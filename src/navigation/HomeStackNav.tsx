@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
@@ -22,6 +23,11 @@ export function HomeStackNav() {
         name="HomeMain"
         component={HomeScreen}
         options={{ title: 'HalıSaha' }}
+      />
+      <Stack.Screen
+        name="JoinMatch"
+        component={JoinMatchScreen}
+        options={{ title: 'Maça katıl' }}
       />
       <Stack.Screen
         name="MatchDetail"

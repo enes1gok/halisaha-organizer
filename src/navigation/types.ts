@@ -2,6 +2,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type HomeStackParamList = {
   HomeMain: undefined;
+  JoinMatch: undefined;
   MatchDetail: { matchId: string };
   LineupBuilder: { matchId: string };
   ScoreEntry: { matchId: string };

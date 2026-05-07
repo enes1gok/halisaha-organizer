@@ -6,15 +6,11 @@ import { EmptyState } from '../components/EmptyState';
 import { MatchCard } from '../components/MatchCard';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { colors, spacing } from '../theme';
-import type { Match } from '../types/domain';
+import { countGoing } from '../utils/matchRoster';
 import { useAppStore } from '../store/useAppStore';
 import type { MyMatchesStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<MyMatchesStackParamList, 'MyMatchesMain'>;
-
-function countGoing(m: Match): number {
-  return m.attendees.filter((a) => a.status === 'going').length;
-}
 
 export function MyMatchesScreen() {
   const navigation = useNavigation<Nav>();

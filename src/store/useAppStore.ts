@@ -66,6 +66,8 @@ export interface AppState {
   ) => void;
 
   createMatch: (input: CreateMatchInput) => Match;
+  /** Katılım kodu ile mevcut kullanıcıyı maça "going" olarak ekler / günceller */
+  joinMatchByJoinCode: (code: string) => Match | null;
 
   setRSVP: (matchId: string, playerId: string, status: RSVPStatus) => void;
   setPaid: (matchId: string, playerId: string, paid: boolean, actorId: string) => void;
@@ -125,6 +127,28 @@ export const useAppStore = create<AppState>()(
           matches: [match, ...state.matches],
         }));
         return match;
+      },
+
+      joinMatchByJoinCode: (code) => {
+        const compact = (s: string) => s.replace(/[\s-]/g, '').toUpperCase();
+        const needle = compact(code);
+        if (!needle) return null;
+        const state = get();
+        const found = state.matches.find((m) => {
+          if (m.status !== 'upcoming') return false;
+          return compact(m.joinCode) === needle;
+        });
+        if (!found) return null;
+        const userId = state.getCurrentUserId();
+        set((s) => {
+          const matches = s.matches.map((mm) => {
+            if (mm.id !== found.id) return mm;
+            const attendees = upsertAttendee(mm.attendees, userId, { status: 'going' });
+            return { ...mm, attendees };
+          });
+          return { matches, players: withSyncedStats(s.players, matches) };
+        });
+        return get().getMatch(found.id) ?? null;
       },
 
       setRSVP: (matchId, playerId, status) =>
