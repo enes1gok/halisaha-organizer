@@ -47,6 +47,7 @@ select is_empty(
 );
 
 delete from public.push_tokens where user_id = tests.uuid_organizer();
+select tests.reset_session();
 select isnt_empty(
   $$ select 1 from public.push_tokens where user_id = tests.uuid_organizer() $$,
   'no delete policy: rows remain after delete attempt'

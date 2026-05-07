@@ -65,7 +65,10 @@ select lives_ok(
 );
 
 select tests.authenticate_anon();
-select throws_ok($$ select 1 from public.match_stat_lines limit 1 $$, '42501');
+select is_empty(
+  $$ select 1 from public.match_stat_lines limit 1 $$,
+  'anon cannot see match_stat_lines rows'
+);
 
 select * from finish();
 

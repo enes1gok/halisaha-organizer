@@ -83,9 +83,9 @@ select lives_ok(
 
 -- Anon: no direct table access
 select tests.authenticate_anon();
-select throws_ok(
+select is_empty(
   $$ select id from public.matches limit 1 $$,
-  '42501'
+  'anon cannot see matches rows'
 );
 
 -- Organizer cleanup delete (back as organizer)

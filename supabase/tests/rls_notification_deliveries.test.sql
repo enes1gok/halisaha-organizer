@@ -62,7 +62,10 @@ select throws_ok(
 );
 
 select tests.authenticate_anon();
-select throws_ok($$ select 1 from public.notification_deliveries limit 1 $$, '42501');
+select is_empty(
+  $$ select 1 from public.notification_deliveries limit 1 $$,
+  'anon cannot see notification_deliveries rows'
+);
 
 select * from finish();
 

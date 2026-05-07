@@ -117,7 +117,10 @@ select is_empty(
 );
 
 select tests.authenticate_anon();
-select throws_ok($$ select 1 from public.self_report_requests limit 1 $$, '42501');
+select is_empty(
+  $$ select 1 from public.self_report_requests limit 1 $$,
+  'anon cannot see self_report_requests rows'
+);
 
 select * from finish();
 

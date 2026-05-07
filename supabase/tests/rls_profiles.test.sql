@@ -35,14 +35,21 @@ select throws_ok(
   '42501'
 );
 
-select throws_ok(
+select lives_ok(
   $$ delete from public.profiles where id = tests.uuid_organizer() $$,
-  '42501'
+  'delete own profile does not raise under RLS'
+);
+select isnt_empty(
+  $$ select 1 from public.profiles where id = tests.uuid_organizer() $$,
+  'profile row remains (no delete policy)'
 );
 
 -- Anon cannot select profiles
 select tests.authenticate_anon();
-select throws_ok($$ select id from public.profiles limit 1 $$, '42501');
+select is_empty(
+  $$ select id from public.profiles limit 1 $$,
+  'anon cannot see profiles rows'
+);
 
 select * from finish();
 

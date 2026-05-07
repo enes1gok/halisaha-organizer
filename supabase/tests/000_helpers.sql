@@ -119,4 +119,12 @@ end;
 $$;
 
 grant usage on schema tests to postgres, authenticated, anon;
-grant execute on all functions in schema tests to postgres, authenticated, anon;
+grant execute on all functions in schema tests to postgres, authenticated;
+grant execute on function tests.reset_session() to anon;
+
+-- pg_prove runs every .sql in this folder; emit a minimal TAP plan so the file is not a parse failure.
+create extension if not exists pgtap with schema extensions;
+
+select plan(1);
+select pass('tests helpers loaded');
+select * from finish();

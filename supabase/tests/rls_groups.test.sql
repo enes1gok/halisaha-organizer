@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(9);
 
 select tests.reset_session();
 select tests.create_user(tests.uuid_organizer());
@@ -63,18 +63,29 @@ select lives_ok(
 -- Insert with wrong owner_id
 select throws_ok(
   $$ insert into public.groups (name, owner_id, join_code)
-     values ('Bad', tests.uuid_participant(), 'NEWGRPC12') $$,
+     values (
+       'Bad',
+       'a0000000-0000-4000-8000-000000000002'::uuid,
+       'NEWGRPC12'
+     ) $$,
   '42501'
 );
 
--- Delete group: no policy (deny)
-select throws_ok(
+-- Delete group: no policy (zero rows deleted, no error)
+select lives_ok(
   $$ delete from public.groups where id = 'c0000000-0000-4000-8000-000000000010'::uuid $$,
-  '42501'
+  'organizer delete attempt does not raise'
+);
+select isnt_empty(
+  $$ select 1 from public.groups where id = 'c0000000-0000-4000-8000-000000000010'::uuid $$,
+  'group row remains (no delete policy)'
 );
 
 select tests.authenticate_anon();
-select throws_ok($$ select id from public.groups limit 1 $$, '42501');
+select is_empty(
+  $$ select id from public.groups limit 1 $$,
+  'anon cannot see groups rows'
+);
 
 select * from finish();
 

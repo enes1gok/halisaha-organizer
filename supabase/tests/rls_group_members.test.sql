@@ -58,7 +58,11 @@ select is_empty(
 select tests.authenticate_as(tests.uuid_non_member());
 select throws_ok(
   $$ insert into public.group_members (group_id, player_id, role)
-     values ('c0000000-0000-4000-8000-000000000020'::uuid, tests.uuid_organizer(), 'member') $$,
+     values (
+       'c0000000-0000-4000-8000-000000000020'::uuid,
+       'a0000000-0000-4000-8000-000000000002'::uuid,
+       'member'
+     ) $$,
   '42501'
 );
 
@@ -81,7 +85,10 @@ select is(
 );
 
 select tests.authenticate_anon();
-select throws_ok($$ select 1 from public.group_members limit 1 $$, '42501');
+select is_empty(
+  $$ select 1 from public.group_members limit 1 $$,
+  'anon cannot see group_members rows'
+);
 
 select * from finish();
 

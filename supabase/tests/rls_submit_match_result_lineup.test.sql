@@ -41,7 +41,7 @@ select lives_ok(
        'b0000000-0000-4000-8000-000000000040'::uuid,
        3,
        1,
-       '[{"player_id":"' || tests.uuid_organizer()::text || '","count":2}]'::jsonb,
+       '[{"player_id":"a0000000-0000-4000-8000-000000000001","count":2}]'::jsonb,
        '[]'::jsonb
      ) $$,
   'lineup player may submit score'

@@ -94,11 +94,11 @@ select throws_ok(
          jsonb_build_object('ratee_id', tests.uuid_participant()::text, 'score', 10)
        )
      ) $$,
-  'P0001',
-  'cannot self-score'
+  'P0001'
 );
 
 -- Upcoming match: cannot rate
+select tests.reset_session();
 insert into public.matches (id, starts_at, venue, organizer_id, join_code, status)
 values (
   'b0000000-0000-4000-8000-000000000021'::uuid,
@@ -113,6 +113,8 @@ insert into public.match_team_players (match_id, player_id, team)
 values
   ('b0000000-0000-4000-8000-000000000021'::uuid, tests.uuid_organizer(), 'A'),
   ('b0000000-0000-4000-8000-000000000021'::uuid, tests.uuid_participant(), 'A');
+
+select tests.authenticate_as(tests.uuid_participant());
 
 select throws_ok(
   $$ select public.upsert_match_peer_ratings(

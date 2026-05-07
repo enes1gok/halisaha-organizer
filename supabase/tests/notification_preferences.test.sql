@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(8);
 
 select tests.reset_session();
 

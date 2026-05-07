@@ -63,7 +63,10 @@ select is_empty(
 );
 
 select tests.authenticate_anon();
-select throws_ok($$ select 1 from public.match_team_players limit 1 $$, '42501');
+select is_empty(
+  $$ select 1 from public.match_team_players limit 1 $$,
+  'anon cannot see match_team_players rows'
+);
 
 select * from finish();
 

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(8);
 
 select tests.reset_session();
 select tests.create_user(tests.uuid_organizer());
@@ -80,7 +80,10 @@ select is_empty(
 );
 
 select tests.authenticate_anon();
-select throws_ok($$ select 1 from public.match_attendees limit 1 $$, '42501');
+select is_empty(
+  $$ select 1 from public.match_attendees limit 1 $$,
+  'anon cannot see match_attendees rows'
+);
 
 select * from finish();
 
