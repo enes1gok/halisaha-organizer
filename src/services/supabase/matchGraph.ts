@@ -51,8 +51,49 @@ export type MatchGraphPayload = {
 
 let matchGraphRpcSuccessCount = 0;
 let matchGraphRpcFallbackCount = 0;
+let matchGraphDetailRpcSuccessCount = 0;
+let matchGraphDetailRpcFallbackCount = 0;
 
 export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayload> {
+  const supabase = getSupabaseClient();
+  const startedAt = Date.now();
+
+  // Prefer the consolidated single-RPC path (1 round-trip). If the RPC is
+  // not yet deployed or fails, fall back to the legacy 6-query path so we
+  // can ship the client and migration independently.
+  const { data, error } = await supabase.rpc('get_match_graph_for_user', { p_match_id: matchId });
+  if (!error) {
+    matchGraphDetailRpcSuccessCount += 1;
+    const row = (Array.isArray(data) ? data[0] : data) as MatchGraphRpcRow | undefined;
+    if (!row) throw createNotFoundError('fetchMatchGraph', 'Maç bulunamadı');
+    const attendees = jsonArrayOrEmpty(row.attendees);
+    const teamPlayers = jsonArrayOrEmpty(row.team_players);
+    const statLines = jsonArrayOrEmpty(row.stat_lines);
+    const selfReports = jsonArrayOrEmpty(row.self_reports);
+    const profiles = jsonArrayOrEmpty(row.profiles);
+    const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
+    if (matchGraphDetailRpcSuccessCount === 1 || matchGraphDetailRpcSuccessCount % 10 === 0) {
+      console.info('[matchGraph] detail rpc fetch completed', {
+        successCount: matchGraphDetailRpcSuccessCount,
+        durationMs: Date.now() - startedAt,
+      });
+    }
+    return { match, profiles };
+  }
+
+  matchGraphDetailRpcFallbackCount += 1;
+  console.warn('[matchGraph] get_match_graph_for_user failed; fallback enabled', {
+    fallbackCount: matchGraphDetailRpcFallbackCount,
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+  });
+
+  return fetchMatchGraphLegacy(matchId);
+}
+
+async function fetchMatchGraphLegacy(matchId: string): Promise<MatchGraphPayload> {
   const supabase = getSupabaseClient();
   const [matchRes, attendeesRes, teamsRes, statsRes, selfReportsRes] = await Promise.all([
     supabase.rpc('get_match_detail_for_user', { p_match_id: matchId }),
