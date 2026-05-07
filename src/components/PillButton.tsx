@@ -49,13 +49,12 @@ export function PillButton({
       : variant === 'danger'
         ? colors.danger
         : 'transparent';
-  const border =
-    variant === 'ghost' ? { borderWidth: 1, borderColor: colors.border } : {};
+  const borderStyle = variant === 'ghost' ? styles.ghostBorder : undefined;
   const textColor =
     variant === 'ghost'
       ? colors.text
       : variant === 'accent'
-        ? '#0A0A0A'
+        ? colors.background
         : variant === 'danger'
           ? colors.text
           : colors.text;
@@ -75,13 +74,13 @@ export function PillButton({
       onPressOut={() => {
         scale.value = withSpring(1);
       }}
-      style={[styles.base, { backgroundColor: bg }, border, animStyle, style]}
+      style={[styles.base, { backgroundColor: bg }, borderStyle, animStyle, style]}
     >
       {loading ? (
         <ActivityIndicator color={resolvedTitleColor} />
       ) : (
         <Text
-          style={[typography.subtitle, { color: resolvedTitleColor, fontSize: 15 }]}
+          style={[styles.title, { color: resolvedTitleColor }]}
           accessibilityLiveRegion="polite"
         >
           {title}
@@ -99,5 +98,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
+  },
+  ghostBorder: {
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  title: {
+    ...typography.subtitle,
+    fontSize: 15,
   },
 });

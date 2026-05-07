@@ -136,7 +136,7 @@ export function MatchDetailScreen() {
   if (!match) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: colors.textMuted }}>Maç bulunamadı.</Text>
+        <Text style={styles.emptyText}>Maç bulunamadı.</Text>
       </View>
     );
   }
@@ -148,7 +148,7 @@ export function MatchDetailScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}
+      contentContainerStyle={styles.contentContainer}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <View style={styles.hero}>
@@ -221,7 +221,7 @@ export function MatchDetailScreen() {
                 )
               }
               trackColor={{ false: colors.border, true: colors.accentMuted }}
-              thumbColor={match.selfReportEnabled ? colors.accent : '#888'}
+              thumbColor={match.selfReportEnabled ? colors.accent : colors.textMuted}
             />
           </View>
         </View>
@@ -284,7 +284,7 @@ export function MatchDetailScreen() {
                       )
                     }
                     trackColor={{ false: colors.border, true: colors.accentMuted }}
-                    thumbColor={a.paid ? colors.accent : '#888'}
+                    thumbColor={a.paid ? colors.accent : colors.textMuted}
                   />
                 </View>
               ) : (
@@ -346,6 +346,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  contentContainer: {
+    paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
   },
   center: {
     flex: 1,
@@ -431,7 +434,7 @@ const styles = StyleSheet.create({
   },
   playerMeta: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   playerName: {
     ...typography.body,
@@ -439,7 +442,7 @@ const styles = StyleSheet.create({
   },
   paidRow: {
     alignItems: 'flex-end',
-    gap: 4,
+    gap: spacing.xs,
   },
   micro: {
     ...typography.micro,
@@ -470,5 +473,8 @@ const styles = StyleSheet.create({
     ...typography.subtitle,
     color: colors.text,
     marginBottom: spacing.sm,
+  },
+  emptyText: {
+    color: colors.textMuted,
   },
 });

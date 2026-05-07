@@ -20,7 +20,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
-import { colors, spacing, typography } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 import type { Player, Position } from '../types/domain';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
@@ -87,7 +87,7 @@ function DraggableCard({
     <GestureDetector gesture={pan}>
       <Animated.View style={[styles.card, style]}>
         <PlayerAvatar name={player.name} uri={player.photoUri} size={36} />
-        <View style={{ flex: 1 }}>
+        <View style={styles.cardMeta}>
           <Text style={styles.cardName} numberOfLines={1}>
             {player.name}
           </Text>
@@ -227,7 +227,7 @@ export function LineupBuilderScreen() {
   if (!match) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: colors.textMuted }}>Maç yok</Text>
+        <Text style={styles.emptyText}>Maç yok</Text>
       </View>
     );
   }
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   bench: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radius.card,
     padding: spacing.sm,
     backgroundColor: colors.surface,
     minHeight: 120,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radius.card,
     padding: spacing.sm,
     backgroundColor: colors.surface,
     maxHeight: 420,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.sm,
     marginBottom: spacing.sm,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.background,
@@ -344,6 +344,12 @@ const styles = StyleSheet.create({
   cardName: {
     ...typography.body,
     color: colors.text,
+  },
+  cardMeta: {
+    flex: 1,
+  },
+  emptyText: {
+    color: colors.textMuted,
   },
   actions: {
     gap: spacing.sm,
