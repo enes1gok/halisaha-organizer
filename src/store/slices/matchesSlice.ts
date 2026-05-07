@@ -8,330 +8,295 @@ import type {
   SelfReportRequest,
   SelfReportType,
 } from '../../types/domain';
-import { fetchMatchGraph, fetchMyMatchesGraph } from '../../services/supabase/matchGraph';
-import { scoreResultToRpcPayload } from '../../services/supabase/mappers';
-import {
-  insertMatchWithOrganizerAttendee,
-  joinMatchByJoinCode as joinMatchByJoinCodeRpc,
-  submitMatchResultRpc,
-} from '../../services/supabase/matches';
-import {
-  insertSelfReportRemote,
-  replaceMatchTeamPlayersRemote,
-  updateMatchAttendeeRemote,
-  updateMatchOrganizerFieldsRemote,
-  updateSelfReportStatusRemote,
-} from '../../services/supabase/matchMutations';
+import type { MatchGraphPayload } from '../../services/supabase/matchGraph';
 import { createId } from '../../utils/id';
-import { isRemoteMatchId } from '../../utils/matchId';
+import {
+  addSelfReportUseCase,
+  createMatchUseCase,
+  hydrateRemoteMatchesUseCase,
+  joinMatchByJoinCodeUseCase,
+  lockLineupUseCase,
+  refreshRemoteMatchUseCase,
+  respondSelfReportUseCase,
+  setMatchStatusUseCase,
+  setMatchTeamsUseCase,
+  setPaidUseCase,
+  setRsvpUseCase,
+  setSelfReportEnabledUseCase,
+  submitScoreUseCase,
+} from '../../usecases/matches';
 import {
   mergeHydratedRemoteMatches,
   mergeRemoteGraph,
   mergeStatLines,
-  rethrowStoreActionError,
   upsertAttendee,
   withSyncedStats,
 } from '../helpers';
 import { storeSeed } from '../storeSeed';
-import type { AppState, MatchesSlice } from '../types';
+import type { AppState, CreateMatchInput, MatchesSlice } from '../types';
+
+function applyHydratedRemoteMatches(set: Parameters<StateCreator<AppState>>[0], graphs: MatchGraphPayload[]) {
+  set((state) => mergeHydratedRemoteMatches(state, graphs));
+}
+
+function applyRemoteGraph(set: Parameters<StateCreator<AppState>>[0], graph: MatchGraphPayload) {
+  set((state) => mergeRemoteGraph(state, graph));
+}
+
+function createLocalMatch(
+  set: Parameters<StateCreator<AppState>>[0],
+  get: Parameters<StateCreator<AppState>>[1],
+  input: CreateMatchInput,
+): Match {
+  const organizerId = get().getCurrentUserId();
+  const match: Match = {
+    id: createId('match'),
+    groupId: input.groupId,
+    startsAt: input.startsAt,
+    venue: input.venue,
+    organizerId,
+    maxPlayers: input.maxPlayers || 14,
+    pricePerPerson: input.pricePerPerson,
+    iban: input.iban,
+    joinCode: createJoinCode(),
+    attendees: [{ playerId: organizerId, status: 'going', paid: false }],
+    teamAIds: [],
+    teamBIds: [],
+    lineupLocked: false,
+    selfReportEnabled: false,
+    status: 'upcoming',
+    selfReports: [],
+  };
+  set((state) => ({
+    matches: [match, ...state.matches],
+  }));
+  return match;
+}
+
+function joinLocalMatchByJoinCode(
+  set: Parameters<StateCreator<AppState>>[0],
+  get: Parameters<StateCreator<AppState>>[1],
+  code: string,
+): Match | null {
+  const compact = (s: string) => s.replace(/[\s-]/g, '').toUpperCase();
+  const needle = compact(code);
+  if (!needle) return null;
+
+  const state = get();
+  const found = state.matches.find((m) => {
+    if (m.status !== 'upcoming') return false;
+    return compact(m.joinCode) === needle;
+  });
+  if (!found) return null;
+  const userId = state.getCurrentUserId();
+  set((s) => {
+    const matches = s.matches.map((mm) => {
+      if (mm.id !== found.id) return mm;
+      const attendees = upsertAttendee(mm.attendees, userId, { status: 'going' });
+      return { ...mm, attendees };
+    });
+    return { matches, players: withSyncedStats(s.players, matches) };
+  });
+  return get().getMatch(found.id) ?? null;
+}
+
+function setLocalRsvp(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  playerId: string,
+  status: RSVPStatus,
+) {
+  set((state) => {
+    const matches = state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      const attendees = upsertAttendee(m.attendees, playerId, { status });
+      return { ...m, attendees };
+    });
+    return { matches, players: withSyncedStats(state.players, matches) };
+  });
+}
+
+function setLocalPaid(
+  set: Parameters<StateCreator<AppState>>[0],
+  get: Parameters<StateCreator<AppState>>[1],
+  matchId: string,
+  playerId: string,
+  paid: boolean,
+  actorId: string,
+) {
+  const stateSnap = get();
+  const m = stateSnap.matches.find((x) => x.id === matchId);
+  if (!m) return;
+  const isOrganizer = m.organizerId === actorId;
+  if (!isOrganizer && playerId !== actorId) return;
+
+  set((state) => {
+    const matches = state.matches.map((mm) => {
+      if (mm.id !== matchId) return mm;
+      const attendees = upsertAttendee(mm.attendees, playerId, { paid });
+      return { ...mm, attendees };
+    });
+    return { matches, players: withSyncedStats(state.players, matches) };
+  });
+}
+
+function setLocalSelfReportEnabled(set: Parameters<StateCreator<AppState>>[0], matchId: string, enabled: boolean) {
+  set((state) => ({
+    matches: state.matches.map((m) => (m.id === matchId ? { ...m, selfReportEnabled: enabled } : m)),
+  }));
+}
+
+function addLocalSelfReport(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  playerId: string,
+  type: SelfReportType,
+) {
+  set((state) => {
+    const matches = state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      const req: SelfReportRequest = {
+        id: createId('sr'),
+        matchId,
+        playerId,
+        type,
+        status: 'pending',
+      };
+      return { ...m, selfReports: [...m.selfReports, req] };
+    });
+    return { matches };
+  });
+}
+
+function respondLocalSelfReport(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  requestId: string,
+  approve: boolean,
+) {
+  set((state) => ({
+    matches: state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      return {
+        ...m,
+        selfReports: m.selfReports.map((r) =>
+          r.id === requestId ? { ...r, status: approve ? ('approved' as const) : ('rejected' as const) } : r,
+        ),
+      };
+    }),
+  }));
+}
+
+function setLocalMatchTeams(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  teamAIds: string[],
+  teamBIds: string[],
+) {
+  set((state) => ({
+    matches: state.matches.map((m) => (m.id === matchId ? { ...m, teamAIds, teamBIds } : m)),
+  }));
+}
+
+function lockLocalLineup(set: Parameters<StateCreator<AppState>>[0], matchId: string) {
+  set((state) => ({
+    matches: state.matches.map((m) => (m.id === matchId ? { ...m, lineupLocked: true } : m)),
+  }));
+}
+
+function setLocalMatchStatus(set: Parameters<StateCreator<AppState>>[0], matchId: string, status: MatchStatus) {
+  set((state) => ({
+    matches: state.matches.map((m) => (m.id === matchId ? { ...m, status } : m)),
+  }));
+}
+
+function submitLocalScore(set: Parameters<StateCreator<AppState>>[0], matchId: string, result: ScoreResult) {
+  set((state) => {
+    const matches = state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      let merged: ScoreResult = { ...result };
+      const approved = m.selfReports.filter((r) => r.status === 'approved');
+      for (const r of approved) {
+        if (r.type === 'goal') {
+          merged = {
+            ...merged,
+            scorers: mergeStatLines(merged.scorers, r.playerId, 1),
+          };
+        } else {
+          merged = {
+            ...merged,
+            assists: mergeStatLines(merged.assists, r.playerId, 1),
+          };
+        }
+      }
+      return {
+        ...m,
+        status: 'finished' as const,
+        result: merged,
+      };
+    });
+    return { matches, players: withSyncedStats(state.players, matches) };
+  });
+}
+
+function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get: Parameters<StateCreator<AppState>>[1]) {
+  return {
+    getRemoteUserId: () => get().remoteUserId,
+    mergeHydratedRemoteMatches: (graphs: MatchGraphPayload[]) => applyHydratedRemoteMatches(set, graphs),
+    mergeRemoteGraph: (graph: MatchGraphPayload) => applyRemoteGraph(set, graph),
+    createLocalMatch: (input: CreateMatchInput) => createLocalMatch(set, get, input),
+    joinLocalMatchByJoinCode: (code: string) => joinLocalMatchByJoinCode(set, get, code),
+    setLocalRsvp: (matchId: string, playerId: string, status: RSVPStatus) =>
+      setLocalRsvp(set, matchId, playerId, status),
+    setLocalPaid: (matchId: string, playerId: string, paid: boolean, actorId: string) =>
+      setLocalPaid(set, get, matchId, playerId, paid, actorId),
+    setLocalSelfReportEnabled: (matchId: string, enabled: boolean) => setLocalSelfReportEnabled(set, matchId, enabled),
+    addLocalSelfReport: (matchId: string, playerId: string, type: SelfReportType) =>
+      addLocalSelfReport(set, matchId, playerId, type),
+    respondLocalSelfReport: (matchId: string, requestId: string, approve: boolean) =>
+      respondLocalSelfReport(set, matchId, requestId, approve),
+    setLocalMatchTeams: (matchId: string, teamAIds: string[], teamBIds: string[]) =>
+      setLocalMatchTeams(set, matchId, teamAIds, teamBIds),
+    lockLocalLineup: (matchId: string) => lockLocalLineup(set, matchId),
+    setLocalMatchStatus: (matchId: string, status: MatchStatus) => setLocalMatchStatus(set, matchId, status),
+    submitLocalScore: (matchId: string, result: ScoreResult) => submitLocalScore(set, matchId, result),
+  };
+}
 
 export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = (set, get) => ({
   matches: storeSeed.matches,
 
   getMatch: (id) => get().matches.find((m) => m.id === id),
 
-  hydrateRemoteMatches: async () => {
-    const uid = get().remoteUserId;
-    if (!uid) return;
-    try {
-      const graphs = await fetchMyMatchesGraph();
-      set((state) => mergeHydratedRemoteMatches(state, graphs));
-    } catch (error) {
-      rethrowStoreActionError(
-        'hydrateRemoteMatches',
-        error,
-        'Maçlar yenilenemedi. Lütfen tekrar deneyin.',
-      );
-    }
-  },
+  hydrateRemoteMatches: () => hydrateRemoteMatchesUseCase(buildMatchesUseCaseDeps(set, get)),
 
-  refreshRemoteMatch: async (matchId) => {
-    if (!get().remoteUserId || !isRemoteMatchId(matchId)) return;
-    try {
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-    } catch (error) {
-      rethrowStoreActionError(
-        'refreshRemoteMatch',
-        error,
-        'Maç bilgileri yenilenemedi. Lütfen tekrar deneyin.',
-      );
-    }
-  },
+  refreshRemoteMatch: (matchId) => refreshRemoteMatchUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 
-  createMatch: async (input) => {
-    const organizerId = get().getCurrentUserId();
-    const uid = get().remoteUserId;
+  createMatch: (input) => createMatchUseCase(buildMatchesUseCaseDeps(set, get), input),
 
-    if (uid) {
-      try {
-        const joinCode = createJoinCode();
-        const row = await insertMatchWithOrganizerAttendee({
-          startsAt: input.startsAt,
-          venue: input.venue,
-          maxPlayers: input.maxPlayers || 14,
-          joinCode,
-          groupId: input.groupId,
-          pricePerPerson: input.pricePerPerson ?? null,
-          iban: input.iban ?? null,
-        });
-        const graph = await fetchMatchGraph(row.id);
-        set((state) => mergeRemoteGraph(state, graph));
-        return graph.match;
-      } catch (error) {
-        rethrowStoreActionError('createMatch', error, 'Maç oluşturulamadı.');
-      }
-    }
+  joinMatchByJoinCode: (code) => joinMatchByJoinCodeUseCase(buildMatchesUseCaseDeps(set, get), code),
 
-    const match: Match = {
-      id: createId('match'),
-      groupId: input.groupId,
-      startsAt: input.startsAt,
-      venue: input.venue,
-      organizerId,
-      maxPlayers: input.maxPlayers || 14,
-      pricePerPerson: input.pricePerPerson,
-      iban: input.iban,
-      joinCode: createJoinCode(),
-      attendees: [{ playerId: organizerId, status: 'going', paid: false }],
-      teamAIds: [],
-      teamBIds: [],
-      lineupLocked: false,
-      selfReportEnabled: false,
-      status: 'upcoming',
-      selfReports: [],
-    };
-    set((state) => ({
-      matches: [match, ...state.matches],
-    }));
-    return match;
-  },
+  setRSVP: (matchId, playerId, status) =>
+    setRsvpUseCase(buildMatchesUseCaseDeps(set, get), matchId, playerId, status),
 
-  joinMatchByJoinCode: async (code) => {
-    const compact = (s: string) => s.replace(/[\s-]/g, '').toUpperCase();
-    const needle = compact(code);
-    if (!needle) return null;
+  setPaid: (matchId, playerId, paid, actorId) =>
+    setPaidUseCase(buildMatchesUseCaseDeps(set, get), matchId, playerId, paid, actorId),
 
-    const uid = get().remoteUserId;
-    if (uid) {
-      try {
-        const mid = await joinMatchByJoinCodeRpc(code);
-        if (!mid) return null;
-        const graph = await fetchMatchGraph(mid);
-        set((state) => mergeRemoteGraph(state, graph));
-        return graph.match;
-      } catch (error) {
-        rethrowStoreActionError('joinMatchByJoinCode', error, 'Katılım işlemi başarısız oldu.');
-      }
-    }
+  setSelfReportEnabled: (matchId, enabled) =>
+    setSelfReportEnabledUseCase(buildMatchesUseCaseDeps(set, get), matchId, enabled),
 
-    const state = get();
-    const found = state.matches.find((m) => {
-      if (m.status !== 'upcoming') return false;
-      return compact(m.joinCode) === needle;
-    });
-    if (!found) return null;
-    const userId = state.getCurrentUserId();
-    set((s) => {
-      const matches = s.matches.map((mm) => {
-        if (mm.id !== found.id) return mm;
-        const attendees = upsertAttendee(mm.attendees, userId, { status: 'going' });
-        return { ...mm, attendees };
-      });
-      return { matches, players: withSyncedStats(s.players, matches) };
-    });
-    return get().getMatch(found.id) ?? null;
-  },
+  addSelfReport: (matchId, playerId, type) =>
+    addSelfReportUseCase(buildMatchesUseCaseDeps(set, get), matchId, playerId, type),
 
-  setRSVP: async (matchId, playerId, status) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      await updateMatchAttendeeRemote(matchId, playerId, { status });
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-    set((state) => {
-      const matches = state.matches.map((m) => {
-        if (m.id !== matchId) return m;
-        const attendees = upsertAttendee(m.attendees, playerId, { status });
-        return { ...m, attendees };
-      });
-      return { matches, players: withSyncedStats(state.players, matches) };
-    });
-  },
+  respondSelfReport: (matchId, requestId, approve) =>
+    respondSelfReportUseCase(buildMatchesUseCaseDeps(set, get), matchId, requestId, approve),
 
-  setPaid: async (matchId, playerId, paid, actorId) => {
-    const stateSnap = get();
-    const m = stateSnap.matches.find((x) => x.id === matchId);
-    if (!m) return;
-    const isOrganizer = m.organizerId === actorId;
-    if (!isOrganizer && playerId !== actorId) return;
+  setMatchTeams: (matchId, teamAIds, teamBIds) =>
+    setMatchTeamsUseCase(buildMatchesUseCaseDeps(set, get), matchId, teamAIds, teamBIds),
 
-    if (stateSnap.remoteUserId && isRemoteMatchId(matchId)) {
-      await updateMatchAttendeeRemote(matchId, playerId, { paid });
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
+  lockLineup: (matchId) => lockLineupUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 
-    set((state) => {
-      const matches = state.matches.map((mm) => {
-        if (mm.id !== matchId) return mm;
-        const attendees = upsertAttendee(mm.attendees, playerId, { paid });
-        return { ...mm, attendees };
-      });
-      return { matches, players: withSyncedStats(state.players, matches) };
-    });
-  },
+  setMatchStatus: (matchId, status) => setMatchStatusUseCase(buildMatchesUseCaseDeps(set, get), matchId, status),
 
-  setSelfReportEnabled: async (matchId, enabled) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      await updateMatchOrganizerFieldsRemote(matchId, { self_report_enabled: enabled });
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-    set((state) => ({
-      matches: state.matches.map((m) =>
-        m.id === matchId ? { ...m, selfReportEnabled: enabled } : m,
-      ),
-    }));
-  },
-
-  addSelfReport: async (matchId, playerId, type) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      await insertSelfReportRemote(matchId, playerId, type);
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-    set((state) => {
-      const matches = state.matches.map((m) => {
-        if (m.id !== matchId) return m;
-        const req: SelfReportRequest = {
-          id: createId('sr'),
-          matchId,
-          playerId,
-          type,
-          status: 'pending',
-        };
-        return { ...m, selfReports: [...m.selfReports, req] };
-      });
-      return { matches };
-    });
-  },
-
-  respondSelfReport: async (matchId, requestId, approve) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      await updateSelfReportStatusRemote(requestId, approve ? 'approved' : 'rejected');
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-    set((state) => ({
-      matches: state.matches.map((m) => {
-        if (m.id !== matchId) return m;
-        return {
-          ...m,
-          selfReports: m.selfReports.map((r) =>
-            r.id === requestId
-              ? { ...r, status: approve ? ('approved' as const) : ('rejected' as const) }
-              : r,
-          ),
-        };
-      }),
-    }));
-  },
-
-  setMatchTeams: async (matchId, teamAIds, teamBIds) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      await replaceMatchTeamPlayersRemote(matchId, teamAIds, teamBIds);
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-    set((state) => ({
-      matches: state.matches.map((m) =>
-        m.id === matchId ? { ...m, teamAIds, teamBIds } : m,
-      ),
-    }));
-  },
-
-  lockLineup: async (matchId) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      await updateMatchOrganizerFieldsRemote(matchId, { lineup_locked: true });
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-    set((state) => ({
-      matches: state.matches.map((m) =>
-        m.id === matchId ? { ...m, lineupLocked: true } : m,
-      ),
-    }));
-  },
-
-  setMatchStatus: async (matchId, status) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      await updateMatchOrganizerFieldsRemote(matchId, { status });
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-    set((state) => ({
-      matches: state.matches.map((m) => (m.id === matchId ? { ...m, status } : m)),
-    }));
-  },
-
-  submitScore: async (matchId, result) => {
-    if (get().remoteUserId && isRemoteMatchId(matchId)) {
-      const payload = scoreResultToRpcPayload(result);
-      await submitMatchResultRpc({
-        matchId,
-        scoreA: result.scoreA,
-        scoreB: result.scoreB,
-        scorers: payload.scorers,
-        assists: payload.assists,
-      });
-      const graph = await fetchMatchGraph(matchId);
-      set((state) => mergeRemoteGraph(state, graph));
-      return;
-    }
-
-    set((state) => {
-      const matches = state.matches.map((m) => {
-        if (m.id !== matchId) return m;
-        let merged: ScoreResult = { ...result };
-        const approved = m.selfReports.filter((r) => r.status === 'approved');
-        for (const r of approved) {
-          if (r.type === 'goal')
-            merged = {
-              ...merged,
-              scorers: mergeStatLines(merged.scorers, r.playerId, 1),
-            };
-          else
-            merged = {
-              ...merged,
-              assists: mergeStatLines(merged.assists, r.playerId, 1),
-            };
-        }
-        return {
-          ...m,
-          status: 'finished' as const,
-          result: merged,
-        };
-      });
-      return { matches, players: withSyncedStats(state.players, matches) };
-    });
-  },
+  submitScore: (matchId, result) => submitScoreUseCase(buildMatchesUseCaseDeps(set, get), matchId, result),
 });

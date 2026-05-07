@@ -1,93 +1,103 @@
 import type { StateCreator } from 'zustand';
 import type { Group, GroupMembership } from '../../types/domain';
-import { createGroupRemote, fetchMyGroups, joinGroupRemote, leaveGroupRemote } from '../../services/supabase/groups';
-import { createJoinCode } from '../../data/seed';
-import { createId } from '../../utils/id';
+import {
+  buildLocalGroup,
+  createGroupUseCase,
+  hydrateRemoteGroupsUseCase,
+  joinGroupUseCase,
+  leaveGroupUseCase,
+} from '../../usecases/groups';
 import type { AppState, GroupsSlice } from '../types';
+
+function hydrateGroupsState(
+  set: Parameters<StateCreator<AppState>>[0],
+  payload: { groups: Group[]; memberships: GroupMembership[] },
+) {
+  set({ groups: payload.groups, groupMemberships: payload.memberships });
+}
+
+function createLocalGroup(
+  set: Parameters<StateCreator<AppState>>[0],
+  get: Parameters<StateCreator<AppState>>[1],
+  name: string,
+): Group {
+  const localGroup = buildLocalGroup(name, get().getCurrentUserId());
+  const membership: GroupMembership = {
+    groupId: localGroup.id,
+    playerId: localGroup.ownerId,
+    role: 'owner',
+    createdAt: localGroup.createdAt,
+  };
+  set((state) => ({
+    groups: [localGroup, ...state.groups],
+    groupMemberships: [membership, ...state.groupMemberships],
+  }));
+  return localGroup;
+}
+
+function joinLocalGroup(
+  set: Parameters<StateCreator<AppState>>[0],
+  get: Parameters<StateCreator<AppState>>[1],
+  joinCode: string,
+): Group | null {
+  const compact = joinCode.replace(/[\s-]/g, '').toUpperCase();
+  const state = get();
+  const found = state.groups.find((group) => group.joinCode.replace(/[\s-]/g, '').toUpperCase() === compact);
+  if (!found) return null;
+  const currentUserId = state.getCurrentUserId();
+  if (
+    !state.groupMemberships.some(
+      (membership) => membership.groupId === found.id && membership.playerId === currentUserId,
+    )
+  ) {
+    set((prev) => ({
+      groupMemberships: [
+        ...prev.groupMemberships,
+        {
+          groupId: found.id,
+          playerId: currentUserId,
+          role: 'member',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+  }
+  return found;
+}
+
+function leaveLocalGroup(
+  set: Parameters<StateCreator<AppState>>[0],
+  get: Parameters<StateCreator<AppState>>[1],
+  groupId: string,
+) {
+  const currentUserId = get().getCurrentUserId();
+  set((state) => ({
+    groupMemberships: state.groupMemberships.filter(
+      (membership) => !(membership.groupId === groupId && membership.playerId === currentUserId),
+    ),
+  }));
+}
+
+function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get: Parameters<StateCreator<AppState>>[1]) {
+  return {
+    getRemoteUserId: () => get().remoteUserId,
+    hydrateLocalGroups: (payload: { groups: Group[]; memberships: GroupMembership[] }) =>
+      hydrateGroupsState(set, payload),
+    createLocalGroup: (name: string) => createLocalGroup(set, get, name),
+    joinLocalGroup: (joinCode: string) => joinLocalGroup(set, get, joinCode),
+    leaveLocalGroup: (groupId: string) => leaveLocalGroup(set, get, groupId),
+  };
+}
 
 export const createGroupsSlice: StateCreator<AppState, [], [], GroupsSlice> = (set, get) => ({
   groups: [],
   groupMemberships: [],
 
-  hydrateRemoteGroups: async () => {
-    if (!get().remoteUserId) return;
-    const payload = await fetchMyGroups();
-    set({ groups: payload.groups, groupMemberships: payload.memberships });
-  },
+  hydrateRemoteGroups: () => hydrateRemoteGroupsUseCase(buildGroupsUseCaseDeps(set, get)),
 
-  createGroup: async (name) => {
-    const uid = get().remoteUserId;
-    if (uid) {
-      const group = await createGroupRemote(name);
-      await get().hydrateRemoteGroups();
-      return group;
-    }
-    const localGroup: Group = {
-      id: createId('group'),
-      name,
-      ownerId: get().getCurrentUserId(),
-      joinCode: createJoinCode(),
-      createdAt: new Date().toISOString(),
-    };
-    const membership: GroupMembership = {
-      groupId: localGroup.id,
-      playerId: localGroup.ownerId,
-      role: 'owner',
-      createdAt: localGroup.createdAt,
-    };
-    set((state) => ({
-      groups: [localGroup, ...state.groups],
-      groupMemberships: [membership, ...state.groupMemberships],
-    }));
-    return localGroup;
-  },
+  createGroup: (name) => createGroupUseCase(buildGroupsUseCaseDeps(set, get), name),
 
-  joinGroup: async (joinCode) => {
-    const uid = get().remoteUserId;
-    if (uid) {
-      const joined = await joinGroupRemote(joinCode);
-      await get().hydrateRemoteGroups();
-      return joined;
-    }
-    const compact = joinCode.replace(/[\s-]/g, '').toUpperCase();
-    const state = get();
-    const found = state.groups.find(
-      (group) => group.joinCode.replace(/[\s-]/g, '').toUpperCase() === compact,
-    );
-    if (!found) return null;
-    const currentUserId = state.getCurrentUserId();
-    if (
-      !state.groupMemberships.some(
-        (membership) => membership.groupId === found.id && membership.playerId === currentUserId,
-      )
-    ) {
-      set((prev) => ({
-        groupMemberships: [
-          ...prev.groupMemberships,
-          {
-            groupId: found.id,
-            playerId: currentUserId,
-            role: 'member',
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      }));
-    }
-    return found;
-  },
+  joinGroup: (joinCode) => joinGroupUseCase(buildGroupsUseCaseDeps(set, get), joinCode),
 
-  leaveGroup: async (groupId) => {
-    const uid = get().remoteUserId;
-    if (uid) {
-      await leaveGroupRemote(groupId);
-      await get().hydrateRemoteGroups();
-      return;
-    }
-    const currentUserId = get().getCurrentUserId();
-    set((state) => ({
-      groupMemberships: state.groupMemberships.filter(
-        (membership) => !(membership.groupId === groupId && membership.playerId === currentUserId),
-      ),
-    }));
-  },
+  leaveGroup: (groupId) => leaveGroupUseCase(buildGroupsUseCaseDeps(set, get), groupId),
 });

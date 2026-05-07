@@ -1,5 +1,4 @@
 import type { Attendee, Match, Player } from '../types/domain';
-import { isAppError, shouldRetry, toUserMessage } from '../services/supabase/errors';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import type { ProfileRow, PublicProfileRow } from '../services/supabase/types';
 import { isRemoteMatchId } from '../utils/matchId';
@@ -41,18 +40,6 @@ export function emptyPlayerStats(): Player['stats'] {
     losses: 0,
     draws: 0,
   };
-}
-
-export function rethrowStoreActionError(action: string, error: unknown, fallbackMessage: string): never {
-  if (isAppError(error)) {
-    console.warn(`[store] ${action} failed`, {
-      code: error.code,
-      operation: error.operation,
-      retryable: shouldRetry(error),
-    });
-    throw error;
-  }
-  throw new Error(toUserMessage(error, fallbackMessage));
 }
 
 export function upsertProfilesIntoPlayers(players: Player[], profiles: PublicProfileRow[] | ProfileRow[]): Player[] {
