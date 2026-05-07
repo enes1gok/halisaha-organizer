@@ -4,6 +4,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { buildSeedState, createJoinCode, CURRENT_USER_ID, STORE_VERSION } from '../data/seed';
 import type {
   Attendee,
+  Group,
+  GroupMembership,
   Match,
   MatchStatus,
   Player,
@@ -12,6 +14,7 @@ import type {
   SelfReportRequest,
   SelfReportType,
 } from '../types/domain';
+import { createGroupRemote, fetchMyGroups, joinGroupRemote, leaveGroupRemote } from '../services/supabase/groups';
 import { fetchMatchGraph, fetchMyMatchesGraph, scoreResultToRpcPayload } from '../services/supabase/matchGraph';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import {
@@ -35,6 +38,7 @@ type CreateMatchInput = {
   venue: string;
   startsAt: string;
   maxPlayers: number;
+  groupId?: string;
   pricePerPerson?: number;
   iban?: string;
 };
@@ -142,6 +146,8 @@ export type RemoteProfileRow = {
 export interface AppState {
   players: Player[];
   matches: Match[];
+  groups: Group[];
+  groupMemberships: GroupMembership[];
 
   remoteUserId: string | null;
   setRemoteUserId: (id: string | null) => void;
@@ -158,12 +164,16 @@ export interface AppState {
     patch: Partial<Pick<Player, 'name' | 'photoUri' | 'position' | 'preferredFoot' | 'iban'>>,
   ) => void;
 
-  /** Oturum + Supabase maçları yeniden yükler; demo maçları korur. */
+  /** Oturum + Supabase maçları yeniden yükler. */
   hydrateRemoteMatches: () => Promise<void>;
+  hydrateRemoteGroups: () => Promise<void>;
   refreshRemoteMatch: (matchId: string) => Promise<void>;
 
   createMatch: (input: CreateMatchInput) => Promise<Match>;
   joinMatchByJoinCode: (code: string) => Promise<Match | null>;
+  createGroup: (name: string) => Promise<Group>;
+  joinGroup: (joinCode: string) => Promise<Group | null>;
+  leaveGroup: (groupId: string) => Promise<void>;
 
   setRSVP: (matchId: string, playerId: string, status: RSVPStatus) => Promise<void>;
   setPaid: (matchId: string, playerId: string, paid: boolean, actorId: string) => Promise<void>;
@@ -186,6 +196,8 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       players: seed.players,
       matches: seed.matches,
+      groups: [],
+      groupMemberships: [],
       remoteUserId: null,
 
       setRemoteUserId: (id) => set({ remoteUserId: id }),
@@ -214,7 +226,13 @@ export const useAppStore = create<AppState>()(
 
       resetToSeed: () => {
         const s = buildSeedState();
-        set({ players: s.players, matches: s.matches, remoteUserId: null });
+        set({
+          players: s.players,
+          matches: s.matches,
+          groups: [],
+          groupMemberships: [],
+          remoteUserId: null,
+        });
       },
 
       updatePlayerProfile: (playerId, patch) =>
@@ -227,6 +245,12 @@ export const useAppStore = create<AppState>()(
         if (!uid) return;
         const graphs = await fetchMyMatchesGraph();
         set((state) => mergeHydratedRemoteMatches(state, graphs));
+      },
+
+      hydrateRemoteGroups: async () => {
+        if (!get().remoteUserId) return;
+        const payload = await fetchMyGroups();
+        set({ groups: payload.groups, groupMemberships: payload.memberships });
       },
 
       refreshRemoteMatch: async (matchId) => {
@@ -246,6 +270,7 @@ export const useAppStore = create<AppState>()(
             venue: input.venue,
             maxPlayers: input.maxPlayers || 14,
             joinCode,
+            groupId: input.groupId,
             pricePerPerson: input.pricePerPerson ?? null,
             iban: input.iban ?? null,
           });
@@ -256,6 +281,7 @@ export const useAppStore = create<AppState>()(
 
         const match: Match = {
           id: createId('match'),
+          groupId: input.groupId,
           startsAt: input.startsAt,
           venue: input.venue,
           organizerId,
@@ -307,6 +333,82 @@ export const useAppStore = create<AppState>()(
           return { matches, players: withSyncedStats(s.players, matches) };
         });
         return get().getMatch(found.id) ?? null;
+      },
+
+      createGroup: async (name) => {
+        const uid = get().remoteUserId;
+        if (uid) {
+          const group = await createGroupRemote(name);
+          await get().hydrateRemoteGroups();
+          return group;
+        }
+        const localGroup: Group = {
+          id: createId('group'),
+          name,
+          ownerId: get().getCurrentUserId(),
+          joinCode: createJoinCode(),
+          createdAt: new Date().toISOString(),
+        };
+        const membership: GroupMembership = {
+          groupId: localGroup.id,
+          playerId: localGroup.ownerId,
+          role: 'owner',
+          createdAt: localGroup.createdAt,
+        };
+        set((state) => ({
+          groups: [localGroup, ...state.groups],
+          groupMemberships: [membership, ...state.groupMemberships],
+        }));
+        return localGroup;
+      },
+
+      joinGroup: async (joinCode) => {
+        const uid = get().remoteUserId;
+        if (uid) {
+          const joined = await joinGroupRemote(joinCode);
+          await get().hydrateRemoteGroups();
+          return joined;
+        }
+        const compact = joinCode.replace(/[\s-]/g, '').toUpperCase();
+        const state = get();
+        const found = state.groups.find(
+          (group) => group.joinCode.replace(/[\s-]/g, '').toUpperCase() === compact,
+        );
+        if (!found) return null;
+        const currentUserId = state.getCurrentUserId();
+        if (
+          !state.groupMemberships.some(
+            (membership) => membership.groupId === found.id && membership.playerId === currentUserId,
+          )
+        ) {
+          set((prev) => ({
+            groupMemberships: [
+              ...prev.groupMemberships,
+              {
+                groupId: found.id,
+                playerId: currentUserId,
+                role: 'member',
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          }));
+        }
+        return found;
+      },
+
+      leaveGroup: async (groupId) => {
+        const uid = get().remoteUserId;
+        if (uid) {
+          await leaveGroupRemote(groupId);
+          await get().hydrateRemoteGroups();
+          return;
+        }
+        const currentUserId = get().getCurrentUserId();
+        set((state) => ({
+          groupMemberships: state.groupMemberships.filter(
+            (membership) => !(membership.groupId === groupId && membership.playerId === currentUserId),
+          ),
+        }));
       },
 
       setRSVP: async (matchId, playerId, status) => {
@@ -498,13 +600,20 @@ export const useAppStore = create<AppState>()(
       partialize: (s) => ({
         players: s.players,
         matches: s.matches,
+        groups: s.groups,
+        groupMemberships: s.groupMemberships,
       }),
       migrate: (persisted: unknown, version: number) => {
         if (version !== STORE_VERSION) {
           const fresh = buildSeedState();
-          return { players: fresh.players, matches: fresh.matches };
+          return { players: fresh.players, matches: fresh.matches, groups: [], groupMemberships: [] };
         }
-        return persisted as { players: Player[]; matches: Match[] };
+        return persisted as {
+          players: Player[];
+          matches: Match[];
+          groups: Group[];
+          groupMemberships: GroupMembership[];
+        };
       },
       onRehydrateStorage: () => (state, error) => {
         if (error) console.warn('persist error', error);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { CreateMatchTabScreen } from '../screens/CreateMatchTabScreen';
-import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { AnimatedTabScene } from './TabSceneTransitionContext';
+import { GroupsStackNav } from './GroupsStackNav';
 import { HomeStackNav } from './HomeStackNav';
 import { MyMatchesStackNav } from './MyMatchesStackNav';
 import { ProfileStackNav } from './ProfileStackNav';
@@ -30,10 +30,10 @@ export function CreateTabWithTransition() {
   );
 }
 
-export function LeaderTabWithTransition() {
+export function GroupsTabWithTransition() {
   return (
     <AnimatedTabScene>
-      <LeaderboardScreen />
+      <GroupsStackNav />
     </AnimatedTabScene>
   );
 }

@@ -1,7 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from '../lib/supabase';
+import { registerForPushToken } from '../services/notifications';
 import { fetchProfileById } from '../services/supabase/profiles';
+import { deactivatePushToken, upsertPushToken } from '../services/supabase/pushTokens';
 import { useAppStore } from '../store/useAppStore';
 import { isRemoteMatchId } from '../utils/matchId';
 
@@ -23,6 +25,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [session, setSession] = useState<Session | null>(null);
   const setRemoteUserId = useAppStore((s) => s.setRemoteUserId);
   const syncPlayerFromRemoteProfile = useAppStore((s) => s.syncPlayerFromRemoteProfile);
+  const hydrateRemoteGroups = useAppStore((s) => s.hydrateRemoteGroups);
+  const [activePushToken, setActivePushToken] = useState<string | null>(null);
 
   const pushProfileToStore = useCallback(
     async (userId: string) => {
@@ -53,13 +57,22 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (uid) {
         await pushProfileToStore(uid);
         try {
-          await useAppStore.getState().hydrateRemoteMatches();
+          await Promise.all([useAppStore.getState().hydrateRemoteMatches(), hydrateRemoteGroups()]);
         } catch (e) {
           console.warn('Maç senkronu başarısız', e);
         }
+        try {
+          const token = await registerForPushToken();
+          if (token) {
+            await upsertPushToken(token, 'expo');
+            setActivePushToken(token);
+          }
+        } catch (e) {
+          console.warn('Push token kaydı başarısız', e);
+        }
       }
     },
-    [pushProfileToStore, setRemoteUserId],
+    [hydrateRemoteGroups, pushProfileToStore, setRemoteUserId],
   );
 
   useEffect(() => {
@@ -130,14 +143,24 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const signOut = useCallback(async () => {
     if (!configured) return;
     const supabase = getSupabaseClient();
+    if (activePushToken) {
+      try {
+        await deactivatePushToken(activePushToken);
+      } catch (e) {
+        console.warn('Push token pasifleştirme başarısız', e);
+      }
+    }
     await supabase.auth.signOut();
     resetSupabaseClient();
     setRemoteUserId(null);
     setSession(null);
+    setActivePushToken(null);
     useAppStore.setState((state) => ({
       matches: state.matches.filter((m) => !isRemoteMatchId(m.id)),
+      groups: [],
+      groupMemberships: [],
     }));
-  }, [configured, setRemoteUserId]);
+  }, [activePushToken, configured, setRemoteUserId]);
 
   const value = useMemo<SupabaseAuthContextValue>(
     () => ({

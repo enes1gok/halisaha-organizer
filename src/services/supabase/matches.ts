@@ -6,6 +6,7 @@ export type CreateMatchRowInput = {
   venue: string;
   maxPlayers: number;
   joinCode: string;
+  groupId?: string;
   pricePerPerson?: number | null;
   iban?: string | null;
 };
@@ -25,6 +26,7 @@ export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInpu
       venue: input.venue,
       organizer_id: user.id,
       max_players: input.maxPlayers,
+      group_id: input.groupId ?? null,
       price_per_person: input.pricePerPerson ?? null,
       iban: input.iban ?? null,
       join_code: input.joinCode,
@@ -55,26 +57,7 @@ export async function fetchMatchById(matchId: string): Promise<MatchRow | null> 
 /** Kullanıcının organizatör olduğu veya davetli olduğu maçlar (RLS ile uyumlu). */
 export async function fetchMatchesForCurrentUser(): Promise<MatchRow[]> {
   const supabase = getSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const [organized, attending] = await Promise.all([
-    supabase.from('matches').select('id').eq('organizer_id', user.id),
-    supabase.from('match_attendees').select('match_id').eq('player_id', user.id),
-  ]);
-
-  if (organized.error) throw organized.error;
-  if (attending.error) throw attending.error;
-
-  const ids = new Set<string>();
-  organized.data?.forEach((r) => ids.add(r.id));
-  attending.data?.forEach((r) => ids.add(r.match_id));
-
-  if (ids.size === 0) return [];
-
-  const { data, error } = await supabase.from('matches').select('*').in('id', [...ids]);
+  const { data, error } = await supabase.from('matches').select('*');
   if (error) throw error;
   return (data ?? []) as MatchRow[];
 }

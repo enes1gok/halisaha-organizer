@@ -1,0 +1,27 @@
+import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
+import { CreateGroupScreen } from '../screens/CreateGroupScreen';
+import { GroupDetailScreen } from '../screens/GroupDetailScreen';
+import { GroupsScreen } from '../screens/GroupsScreen';
+import { JoinGroupScreen } from '../screens/JoinGroupScreen';
+import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
+import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { ScoreEntryScreen } from '../screens/ScoreEntryScreen';
+import { defaultStackScreenOptions } from './defaultStackScreenOptions';
+import type { GroupsStackParamList } from './types';
+
+const Stack = createStackNavigator<GroupsStackParamList>();
+
+export function GroupsStackNav() {
+  return (
+    <Stack.Navigator screenOptions={defaultStackScreenOptions}>
+      <Stack.Screen name="GroupsMain" component={GroupsScreen} options={{ title: 'Gruplarım' }} />
+      <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Grup Detayı' }} />
+      <Stack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: 'Grup Oluştur' }} />
+      <Stack.Screen name="JoinGroup" component={JoinGroupScreen} options={{ title: 'Gruba Katıl' }} />
+      <Stack.Screen name="MatchDetail" component={MatchDetailScreen} options={{ title: 'Maç Detayı' }} />
+      <Stack.Screen name="LineupBuilder" component={LineupBuilderScreen} options={{ title: 'Kadro Kur' }} />
+      <Stack.Screen name="ScoreEntry" component={ScoreEntryScreen} options={{ title: 'Skor Gir' }} />
+    </Stack.Navigator>
+  );
+}

@@ -28,7 +28,7 @@ export const TAB_ROUTE_ORDER = [
   'HomeTab',
   'MyMatchesTab',
   'CreateTab',
-  'LeaderTab',
+  'GroupsTab',
   'ProfileTab',
 ] as const;
 export type TabRouteName = (typeof TAB_ROUTE_ORDER)[number];

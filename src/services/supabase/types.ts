@@ -29,6 +29,7 @@ export interface ProfileRow {
 
 export interface MatchRow {
   id: string;
+  group_id: string | null;
   starts_at: string;
   venue: string;
   organizer_id: string;
@@ -41,6 +42,31 @@ export interface MatchRow {
   status: MatchStatusRow;
   score_a: number | null;
   score_b: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupRow {
+  id: string;
+  name: string;
+  owner_id: string;
+  join_code: string;
+  created_at: string;
+}
+
+export interface GroupMemberRow {
+  group_id: string;
+  player_id: string;
+  role: 'owner' | 'member';
+  created_at: string;
+}
+
+export interface PushTokenRow {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: string | null;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }

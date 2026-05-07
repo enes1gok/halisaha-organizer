@@ -20,10 +20,20 @@ export type ProfileStackParamList = {
   PrivacyPolicy: undefined;
 };
 
+export type GroupsStackParamList = {
+  GroupsMain: undefined;
+  GroupDetail: { groupId: string };
+  CreateGroup: undefined;
+  JoinGroup: undefined;
+  MatchDetail: { matchId: string };
+  LineupBuilder: { matchId: string };
+  ScoreEntry: { matchId: string };
+};
+
 export type RootTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
   MyMatchesTab: NavigatorScreenParams<MyMatchesStackParamList> | undefined;
   CreateTab: undefined;
-  LeaderTab: undefined;
+  GroupsTab: NavigatorScreenParams<GroupsStackParamList> | undefined;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };

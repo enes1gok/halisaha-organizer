@@ -10,6 +10,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -31,6 +32,8 @@ export function CreateMatchTabScreen() {
   const snapPoints = useMemo(() => ['82%'], []);
   const createMatch = useAppStore((s) => s.createMatch);
   const userId = useAppStore((s) => s.getCurrentUserId());
+  const groups = useAppStore((s) => s.groups);
+  const memberships = useAppStore((s) => s.groupMemberships);
   const profileIbanRaw = useAppStore((s) => s.players.find((p) => p.id === userId)?.iban);
 
   const profileNorm = useMemo(
@@ -51,7 +54,16 @@ export function CreateMatchTabScreen() {
   const [venue, setVenue] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('14');
   const [price, setPrice] = useState('');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 86400000));
+  const myGroups = useMemo(
+    () =>
+      groups.filter((group) =>
+        memberships.some((membership) => membership.groupId === group.id && membership.playerId === userId),
+      ),
+    [groups, memberships, userId],
+  );
+
   const [showPicker, setShowPicker] = useState(false);
 
   useFocusEffect(
@@ -89,6 +101,7 @@ export function CreateMatchTabScreen() {
         venue: venue.trim(),
         startsAt: startsAt.toISOString(),
         maxPlayers: mp,
+        groupId: selectedGroupId ?? undefined,
         pricePerPerson: priceNum && priceNum > 0 ? priceNum : undefined,
         iban: ibanNormForMatch || undefined,
       });
@@ -126,6 +139,33 @@ export function CreateMatchTabScreen() {
       >
         <BottomSheetScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
           <Text style={[typography.title, styles.title]}>Yeni Maç</Text>
+          <Text style={styles.label}>Grup (isteğe bağlı)</Text>
+          <View style={styles.groupRow}>
+            <Pressable
+              onPress={() => setSelectedGroupId(null)}
+              style={[styles.groupChip, selectedGroupId === null && styles.groupChipActive]}
+            >
+              <Text style={[styles.groupChipText, selectedGroupId === null && styles.groupChipTextActive]}>
+                Genel maç
+              </Text>
+            </Pressable>
+            {myGroups.map((group) => (
+              <Pressable
+                key={group.id}
+                onPress={() => setSelectedGroupId(group.id)}
+                style={[styles.groupChip, selectedGroupId === group.id && styles.groupChipActive]}
+              >
+                <Text
+                  style={[
+                    styles.groupChipText,
+                    selectedGroupId === group.id && styles.groupChipTextActive,
+                  ]}
+                >
+                  {group.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
           <Text style={styles.label}>Saha</Text>
           <BottomSheetTextInput
             value={venue}
@@ -257,6 +297,30 @@ const styles = StyleSheet.create({
   },
   ibanBlock: {
     gap: spacing.sm,
+  },
+  groupRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  groupChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  groupChipActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+  },
+  groupChipText: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  groupChipTextActive: {
+    color: colors.accent,
   },
   ibanMasked: {
     ...typography.body,

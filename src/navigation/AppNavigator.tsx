@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, DarkTheme, type NavigationState } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, type LinkingOptions, type NavigationState } from '@react-navigation/native';
 import React, { useCallback, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,8 +8,8 @@ import { colors, typography } from '../theme';
 import { TabSceneTransitionProvider } from './TabSceneTransitionContext';
 import {
   CreateTabWithTransition,
+  GroupsTabWithTransition,
   HomeTabWithTransition,
-  LeaderTabWithTransition,
   MyMatchesTabWithTransition,
   ProfileTabWithTransition,
 } from './tabScreensWithTransition';
@@ -19,8 +19,26 @@ import {
   TAB_BAR_FLOAT_MARGIN_H,
   TAB_BAR_OVERFLOW_TOP,
 } from './tabBarLayout';
+import { navigationRef } from './navigationActions';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
+const linking: LinkingOptions<RootTabParamList> = {
+  prefixes: ['halisaha://'],
+  config: {
+    screens: {
+      HomeTab: {
+        screens: {
+          MatchDetail: 'match/:matchId',
+        },
+      },
+      GroupsTab: {
+        screens: {
+          GroupDetail: 'group/:groupId',
+        },
+      },
+    },
+  },
+};
 
 const NavTheme = {
   ...DarkTheme,
@@ -48,8 +66,8 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
         return 'Ana Sayfa';
       case 'MyMatchesTab':
         return 'Maçlarım';
-      case 'LeaderTab':
-        return 'Sıralama';
+      case 'GroupsTab':
+        return 'Gruplar';
       case 'ProfileTab':
         return 'Profil';
       default:
@@ -65,8 +83,8 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
         return <Ionicons name="home-outline" size={size} color={c} />;
       case 'MyMatchesTab':
         return <Ionicons name="football-outline" size={size} color={c} />;
-      case 'LeaderTab':
-        return <Ionicons name="trophy-outline" size={size} color={c} />;
+      case 'GroupsTab':
+        return <Ionicons name="people-outline" size={size} color={c} />;
       case 'ProfileTab':
         return <Ionicons name="person-outline" size={size} color={c} />;
       default:
@@ -124,7 +142,12 @@ export function AppNavigator() {
   }, []);
 
   return (
-    <NavigationContainer theme={NavTheme} onStateChange={onNavigationStateChange}>
+    <NavigationContainer
+      ref={navigationRef}
+      linking={linking}
+      theme={NavTheme}
+      onStateChange={onNavigationStateChange}
+    >
       <TabSceneTransitionProvider activeTabName={activeTabName}>
         <Tab.Navigator
           tabBar={(p) => <HalisaTabBar {...p} />}
@@ -144,7 +167,7 @@ export function AppNavigator() {
             component={CreateTabWithTransition}
             options={{ tabBarButton: () => null }}
           />
-          <Tab.Screen name="LeaderTab" component={LeaderTabWithTransition} />
+          <Tab.Screen name="GroupsTab" component={GroupsTabWithTransition} />
           <Tab.Screen name="ProfileTab" component={ProfileTabWithTransition} />
         </Tab.Navigator>
       </TabSceneTransitionProvider>

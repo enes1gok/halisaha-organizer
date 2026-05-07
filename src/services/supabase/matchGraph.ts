@@ -92,6 +92,7 @@ export function rowsToMatch(
 
   return {
     id: row.id,
+    groupId: row.group_id ?? undefined,
     startsAt: row.starts_at,
     venue: row.venue,
     organizerId: row.organizer_id,

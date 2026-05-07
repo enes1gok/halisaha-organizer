@@ -5,6 +5,7 @@ export type PreferredFoot = 'left' | 'right' | 'both';
 export type RSVPStatus = 'going' | 'maybe' | 'notGoing';
 
 export type MatchStatus = 'upcoming' | 'ongoing' | 'finished';
+export type GroupRole = 'owner' | 'member';
 
 export interface PlayerStats {
   matchesPlayed: number;
@@ -58,6 +59,7 @@ export interface SelfReportRequest {
 
 export interface Match {
   id: string;
+  groupId?: string;
   startsAt: string;
   venue: string;
   organizerId: string;
@@ -73,4 +75,19 @@ export interface Match {
   status: MatchStatus;
   result?: ScoreResult;
   selfReports: SelfReportRequest[];
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  ownerId: string;
+  joinCode: string;
+  createdAt: string;
+}
+
+export interface GroupMembership {
+  groupId: string;
+  playerId: string;
+  role: GroupRole;
+  createdAt: string;
 }
