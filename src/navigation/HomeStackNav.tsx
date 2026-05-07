@@ -1,24 +1,18 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { ScoreEntryScreen } from '../screens/ScoreEntryScreen';
+import { defaultStackScreenOptions } from './defaultStackScreenOptions';
 import type { HomeStackParamList } from './types';
 
-const Stack = createNativeStackNavigator<HomeStackParamList>();
+const Stack = createStackNavigator<HomeStackParamList>();
 
 export function HomeStackNav() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#0A0A0A' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-        contentStyle: { backgroundColor: '#0A0A0A' },
-      }}
-    >
+    <Stack.Navigator screenOptions={defaultStackScreenOptions}>
       <Stack.Screen
         name="HomeMain"
         component={HomeScreen}

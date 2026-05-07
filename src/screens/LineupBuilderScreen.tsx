@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
@@ -27,7 +27,7 @@ import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/
 type Route =
   | RouteProp<HomeStackParamList, 'LineupBuilder'>
   | RouteProp<MyMatchesStackParamList, 'LineupBuilder'>;
-type Nav = NativeStackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
+type Nav = StackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
 
 type Rect = { x: number; y: number; w: number; h: number };
 

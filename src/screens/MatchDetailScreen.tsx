@@ -5,7 +5,7 @@ import {
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -36,7 +36,7 @@ type MatchDetailRoute =
   | RouteProp<HomeStackParamList, 'MatchDetail'>
   | RouteProp<MyMatchesStackParamList, 'MatchDetail'>;
 
-type Nav = NativeStackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
+type Nav = StackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);

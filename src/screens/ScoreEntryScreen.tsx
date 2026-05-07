@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -13,7 +13,7 @@ import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/
 type Route =
   | RouteProp<HomeStackParamList, 'ScoreEntry'>
   | RouteProp<MyMatchesStackParamList, 'ScoreEntry'>;
-type Nav = NativeStackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
+type Nav = StackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
 
 function toLines(map: Record<string, number>) {
   return Object.entries(map)

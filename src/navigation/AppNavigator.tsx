@@ -1,15 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
-import React from 'react';
+import { NavigationContainer, DarkTheme, type NavigationState } from '@react-navigation/native';
+import React, { useCallback, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '../theme';
-import { CreateMatchTabScreen } from '../screens/CreateMatchTabScreen';
-import { LeaderboardScreen } from '../screens/LeaderboardScreen';
-import { HomeStackNav } from './HomeStackNav';
-import { MyMatchesStackNav } from './MyMatchesStackNav';
-import { ProfileStackNav } from './ProfileStackNav';
+import { TabSceneTransitionProvider } from './TabSceneTransitionContext';
+import {
+  CreateTabWithTransition,
+  HomeTabWithTransition,
+  LeaderTabWithTransition,
+  MyMatchesTabWithTransition,
+  ProfileTabWithTransition,
+} from './tabScreensWithTransition';
 import type { RootTabParamList } from './types';
 import {
   TAB_BAR_FLOAT_MARGIN_BOTTOM,
@@ -110,29 +113,41 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export function AppNavigator() {
+  const [activeTabName, setActiveTabName] = useState<string | undefined>(undefined);
+  const activeTabRef = useRef<string | undefined>(undefined);
+
+  const onNavigationStateChange = useCallback((state: NavigationState | undefined) => {
+    const name = state?.routes[state?.index ?? 0]?.name;
+    if (name === undefined || name === activeTabRef.current) return;
+    activeTabRef.current = name;
+    setActiveTabName(name);
+  }, []);
+
   return (
-    <NavigationContainer theme={NavTheme}>
-      <Tab.Navigator
-        tabBar={(p) => <HalisaTabBar {...p} />}
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: colors.background,
-            borderTopWidth: 0,
-            elevation: 0,
-          },
-        }}
-      >
-        <Tab.Screen name="HomeTab" component={HomeStackNav} />
-        <Tab.Screen name="MyMatchesTab" component={MyMatchesStackNav} />
-        <Tab.Screen
-          name="CreateTab"
-          component={CreateMatchTabScreen}
-          options={{ tabBarButton: () => null }}
-        />
-        <Tab.Screen name="LeaderTab" component={LeaderboardScreen} />
-        <Tab.Screen name="ProfileTab" component={ProfileStackNav} />
-      </Tab.Navigator>
+    <NavigationContainer theme={NavTheme} onStateChange={onNavigationStateChange}>
+      <TabSceneTransitionProvider activeTabName={activeTabName}>
+        <Tab.Navigator
+          tabBar={(p) => <HalisaTabBar {...p} />}
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: {
+              backgroundColor: colors.background,
+              borderTopWidth: 0,
+              elevation: 0,
+            },
+          }}
+        >
+          <Tab.Screen name="HomeTab" component={HomeTabWithTransition} />
+          <Tab.Screen name="MyMatchesTab" component={MyMatchesTabWithTransition} />
+          <Tab.Screen
+            name="CreateTab"
+            component={CreateTabWithTransition}
+            options={{ tabBarButton: () => null }}
+          />
+          <Tab.Screen name="LeaderTab" component={LeaderTabWithTransition} />
+          <Tab.Screen name="ProfileTab" component={ProfileTabWithTransition} />
+        </Tab.Navigator>
+      </TabSceneTransitionProvider>
     </NavigationContainer>
   );
 }
