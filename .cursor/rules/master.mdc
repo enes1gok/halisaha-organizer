@@ -12,6 +12,9 @@ alwaysApply: true
 | You are working on | Activate |
 |--------------------|----------|
 | TypeScript, Zustand, hooks, services, performance in `src/` | `technical-excellence.mdc` |
+| Modular architecture boundaries, import direction, or folder responsibility decisions | `module-boundaries.mdc` |
+| Zustand slice design, selectors, action conventions, persist/migrate changes | `store-architecture.mdc` |
+| Test strategy, quality gates, test matrix, or release-readiness checks | `testing-quality-gate.mdc` |
 | UI components, screens, layout, styling, animations | `ui-ux-design.mdc` |
 | Supabase auth, RLS, migrations, storage policies, or security-sensitive data access | `supabase-governance.mdc` |
 | SQL performance tuning, indexing, or Postgres-backed list/query optimization | `supabase-postgres-performance.mdc` |
@@ -26,6 +29,8 @@ Skills live in `.cursor/skills/{name}/SKILL.md`. Read the matching skill when th
 |-------|---------|
 | `add-screen` | New route/screen, new stack entry, or new tab surface |
 | `add-domain-feature` | Extending matches, players, RSVP, lineup, scoring, leaderboard, or store behavior |
+| `refactor-screen-to-modules` | A screen is large/coupled and needs extraction into screen + hooks + components + adapters |
+| `add-store-slice` | Adding or splitting a Zustand slice with selectors, exports, and migration-safe persistence |
 | `supabase-governance` | Supabase auth/RLS/migration/storage/query-performance tasks that need security + operational playbooks |
 
 ## Maintenance contract

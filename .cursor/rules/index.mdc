@@ -57,4 +57,10 @@ Reusable pieces (`Card`, `PillButton`, `MatchCard`, modals, empty states, …).
 3. **Persistence**: Store shape is versioned (`STORE_VERSION`, migrate in `persist`). Changing persisted fields requires a migration or bump strategy.
 4. **Copy**: User-visible strings are currently **Turkish inline** in UI; there is no i18n layer yet. Keep tone consistent with existing screens until i18n is introduced.
 
-For rule routing and skills, see [master.mdc](master.mdc).
+## Operational governance
+
+- **Module boundaries** (dependency direction and folder ownership): [`module-boundaries.mdc`](module-boundaries.mdc)
+- **Store design standards** (slice contract, selectors, migration): [`store-architecture.mdc`](store-architecture.mdc)
+- **Testing and release quality gates**: [`testing-quality-gate.mdc`](testing-quality-gate.mdc)
+
+For rule routing and skills, see [`master.mdc`](master.mdc).

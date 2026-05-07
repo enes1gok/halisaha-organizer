@@ -72,3 +72,9 @@ For new or heavily touched interactives, set at least:
 ## Copy
 
 There is **no i18n** layer yet — keep user-visible strings **Turkish** and consistent with existing screens. When i18n is added, migrate strings in a dedicated change.
+
+## Cross-links
+
+- Screen modular refactors: [`../skills/refactor-screen-to-modules/SKILL.md`](../skills/refactor-screen-to-modules/SKILL.md)
+- Module boundaries (where UI logic should live): [`module-boundaries.mdc`](module-boundaries.mdc)
+- Test quality gates for interactives: [`testing-quality-gate.mdc`](testing-quality-gate.mdc)

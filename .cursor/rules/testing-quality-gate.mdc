@@ -1,0 +1,56 @@
+---
+description: Testing expectations and quality gates by change type
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Testing quality gate
+
+Every meaningful change should include validation proportional to risk.
+
+## Change-to-test matrix
+
+| Change type | Minimum expectation |
+|-------------|---------------------|
+| Pure helper logic (`src/utils`, `src/store/helpers.ts`) | Unit tests for happy path + edge case(s) |
+| Store mutations/selectors (`src/store`) | Unit tests for state transitions and derived values |
+| Screen interaction flow (`src/screens`) | Behavior test (or explicit manual test plan if tests are unavailable) |
+| Navigation params/route wiring | Route smoke validation and param-shape checks |
+| Persistence model changes | Migration scenario validation (old snapshot -> new shape) |
+
+If automated tests are not feasible yet, include a concrete manual verification checklist in PR notes.
+
+## UI quality gate
+
+For new or heavily modified interactives:
+- `testID` is present with `{domain}:{component}:{action}` format.
+- `accessibilityRole` and `accessibilityLabel` are set.
+- Turkish copy consistency is preserved.
+
+## Store/domain quality gate
+
+- State mutation path is deterministic.
+- Derived stats/leaderboard impacts are validated.
+- No regression on existing match/player/group workflows.
+
+## Release-readiness checklist
+
+```
+- [ ] High-risk paths verified (create/join/lineup/score/leaderboard as applicable)
+- [ ] Edge cases verified (empty states, invalid ids, duplicate actions)
+- [ ] Persist/migrate behavior verified when schema changes
+- [ ] testID + accessibility checks completed for interactives
+- [ ] Lint/type checks pass for touched files
+```
+
+## Anti-patterns
+
+- “Works on my screen” verification without explicit scenarios.
+- Skipping migration validation after persisted shape updates.
+- Shipping large refactors without regression smoke checks.
+
+## Related
+
+- UI conventions and testID format: [`ui-ux-design.mdc`](ui-ux-design.mdc)
+- Domain/store implementation quality: [`technical-excellence.mdc`](technical-excellence.mdc)
+- Slice migration process: [`store-architecture.mdc`](store-architecture.mdc)

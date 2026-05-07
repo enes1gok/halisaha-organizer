@@ -57,3 +57,6 @@ const { setRSVP, setPaid } = useMatchesStore(
 ## Cross-links
 
 - Architecture: [`.cursor/rules/index.mdc`](index.mdc).
+- Module boundaries: [`module-boundaries.mdc`](module-boundaries.mdc).
+- Store architecture specifics: [`store-architecture.mdc`](store-architecture.mdc).
+- Store extension workflow: [`../skills/add-store-slice/SKILL.md`](../skills/add-store-slice/SKILL.md).
