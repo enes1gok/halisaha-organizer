@@ -11,8 +11,8 @@ Authoritative static context for this repo.
 
 | Field | Value |
 |--------|--------|
-| Display name | halisaha-organizer (Expo `name`) |
-| Expo slug | `halisaha-organizer` |
+| Display name | Halısaha: Maç Organize Et (Expo `name`) |
+| Expo slug | `halisaha-mac-organize-et` |
 | UI | Dark mode (`userInterfaceStyle: "dark"`), portrait |
 | React Native | New Architecture enabled (`newArchEnabled: true`) |
 | Config | [app.json](../../app.json) |
