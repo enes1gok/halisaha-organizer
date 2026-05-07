@@ -72,7 +72,7 @@ begin
     'authenticated',
     'authenticated',
     v_email,
-    crypt('TestPass123!', gen_salt('bf')),
+    extensions.crypt('TestPass123!', extensions.gen_salt('bf'::text)),
     now(),
     now(),
     now(),
