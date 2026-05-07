@@ -28,7 +28,7 @@ import { colors, spacing, typography } from '../theme';
 import type { Position, PreferredFoot } from '../types/domain';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { updateCurrentUserProfile } from '../services/supabase/profiles';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { formatShortDate } from '../utils/dates';
 import { levelLabelFromScore, playerScore, winRate } from '../utils/stats';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
@@ -52,11 +52,11 @@ function footLabel(f: PreferredFoot): string {
 
 export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const player = useAppStore((s) => s.players.find((p) => p.id === userId));
-  const matches = useAppStore((s) => s.matches);
-  const updateProfile = useAppStore((s) => s.updatePlayerProfile);
-  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const player = usePlayersStore((s) => s.players.find((p) => p.id === userId));
+  const matches = useMatchesStore((s) => s.matches);
+  const updateProfile = usePlayersStore((s) => s.updatePlayerProfile);
+  const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const { configured, session, refreshRemoteProfile } = useSupabaseAuth();
 
   useLayoutEffect(() => {

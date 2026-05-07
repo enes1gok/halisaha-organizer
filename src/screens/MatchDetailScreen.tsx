@@ -30,7 +30,7 @@ import { formatMatchDateTime } from '../utils/dates';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
 import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 
@@ -50,16 +50,16 @@ export function MatchDetailScreen() {
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
 
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const getPlayer = useAppStore((s) => s.getPlayer);
-  const setRSVP = useAppStore((s) => s.setRSVP);
-  const setPaid = useAppStore((s) => s.setPaid);
-  const setSelfReportEnabled = useAppStore((s) => s.setSelfReportEnabled);
-  const addSelfReport = useAppStore((s) => s.addSelfReport);
-  const respondSelfReport = useAppStore((s) => s.respondSelfReport);
-  const refreshRemoteMatch = useAppStore((s) => s.refreshRemoteMatch);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const getPlayer = usePlayersStore((s) => s.getPlayer);
+  const setRSVP = useMatchesStore((s) => s.setRSVP);
+  const setPaid = useMatchesStore((s) => s.setPaid);
+  const setSelfReportEnabled = useMatchesStore((s) => s.setSelfReportEnabled);
+  const addSelfReport = useMatchesStore((s) => s.addSelfReport);
+  const respondSelfReport = useMatchesStore((s) => s.respondSelfReport);
+  const refreshRemoteMatch = useMatchesStore((s) => s.refreshRemoteMatch);
 
-  const match = useAppStore((s) => s.matches.find((m) => m.id === matchId));
+  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
 
   const rsvpRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['32%'], []);

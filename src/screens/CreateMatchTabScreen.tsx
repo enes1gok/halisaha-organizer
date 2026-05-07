@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { colors, spacing, typography } from '../theme';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import {
@@ -31,11 +31,11 @@ export function CreateMatchTabScreen() {
   const navigation = useNavigation();
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['82%'], []);
-  const createMatch = useAppStore((s) => s.createMatch);
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const groups = useAppStore((s) => s.groups);
-  const memberships = useAppStore((s) => s.groupMemberships);
-  const profileIbanRaw = useAppStore((s) => s.players.find((p) => p.id === userId)?.iban);
+  const createMatch = useMatchesStore((s) => s.createMatch);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const groups = useGroupsStore((s) => s.groups);
+  const memberships = useGroupsStore((s) => s.groupMemberships);
+  const profileIbanRaw = usePlayersStore((s) => s.players.find((p) => p.id === userId)?.iban);
 
   const profileNorm = useMemo(
     () => (profileIbanRaw ? normalizeIban(profileIbanRaw) : ''),

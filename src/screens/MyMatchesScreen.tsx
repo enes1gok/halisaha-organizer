@@ -7,17 +7,17 @@ import { MatchCard } from '../components/MatchCard';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { colors, spacing } from '../theme';
 import { countGoing } from '../utils/matchRoster';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useMatchesStore } from '../store';
 import type { MyMatchesStackParamList } from '../navigation/types';
 
 type Nav = StackNavigationProp<MyMatchesStackParamList, 'MyMatchesMain'>;
 
 export function MyMatchesScreen() {
   const navigation = useNavigation<Nav>();
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const matches = useAppStore((s) => s.matches);
-  const remoteUserId = useAppStore((s) => s.remoteUserId);
-  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const matches = useMatchesStore((s) => s.matches);
+  const remoteUserId = useAuthStore((s) => s.remoteUserId);
+  const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const [refreshing, setRefreshing] = useState(false);
 
   const mine = useMemo(() => {

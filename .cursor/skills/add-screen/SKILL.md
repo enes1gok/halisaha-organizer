@@ -35,7 +35,7 @@ Tabs wrap stack content in [`AnimatedTabScene`](src/navigation/TabSceneTransitio
 
 ## State
 
-- Read/write match and player data through [`useAppStore`](src/store/useAppStore.ts) with **atomic selectors** and `useShallow` when selecting multiple actions/fields — see [`technical-excellence.mdc`](../../rules/technical-excellence.mdc).
+- Read/write match and player data through domain hooks from [`src/store/index.ts`](src/store/index.ts) (`useMatchesStore`, `usePlayersStore`, …) with **atomic selectors** and `useShallow` when selecting multiple actions/fields — see [`technical-excellence.mdc`](../../rules/technical-excellence.mdc).
 
 ## When behavior touches domain rules
 

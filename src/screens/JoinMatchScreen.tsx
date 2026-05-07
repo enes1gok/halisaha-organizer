@@ -4,7 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { colors, spacing, typography } from '../theme';
-import { useAppStore } from '../store/useAppStore';
+import { useMatchesStore } from '../store';
 import { isAppError, toUserMessage } from '../services/supabase/errors';
 import type { HomeStackParamList } from '../navigation/types';
 
@@ -12,7 +12,7 @@ type Nav = StackNavigationProp<HomeStackParamList, 'JoinMatch'>;
 
 export function JoinMatchScreen() {
   const navigation = useNavigation<Nav>();
-  const joinMatchByJoinCode = useAppStore((s) => s.joinMatchByJoinCode);
+  const joinMatchByJoinCode = useMatchesStore((s) => s.joinMatchByJoinCode);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
 

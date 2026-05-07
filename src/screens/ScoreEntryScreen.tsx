@@ -7,7 +7,7 @@ import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { colors, spacing, typography } from '../theme';
 import type { ScoreResult } from '../types/domain';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
 import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 
@@ -27,11 +27,11 @@ export function ScoreEntryScreen() {
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
 
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const match = useAppStore((s) => s.matches.find((m) => m.id === matchId));
-  const getPlayer = useAppStore((s) => s.getPlayer);
-  const submitScore = useAppStore((s) => s.submitScore);
-  const setSelfReportEnabled = useAppStore((s) => s.setSelfReportEnabled);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
+  const getPlayer = usePlayersStore((s) => s.getPlayer);
+  const submitScore = useMatchesStore((s) => s.submitScore);
+  const setSelfReportEnabled = useMatchesStore((s) => s.setSelfReportEnabled);
 
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);

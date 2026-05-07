@@ -15,7 +15,7 @@ import {
   TAB_BAR_LIST_PADDING_PINNED_EXTRA,
 } from '../navigation/tabBarLayout';
 import { colors, spacing, typography } from '../theme';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import type { GroupsStackParamList } from '../navigation/types';
 import { fetchPlayerLeaderboardStats } from '../services/supabase/leaderboard';
 import { toUserMessage } from '../services/supabase/errors';
@@ -51,11 +51,11 @@ function Chip({
 export function LeaderboardScreen() {
   const route = useRoute<GroupLeaderboardRoute>();
   const groupId = route.params?.groupId;
-  const players = useAppStore((s) => s.players);
-  const matches = useAppStore((s) => s.matches);
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const remoteUserId = useAppStore((s) => s.remoteUserId);
-  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
+  const players = usePlayersStore((s) => s.players);
+  const matches = useMatchesStore((s) => s.matches);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const remoteUserId = useAuthStore((s) => s.remoteUserId);
+  const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
 
   const [metric, setMetric] = useState<LeaderMetric>('goals');
   const [tf, setTf] = useState<Timeframe>('all');

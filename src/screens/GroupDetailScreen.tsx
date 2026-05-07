@@ -4,7 +4,7 @@ import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { MatchCard } from '../components/MatchCard';
 import { PillButton } from '../components/PillButton';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useGroupsStore, useMatchesStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 import type { GroupsStackParamList } from '../navigation/types';
@@ -16,10 +16,10 @@ export function GroupDetailScreen() {
   const route = useRoute<DetailRoute>();
   const navigation = useNavigation<Nav>();
   const { groupId } = route.params;
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const groups = useAppStore((s) => s.groups);
-  const memberships = useAppStore((s) => s.groupMemberships);
-  const matches = useAppStore((s) => s.matches);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const groups = useGroupsStore((s) => s.groups);
+  const memberships = useGroupsStore((s) => s.groupMemberships);
+  const matches = useMatchesStore((s) => s.matches);
 
   const group = groups.find((item) => item.id === groupId);
   const isMember = memberships.some((item) => item.groupId === groupId && item.playerId === userId);

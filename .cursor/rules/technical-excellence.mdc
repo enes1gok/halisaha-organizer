@@ -29,18 +29,19 @@ function assertNever(x: never): never {
 
 ## Zustand state access
 
-Use **atomic selectors** with **`useShallow`** from `zustand/react/shallow` when selecting multiple fields from [`useAppStore`](../../src/store/useAppStore.ts).
+Use **atomic selectors** with **`useShallow`** from `zustand/react/shallow` when selecting multiple fields. Prefer domain hooks from [`src/store/index.ts`](../../src/store/index.ts): **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`**. Use **`useAppStore`** only when you need the full store API (e.g. `useAppStore.persist`, `getState()`, `setState()`).
 
 ```ts
 import { useShallow } from 'zustand/react/shallow';
-import { useAppStore } from '../store/useAppStore';
+import { useMatchesStore, usePlayersStore } from '../store';
 
-// Prefer: narrow subscription
-const match = useAppStore((s) => s.getMatch(matchId));
+// Prefer: narrow subscription on the right slice
+const match = useMatchesStore((s) => s.getMatch(matchId));
+const getPlayer = usePlayersStore((s) => s.getPlayer);
 
-// Prefer: multiple fields with shallow compare
-const { setRSVP, getPlayer } = useAppStore(
-  useShallow((s) => ({ setRSVP: s.setRSVP, getPlayer: s.getPlayer }))
+// Prefer: multiple fields from one slice with shallow compare
+const { setRSVP, setPaid } = useMatchesStore(
+  useShallow((s) => ({ setRSVP: s.setRSVP, setPaid: s.setPaid }))
 );
 
 // Avoid in new code: whole store snapshot (forces broad re-renders)

@@ -16,7 +16,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { openGroupDetail, openMatchDetail } from './src/navigation/navigationActions';
 import { colors } from './src/theme';
-import { useAppStore } from './src/store/useAppStore';
+import { useAppStore } from './src/store';
 
 function AppShell() {
   const { configured, loading, session } = useSupabaseAuth();

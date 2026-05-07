@@ -3,7 +3,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useGroupsStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
 
@@ -11,9 +11,9 @@ type Nav = StackNavigationProp<GroupsStackParamList, 'GroupsMain'>;
 
 export function GroupsScreen() {
   const navigation = useNavigation<Nav>();
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const groups = useAppStore((s) => s.groups);
-  const memberships = useAppStore((s) => s.groupMemberships);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const groups = useGroupsStore((s) => s.groups);
+  const memberships = useGroupsStore((s) => s.groupMemberships);
 
   const myGroups = groups.filter((group) =>
     memberships.some((membership) => membership.groupId === group.id && membership.playerId === userId),

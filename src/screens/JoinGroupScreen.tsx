@@ -3,7 +3,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
-import { useAppStore } from '../store/useAppStore';
+import { useGroupsStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
 
@@ -11,7 +11,7 @@ type Nav = StackNavigationProp<GroupsStackParamList, 'JoinGroup'>;
 
 export function JoinGroupScreen() {
   const navigation = useNavigation<Nav>();
-  const joinGroup = useAppStore((s) => s.joinGroup);
+  const joinGroup = useGroupsStore((s) => s.joinGroup);
   const [code, setCode] = useState('');
 
   const onJoin = async () => {

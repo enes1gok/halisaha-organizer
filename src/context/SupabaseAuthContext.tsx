@@ -4,7 +4,7 @@ import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from '..
 import { registerForPushToken } from '../services/notifications';
 import { ensureThenFetchProfile } from '../services/supabase/profiles';
 import { deactivatePushToken, upsertPushToken } from '../services/supabase/pushTokens';
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore, useAuthStore, useGroupsStore, usePlayersStore } from '../store';
 import { isRemoteMatchId } from '../utils/matchId';
 
 export type SupabaseAuthContextValue = {
@@ -23,9 +23,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const configured = isSupabaseConfigured();
   const [loading, setLoading] = useState(configured);
   const [session, setSession] = useState<Session | null>(null);
-  const setRemoteUserId = useAppStore((s) => s.setRemoteUserId);
-  const syncPlayerFromRemoteProfile = useAppStore((s) => s.syncPlayerFromRemoteProfile);
-  const hydrateRemoteGroups = useAppStore((s) => s.hydrateRemoteGroups);
+  const setRemoteUserId = useAuthStore((s) => s.setRemoteUserId);
+  const syncPlayerFromRemoteProfile = usePlayersStore((s) => s.syncPlayerFromRemoteProfile);
+  const hydrateRemoteGroups = useGroupsStore((s) => s.hydrateRemoteGroups);
   const [activePushToken, setActivePushToken] = useState<string | null>(null);
 
   const pushProfileToStore = useCallback(

@@ -22,7 +22,7 @@ Authoritative static context for this repo.
 - **Runtime**: Expo ~54, React 19, React Native ~0.81, TypeScript.
 - **Navigation**: **React Navigation** v7 — root **bottom tabs** + per-tab **stack** navigators. Entry: [`AppNavigator.tsx`](../../src/navigation/AppNavigator.tsx). Param lists: [`types.ts`](../../src/navigation/types.ts).
 - **Styling**: **Design tokens** in [`src/theme/index.ts`](../../src/theme/index.ts) (`colors`, `spacing`, `typography`, `radius`, `shadows`) + **`StyleSheet`** in components. No NativeWind / Expo Router.
-- **State**: Single **Zustand** store with **persist** (`AsyncStorage`): [`useAppStore.ts`](../../src/store/useAppStore.ts). Prefer **atomic selectors** and `useShallow` when selecting multiple fields — avoid subscribing to the full store object in new components.
+- **State**: Single **Zustand** store with **persist** (`AsyncStorage`), composed from domain **slices** under [`src/store/`](../../src/store/) — entry [`useAppStore.ts`](../../src/store/useAppStore.ts), barrel [`index.ts`](../../src/store/index.ts) exports **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`** (prefer these in UI over raw `useAppStore`). Prefer **atomic selectors** and `useShallow` when selecting multiple fields — avoid subscribing to the full store object in new components.
 - **Domain model**: [`src/types/domain.ts`](../../src/types/domain.ts) — `Player`, `Match`, `Attendee`, `ScoreResult`, enums (`Position`, `RSVPStatus`, `MatchStatus`, …). Do not duplicate these shapes elsewhere.
 - **Data / seed**: [`src/data/seed.ts`](../../src/data/seed.ts) (and related) for demo/bootstrap data; `resetToSeed` on the store restores it.
 
@@ -53,7 +53,7 @@ Reusable pieces (`Card`, `PillButton`, `MatchCard`, modals, empty states, …).
 ## Architectural invariants
 
 1. **Navigation types**: Adding a stack screen requires updating the matching `*StackParamList` in [`types.ts`](../../src/navigation/types.ts) and registering `Stack.Screen` in the correct navigator.
-2. **Single source of truth**: Match and player mutations go through **`useAppStore`** actions; after model changes, keep **`recomputePlayerStatsFromMatches`** / score merge logic consistent with [`useAppStore.ts`](../../src/store/useAppStore.ts).
+2. **Single source of truth**: Match and player mutations go through store actions (via domain hooks or **`useAppStore`**); after model changes, keep **`recomputePlayerStatsFromMatches`** / score merge logic consistent with [`helpers.ts`](../../src/store/helpers.ts) / [`useAppStore.ts`](../../src/store/useAppStore.ts).
 3. **Persistence**: Store shape is versioned (`STORE_VERSION`, migrate in `persist`). Changing persisted fields requires a migration or bump strategy.
 4. **Copy**: User-visible strings are currently **Turkish inline** in UI; there is no i18n layer yet. Keep tone consistent with existing screens until i18n is introduced.
 

@@ -22,7 +22,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
 import { colors, spacing, typography } from '../theme';
 import type { Player, Position } from '../types/domain';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 
 type Route =
@@ -103,12 +103,12 @@ export function LineupBuilderScreen() {
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
 
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const getPlayer = useAppStore((s) => s.getPlayer);
-  const playersAll = useAppStore((s) => s.players);
-  const match = useAppStore((s) => s.matches.find((m) => m.id === matchId));
-  const setMatchTeams = useAppStore((s) => s.setMatchTeams);
-  const lockLineup = useAppStore((s) => s.lockLineup);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const getPlayer = usePlayersStore((s) => s.getPlayer);
+  const playersAll = usePlayersStore((s) => s.players);
+  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
+  const setMatchTeams = useMatchesStore((s) => s.setMatchTeams);
+  const lockLineup = useMatchesStore((s) => s.lockLineup);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 

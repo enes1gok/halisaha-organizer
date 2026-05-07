@@ -15,7 +15,7 @@ import { HomeUpcomingHeroCard } from '../components/HomeUpcomingHeroCard';
 import { MatchCard } from '../components/MatchCard';
 import { colors, spacing } from '../theme';
 import { countGoing } from '../utils/matchRoster';
-import { useAppStore } from '../store/useAppStore';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { HOME_LIST_PADDING_BOTTOM_EXTRA } from '../navigation/tabBarLayout';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -31,11 +31,11 @@ type Nav = CompositeNavigationProp<
 
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
-  const userId = useAppStore((s) => s.getCurrentUserId());
-  const matches = useAppStore((s) => s.matches);
-  const getPlayer = useAppStore((s) => s.getPlayer);
-  const remoteUserId = useAppStore((s) => s.remoteUserId);
-  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
+  const userId = useAuthStore((s) => s.getCurrentUserId());
+  const matches = useMatchesStore((s) => s.matches);
+  const getPlayer = usePlayersStore((s) => s.getPlayer);
+  const remoteUserId = useAuthStore((s) => s.remoteUserId);
+  const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const [refreshing, setRefreshing] = useState(false);
 
   const upcoming = useMemo(() => {
