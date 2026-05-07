@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -14,6 +15,8 @@ import {
 } from '../navigation/tabBarLayout';
 import { colors, spacing, typography } from '../theme';
 import { useAppStore } from '../store/useAppStore';
+import type { GroupsStackParamList } from '../navigation/types';
+import { fetchPlayerLeaderboardStats } from '../services/supabase/leaderboard';
 import {
   buildLeaderboard,
   metricLabel,
@@ -21,6 +24,8 @@ import {
   type LeaderMetric,
   type Timeframe,
 } from '../utils/leaderboard';
+
+type GroupLeaderboardRoute = RouteProp<GroupsStackParamList, 'GroupLeaderboard'>;
 
 function Chip({
   active,
@@ -42,6 +47,8 @@ function Chip({
 }
 
 export function LeaderboardScreen() {
+  const route = useRoute<GroupLeaderboardRoute>();
+  const groupId = route.params?.groupId;
   const players = useAppStore((s) => s.players);
   const matches = useAppStore((s) => s.matches);
   const userId = useAppStore((s) => s.getCurrentUserId());
@@ -51,11 +58,46 @@ export function LeaderboardScreen() {
   const [metric, setMetric] = useState<LeaderMetric>('goals');
   const [tf, setTf] = useState<Timeframe>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [remoteRows, setRemoteRows] = useState<{ playerId: string; value: number; rank: number }[] | null>(null);
 
-  const rows = useMemo(
-    () => buildLeaderboard(players, matches, metric, tf, new Date()),
-    [players, matches, metric, tf],
+  useEffect(() => {
+    let cancelled = false;
+    if (!remoteUserId) {
+      setRemoteRows(null);
+      return;
+    }
+    void fetchPlayerLeaderboardStats(tf, new Date().toISOString(), groupId ?? null, metric).then((stats) => {
+      if (cancelled) return;
+      const byMetric = stats.map((row) => {
+        const value =
+          metric === 'goals'
+            ? row.goals
+            : metric === 'assists'
+              ? row.assists
+              : metric === 'matches'
+                ? row.matches_played
+                : row.matches_played === 0
+                  ? 0
+                  : row.wins / row.matches_played;
+        return { playerId: row.player_id, value };
+      });
+      const sorted = byMetric.sort((a, b) => b.value - a.value).map((item, index) => ({
+        ...item,
+        rank: index + 1,
+      }));
+      setRemoteRows(sorted);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [groupId, metric, remoteUserId, tf]);
+
+  const localRows = useMemo(
+    () => buildLeaderboard(players, matches, metric, tf, new Date(), groupId),
+    [players, matches, metric, tf, groupId],
   );
+
+  const rows = remoteRows ?? localRows;
 
   const top = rows.slice(0, 10);
   const mine = rows.find((r) => r.playerId === userId);

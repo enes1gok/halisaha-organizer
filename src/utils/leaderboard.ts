@@ -57,6 +57,11 @@ function filterMatchesByTimeframe(matches: Match[], tf: Timeframe, ref: Date): M
   });
 }
 
+function filterMatchesByGroup(matches: Match[], groupId?: string): Match[] {
+  if (!groupId) return matches;
+  return matches.filter((m) => m.groupId === groupId);
+}
+
 function aggregateForMatches(
   players: Player[],
   scoped: Match[],
@@ -111,11 +116,14 @@ export function buildLeaderboard(
   metric: LeaderMetric,
   tf: Timeframe,
   ref: Date = new Date(),
+  groupId?: string,
 ): { playerId: string; value: number; rank: number }[] {
-  const scoped = filterMatchesByTimeframe(allMatches, tf, ref);
+  const scoped = filterMatchesByGroup(filterMatchesByTimeframe(allMatches, tf, ref), groupId);
   const rows = aggregateForMatches(players, scoped, metric);
+  const filteredRows =
+    metric === 'goals' || metric === 'assists' ? rows.filter((row) => row.value > 0) : rows;
 
-  const sorted = [...rows].sort((a, b) => b.value - a.value);
+  const sorted = [...filteredRows].sort((a, b) => b.value - a.value);
   const withRank = sorted.map((row, i) => ({
     ...row,
     rank: i + 1,

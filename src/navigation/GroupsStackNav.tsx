@@ -4,6 +4,7 @@ import { CreateGroupScreen } from '../screens/CreateGroupScreen';
 import { GroupDetailScreen } from '../screens/GroupDetailScreen';
 import { GroupsScreen } from '../screens/GroupsScreen';
 import { JoinGroupScreen } from '../screens/JoinGroupScreen';
+import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { ScoreEntryScreen } from '../screens/ScoreEntryScreen';
@@ -17,6 +18,11 @@ export function GroupsStackNav() {
     <Stack.Navigator screenOptions={defaultStackScreenOptions}>
       <Stack.Screen name="GroupsMain" component={GroupsScreen} options={{ title: 'Gruplarım' }} />
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Grup Detayı' }} />
+      <Stack.Screen
+        name="GroupLeaderboard"
+        component={LeaderboardScreen}
+        options={{ title: 'Grup Liderligi' }}
+      />
       <Stack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: 'Grup Oluştur' }} />
       <Stack.Screen name="JoinGroup" component={JoinGroupScreen} options={{ title: 'Gruba Katıl' }} />
       <Stack.Screen name="MatchDetail" component={MatchDetailScreen} options={{ title: 'Maç Detayı' }} />

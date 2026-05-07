@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../../lib/supabase';
-import type { PlayerLeaderboardStatsRow } from './types';
+import type { LeaderboardMetricFilter, PlayerLeaderboardStatsRow } from './types';
 
 export type LeaderboardTimeframe = 'all' | 'week' | 'month';
 
@@ -10,11 +10,15 @@ export type LeaderboardTimeframe = 'all' | 'week' | 'month';
 export async function fetchPlayerLeaderboardStats(
   timeframe: LeaderboardTimeframe = 'all',
   refIso: string = new Date().toISOString(),
+  groupId: string | null = null,
+  metric: LeaderboardMetricFilter = null,
 ): Promise<PlayerLeaderboardStatsRow[]> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('player_leaderboard_stats', {
     p_timeframe: timeframe,
     p_ref: refIso,
+    p_group_id: groupId,
+    p_metric: metric,
   });
   if (error) throw error;
   const rows = (data ?? []) as PlayerLeaderboardStatsRow[];

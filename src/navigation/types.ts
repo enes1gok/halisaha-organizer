@@ -23,6 +23,7 @@ export type ProfileStackParamList = {
 export type GroupsStackParamList = {
   GroupsMain: undefined;
   GroupDetail: { groupId: string };
+  GroupLeaderboard: { groupId: string };
   CreateGroup: undefined;
   JoinGroup: undefined;
   MatchDetail: { matchId: string };

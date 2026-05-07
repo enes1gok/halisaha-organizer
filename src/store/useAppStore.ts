@@ -22,7 +22,7 @@ import {
   joinMatchByJoinCode as joinMatchByJoinCodeRpc,
   submitMatchResultRpc,
 } from '../services/supabase/matches';
-import type { ProfileRow } from '../services/supabase/types';
+import type { ProfileRow, PublicProfileRow } from '../services/supabase/types';
 import {
   insertSelfReportRemote,
   replaceMatchTeamPlayersRemote,
@@ -81,7 +81,7 @@ function emptyPlayerStats(): Player['stats'] {
   };
 }
 
-function upsertProfilesIntoPlayers(players: Player[], profiles: ProfileRow[]): Player[] {
+function upsertProfilesIntoPlayers(players: Player[], profiles: PublicProfileRow[] | ProfileRow[]): Player[] {
   let next = [...players];
   for (const pr of profiles) {
     const idx = next.findIndex((p) => p.id === pr.id);
@@ -91,7 +91,7 @@ function upsertProfilesIntoPlayers(players: Player[], profiles: ProfileRow[]): P
       photoUri: pr.photo_uri ?? undefined,
       position: pr.position,
       preferredFoot: pr.preferred_foot,
-      iban: pr.iban ?? undefined,
+      iban: 'iban' in pr ? (pr.iban ?? undefined) : idx >= 0 ? next[idx].iban : undefined,
       stats: idx >= 0 ? next[idx].stats : emptyPlayerStats(),
     };
     if (idx >= 0) next[idx] = { ...next[idx], ...stub };
@@ -118,7 +118,7 @@ function mergeHydratedRemoteMatches(
   graphs: MatchGraphPayload[],
 ): { players: Player[]; matches: Match[] } {
   const remoteMatches = graphs.map((g) => g.match);
-  const profileMap = new Map<string, ProfileRow>();
+  const profileMap = new Map<string, PublicProfileRow>();
   for (const g of graphs) {
     for (const p of g.profiles) profileMap.set(p.id, p);
   }

@@ -1,13 +1,16 @@
 import { getSupabaseClient } from '../../lib/supabase';
-import type { PlayerPositionRow, PreferredFootRow, ProfileRow } from './types';
+import type { PlayerPositionRow, PreferredFootRow, ProfileRow, PublicProfileRow } from './types';
 
-export async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
+export async function fetchProfilesByIds(ids: string[]): Promise<PublicProfileRow[]> {
   const uniq = [...new Set(ids)].filter(Boolean);
   if (uniq.length === 0) return [];
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from('profiles').select('*').in('id', uniq);
+  const { data, error } = await supabase
+    .from('profiles_public')
+    .select('id,display_name,photo_uri,position,preferred_foot')
+    .in('id', uniq);
   if (error) throw error;
-  return (data ?? []) as ProfileRow[];
+  return (data ?? []) as PublicProfileRow[];
 }
 
 export async function fetchProfileById(playerId: string): Promise<ProfileRow | null> {

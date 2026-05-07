@@ -14,7 +14,7 @@ import type {
   MatchRow,
   MatchStatLineRow,
   MatchTeamPlayerRow,
-  ProfileRow,
+  PublicProfileRow,
   RsvpStatusRow,
   SelfReportRequestRow,
   SelfReportStatusRow,
@@ -136,33 +136,45 @@ function collectProfileIds(
 
 export type MatchGraphPayload = {
   match: Match;
-  profiles: ProfileRow[];
+  profiles: PublicProfileRow[];
 };
 
 export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayload> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('matches')
-    .select(
-      `
-      *,
-      match_attendees (*),
-      match_team_players (*),
-      match_stat_lines (*),
-      self_report_requests (*)
-    `,
-    )
-    .eq('id', matchId)
-    .maybeSingle();
+  const [matchRes, attendeesRes, teamsRes, statsRes, selfReportsRes] = await Promise.all([
+    supabase.rpc('get_match_detail_for_user', { p_match_id: matchId }),
+    supabase
+      .from('match_attendees')
+      .select('match_id,player_id,status,paid')
+      .eq('match_id', matchId),
+    supabase
+      .from('match_team_players')
+      .select('match_id,player_id,team')
+      .eq('match_id', matchId),
+    supabase
+      .from('match_stat_lines')
+      .select('match_id,player_id,kind,count')
+      .eq('match_id', matchId),
+    supabase
+      .from('self_report_requests')
+      .select('id,match_id,player_id,type,status,created_at')
+      .eq('match_id', matchId),
+  ]);
 
-  if (error) throw error;
-  if (!data) throw new Error('Maç bulunamadı');
+  if (matchRes.error) throw matchRes.error;
+  if (attendeesRes.error) throw attendeesRes.error;
+  if (teamsRes.error) throw teamsRes.error;
+  if (statsRes.error) throw statsRes.error;
+  if (selfReportsRes.error) throw selfReportsRes.error;
 
-  const row = data as NestedMatchRow;
-  const attendees = row.match_attendees ?? [];
-  const teamPlayers = row.match_team_players ?? [];
-  const statLines = row.match_stat_lines ?? [];
-  const selfReports = row.self_report_requests ?? [];
+  const matchData = Array.isArray(matchRes.data) ? matchRes.data[0] : matchRes.data;
+  if (!matchData) throw new Error('Maç bulunamadı');
+
+  const row = matchData as NestedMatchRow;
+  const attendees = (attendeesRes.data ?? []) as MatchAttendeeRow[];
+  const teamPlayers = (teamsRes.data ?? []) as MatchTeamPlayerRow[];
+  const statLines = (statsRes.data ?? []) as MatchStatLineRow[];
+  const selfReports = (selfReportsRes.data ?? []) as SelfReportRequestRow[];
 
   const profileIds = collectProfileIds(row, attendees, teamPlayers, statLines, selfReports);
   const profiles = await fetchProfilesByIds(profileIds);

@@ -49,15 +49,16 @@ export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInpu
 
 export async function fetchMatchById(matchId: string): Promise<MatchRow | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from('matches').select('*').eq('id', matchId).maybeSingle();
+  const { data, error } = await supabase.rpc('get_match_detail_for_user', { p_match_id: matchId });
   if (error) throw error;
-  return data as MatchRow | null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row ?? null) as MatchRow | null;
 }
 
 /** Kullanıcının organizatör olduğu veya davetli olduğu maçlar (RLS ile uyumlu). */
 export async function fetchMatchesForCurrentUser(): Promise<MatchRow[]> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from('matches').select('*');
+  const { data, error } = await supabase.rpc('list_visible_matches_for_user');
   if (error) throw error;
   return (data ?? []) as MatchRow[];
 }

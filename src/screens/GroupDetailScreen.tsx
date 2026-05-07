@@ -3,6 +3,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { MatchCard } from '../components/MatchCard';
+import { PillButton } from '../components/PillButton';
 import { useAppStore } from '../store/useAppStore';
 import { colors, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
@@ -21,14 +22,32 @@ export function GroupDetailScreen() {
   const matches = useAppStore((s) => s.matches);
 
   const group = groups.find((item) => item.id === groupId);
+  const isMember = memberships.some((item) => item.groupId === groupId && item.playerId === userId);
   const memberCount = memberships.filter((item) => item.groupId === groupId).length;
   const groupMatches = matches.filter((item) => item.groupId === groupId);
+
+  if (!group || !isMember) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Bu grubu goruntuleme yetkin yok.</Text>
+          <Text style={styles.meta}>Grup disi katilimciysan mac detayindan kadroyu gorebilirsin.</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <Text style={styles.title}>{group?.name ?? 'Grup'}</Text>
+        <Text style={styles.title}>{group.name}</Text>
         <Text style={styles.meta}>{memberCount} uye</Text>
+        <PillButton
+          title="Liderlik Tablosu"
+          variant="ghost"
+          onPress={() => navigation.navigate('GroupLeaderboard', { groupId })}
+          testID="groups:leaderboard:open"
+        />
       </View>
       <FlatList
         contentContainerStyle={styles.list}

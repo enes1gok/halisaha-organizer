@@ -27,6 +27,14 @@ export interface ProfileRow {
   updated_at: string;
 }
 
+export interface PublicProfileRow {
+  id: string;
+  display_name: string;
+  photo_uri: string | null;
+  position: PlayerPositionRow;
+  preferred_foot: PreferredFootRow;
+}
+
 export interface MatchRow {
   id: string;
   group_id: string | null;
@@ -114,3 +122,5 @@ export interface PlayerLeaderboardStatsRow {
   losses: number;
   draws: number;
 }
+
+export type LeaderboardMetricFilter = 'goals' | 'assists' | 'matches' | 'winRate' | null;
