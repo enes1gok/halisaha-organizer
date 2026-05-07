@@ -10,7 +10,7 @@
     "lint:styles": "node scripts/check-style-guardrails.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:rls:sql": "npx supabase test db",
+    "test:rls:sql": "supabase test db",
     "test:rls:integration": "jest --config jest.integration.config.js",
     "test:rls": "npm run test:rls:sql && npm run test:rls:integration"
   },
