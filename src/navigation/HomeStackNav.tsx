@@ -4,8 +4,10 @@ import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
+import { MatchPregameScreen } from '../screens/MatchPregameScreen';
 import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
-import { ScoreEntryScreen } from '../screens/ScoreEntryScreen';
+import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
 import { defaultStackScreenOptions } from './defaultStackScreenOptions';
 import type { HomeStackParamList } from './types';
 
@@ -35,9 +37,19 @@ export function HomeStackNav() {
         options={{ title: 'Kadro Kur' }}
       />
       <Stack.Screen
-        name="ScoreEntry"
-        component={ScoreEntryScreen}
-        options={{ title: 'Skor Gir' }}
+        name="MatchPregame"
+        component={MatchPregameScreen}
+        options={{ title: 'Maç Öncesi' }}
+      />
+      <Stack.Screen
+        name="MatchPostgame"
+        component={MatchPostgameScreen}
+        options={{ title: 'Maç Sonrası' }}
+      />
+      <Stack.Screen
+        name="MatchSummary"
+        component={MatchSummaryScreen}
+        options={{ title: 'Maçın özeti' }}
       />
       <Stack.Screen
         name="MatchRatings"

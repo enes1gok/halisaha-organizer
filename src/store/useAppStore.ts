@@ -29,6 +29,8 @@ export const useAppStore = create<AppState>()(
           groups: [],
           groupMemberships: [],
           remoteUserId: null,
+          matchRatingSummariesById: {},
+          matchRatingsSubmissionByMatchId: {},
         });
       },
     }),

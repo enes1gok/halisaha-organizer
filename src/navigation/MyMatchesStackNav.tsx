@@ -2,9 +2,11 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
+import { MatchPregameScreen } from '../screens/MatchPregameScreen';
 import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
+import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
 import { MyMatchesScreen } from '../screens/MyMatchesScreen';
-import { ScoreEntryScreen } from '../screens/ScoreEntryScreen';
 import { defaultStackScreenOptions } from './defaultStackScreenOptions';
 import type { MyMatchesStackParamList } from './types';
 
@@ -29,9 +31,19 @@ export function MyMatchesStackNav() {
         options={{ title: 'Kadro Kur' }}
       />
       <Stack.Screen
-        name="ScoreEntry"
-        component={ScoreEntryScreen}
-        options={{ title: 'Skor Gir' }}
+        name="MatchPregame"
+        component={MatchPregameScreen}
+        options={{ title: 'Maç Öncesi' }}
+      />
+      <Stack.Screen
+        name="MatchPostgame"
+        component={MatchPostgameScreen}
+        options={{ title: 'Maç Sonrası' }}
+      />
+      <Stack.Screen
+        name="MatchSummary"
+        component={MatchSummaryScreen}
+        options={{ title: 'Maçın özeti' }}
       />
       <Stack.Screen
         name="MatchRatings"

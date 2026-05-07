@@ -60,6 +60,9 @@ export interface MatchesSlice {
   /** Kadro uygun kullanıcı: puanlar + MOTM. */
   submitMatchRatings: (matchId: string, scores: PeerRatingInput[], motmPickId: string) => Promise<void>;
 
+  /** Maç Ratings gönderildi (persist dışı; Maçlarım özeti yönlendirmesi için). */
+  matchRatingsSubmissionByMatchId: Record<string, true>;
+
   /** Oturum + Supabase maçları yeniden yükler. */
   hydrateRemoteMatches: () => Promise<void>;
   refreshRemoteMatch: (matchId: string) => Promise<void>;

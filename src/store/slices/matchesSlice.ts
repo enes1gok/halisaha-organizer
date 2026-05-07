@@ -271,6 +271,8 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
 
   matchRatingSummariesById: {},
 
+  matchRatingsSubmissionByMatchId: {},
+
   getMatch: (id) => get().matches.find((m) => m.id === id),
 
   loadMatchRatingSummary: async (matchId) => {
@@ -290,6 +292,9 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
   submitMatchRatings: async (matchId: string, scores: PeerRatingInput[], motmPickId: string) => {
     await submitMatchRatingsUseCase(matchId, { scores, motmPickId });
     await get().loadMatchRatingSummary(matchId);
+    set((s) => ({
+      matchRatingsSubmissionByMatchId: { ...s.matchRatingsSubmissionByMatchId, [matchId]: true },
+    }));
   },
 
   hydrateRemoteMatches: () => hydrateRemoteMatchesUseCase(buildMatchesUseCaseDeps(set, get)),

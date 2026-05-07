@@ -251,6 +251,18 @@ export function MatchDetailScreen() {
         </View>
       </View>
 
+      {isRemoteMatchId(match.id) && userOnMatchLineup && !isOrganizer ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Saha</Text>
+          <Text style={styles.muted}>Skoru girmek veya takım arkadaşlarını değerlendirmek için maç sonrası ekranını kullanın.</Text>
+          <PillButton
+            title="Maç sonrası"
+            onPress={() => navigation.navigate('MatchPostgame', { matchId })}
+            style={styles.mt}
+          />
+        </View>
+      ) : null}
+
       {showPrice && match.iban ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ödeme</Text>
@@ -279,8 +291,8 @@ export function MatchDetailScreen() {
             ) : null}
             {match.status !== 'finished' ? (
               <PillButton
-                title="Skor Gir"
-                onPress={() => navigation.navigate('ScoreEntry', { matchId })}
+                title="Maç sonrası"
+                onPress={() => navigation.navigate('MatchPostgame', { matchId })}
                 variant="ghost"
                 style={styles.flex}
               />

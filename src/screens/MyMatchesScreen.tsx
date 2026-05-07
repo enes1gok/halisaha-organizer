@@ -5,6 +5,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { EmptyState } from '../components/EmptyState';
 import { MatchCard } from '../components/MatchCard';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { resolveMyMatchesEntryScreen } from '../navigation/myMatchesEntry';
 import { colors, spacing } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 import { useAuthStore, useMatchesStore } from '../store';
@@ -18,6 +19,7 @@ export function MyMatchesScreen() {
   const matches = useMatchesStore((s) => s.matches);
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
+  const ratingsSubmission = useMatchesStore((s) => s.matchRatingsSubmissionByMatchId);
   const [refreshing, setRefreshing] = useState(false);
 
   const mine = useMemo(() => {
@@ -64,7 +66,14 @@ export function MyMatchesScreen() {
               match={item}
               goingCount={goingCount}
               userGoing={userGoing}
-              onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
+              onPress={() => {
+                const dest = resolveMyMatchesEntryScreen(item, userId, ratingsSubmission);
+                const p = { matchId: item.id };
+                if (dest === 'MatchPregame') navigation.navigate('MatchPregame', p);
+                else if (dest === 'MatchPostgame') navigation.navigate('MatchPostgame', p);
+                else if (dest === 'MatchSummary') navigation.navigate('MatchSummary', p);
+                else navigation.navigate('MatchDetail', p);
+              }}
             />
           );
         }}
