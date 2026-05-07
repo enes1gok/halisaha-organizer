@@ -4,6 +4,8 @@ import {
   BottomSheetScrollView,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -32,6 +34,7 @@ import { formatShortDate } from '../utils/dates';
 import { levelLabelFromScore, playerScore, winRate } from '../utils/stats';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import type { ProfileStackParamList } from '../navigation/types';
 import { isValidTurkishIban, maskIban, normalizeIban } from '../utils/iban';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -40,6 +43,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const POSITIONS: Position[] = ['GK', 'DEF', 'MID', 'FWD'];
 const FEET: PreferredFoot[] = ['left', 'right', 'both'];
+type Nav = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
 function footLabel(f: PreferredFoot): string {
   if (f === 'left') return 'Sol';
@@ -48,6 +52,7 @@ function footLabel(f: PreferredFoot): string {
 }
 
 export function ProfileScreen() {
+  const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const userId = useAppStore((s) => s.getCurrentUserId());
   const player = useAppStore((s) => s.players.find((p) => p.id === userId));
@@ -318,6 +323,14 @@ export function ProfileScreen() {
       </View>
 
       <PillButton title="Profili Düzenle" variant="ghost" onPress={openEdit} style={styles.editBtn} />
+      <PillButton
+        title="Gizlilik Politikasi"
+        variant="ghost"
+        onPress={() => navigation.navigate('PrivacyPolicy')}
+        style={styles.privacyBtn}
+        testID="profile:privacy-policy:press"
+        accessibilityLabel="Gizlilik politikasi ekranina git"
+      />
 
       <BottomSheetModal
         ref={sheetRef}
@@ -547,6 +560,10 @@ const styles = StyleSheet.create({
   editBtn: {
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
+  },
+  privacyBtn: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
   },
   sheetBg: {
     backgroundColor: colors.surface,
