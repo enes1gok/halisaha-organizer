@@ -2,7 +2,7 @@ import type { MatchStatus, RSVPStatus, SelfReportType } from '../../types/domain
 import { getSupabaseClient } from '../../lib/supabase';
 import { mapSupabaseError } from './errors';
 import type { MatchStatusRow, SelfReportStatusRow } from './types';
-import { rsvpToDb } from './matchGraph';
+import { rsvpToDb } from './mappers';
 
 export async function updateMatchAttendeeRemote(
   matchId: string,

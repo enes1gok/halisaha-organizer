@@ -16,8 +16,8 @@ import type {
 } from '../types/domain';
 import { createGroupRemote, fetchMyGroups, joinGroupRemote, leaveGroupRemote } from '../services/supabase/groups';
 import { isAppError, shouldRetry, toUserMessage } from '../services/supabase/errors';
-import { fetchMatchGraph, fetchMyMatchesGraph, scoreResultToRpcPayload } from '../services/supabase/matchGraph';
-import type { MatchGraphPayload } from '../services/supabase/matchGraph';
+import { fetchMatchGraph, fetchMyMatchesGraph, type MatchGraphPayload } from '../services/supabase/matchGraph';
+import { scoreResultToRpcPayload } from '../services/supabase/mappers';
 import {
   insertMatchWithOrganizerAttendee,
   joinMatchByJoinCode as joinMatchByJoinCodeRpc,

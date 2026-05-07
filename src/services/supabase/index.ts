@@ -17,15 +17,20 @@ export {
   shouldRetry,
   toUserMessage,
 } from './errors';
+export { fetchMatchGraph, fetchMyMatchesGraph, type MatchGraphPayload } from './matchGraph';
 export {
-  fetchMatchGraph,
-  fetchMyMatchesGraph,
+  jsonArrayOrEmpty,
+  mapGroup,
+  mapLeaderboardRow,
+  mapMembership,
+  mapSelfReportStatus,
+  mapSelfReportType,
+  numOrUndef,
   rsvpFromDb,
   rsvpToDb,
   rowsToMatch,
   scoreResultToRpcPayload,
-  type MatchGraphPayload,
-} from './matchGraph';
+} from './mappers';
 export {
   insertSelfReportRemote,
   replaceMatchTeamPlayersRemote,

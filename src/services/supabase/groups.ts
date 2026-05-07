@@ -1,26 +1,8 @@
 import type { Group, GroupMembership } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
 import { createAuthRequiredError, mapSupabaseError } from './errors';
+import { mapGroup, mapMembership } from './mappers';
 import type { GroupMemberRow, GroupRow } from './types';
-
-function mapGroup(row: GroupRow): Group {
-  return {
-    id: row.id,
-    name: row.name,
-    ownerId: row.owner_id,
-    joinCode: row.join_code,
-    createdAt: row.created_at,
-  };
-}
-
-function mapMembership(row: GroupMemberRow): GroupMembership {
-  return {
-    groupId: row.group_id,
-    playerId: row.player_id,
-    role: row.role,
-    createdAt: row.created_at,
-  };
-}
 
 export async function fetchMyGroups(): Promise<{ groups: Group[]; memberships: GroupMembership[] }> {
   const supabase = getSupabaseClient();

@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../../lib/supabase';
 import { mapSupabaseError } from './errors';
+import { mapLeaderboardRow } from './mappers';
 import type { LeaderboardMetricFilter, PlayerLeaderboardStatsRow } from './types';
 
 export type LeaderboardTimeframe = 'all' | 'week' | 'month';
@@ -23,13 +24,5 @@ export async function fetchPlayerLeaderboardStats(
   });
   if (error) throw mapSupabaseError(error, 'fetchPlayerLeaderboardStats');
   const rows = (data ?? []) as PlayerLeaderboardStatsRow[];
-  return rows.map((r) => ({
-    ...r,
-    goals: Number(r.goals),
-    assists: Number(r.assists),
-    matches_played: Number(r.matches_played),
-    wins: Number(r.wins),
-    losses: Number(r.losses),
-    draws: Number(r.draws),
-  }));
+  return rows.map(mapLeaderboardRow);
 }
