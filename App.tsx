@@ -13,12 +13,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { openGroupDetail, openMatchDetail } from './src/navigation/navigationActions';
 import { colors } from './src/theme';
 import { useAppStore } from './src/store/useAppStore';
 
 function AppShell() {
-  const { configured, loading } = useSupabaseAuth();
+  const { configured, loading, session } = useSupabaseAuth();
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -42,6 +43,15 @@ function AppShell() {
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
         <ActivityIndicator color={colors.accent} size="large" />
       </View>
+    );
+  }
+
+  if (configured && !session) {
+    return (
+      <>
+        <OnboardingNavigator />
+        <StatusBar style="light" />
+      </>
     );
   }
 

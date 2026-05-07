@@ -20,6 +20,12 @@ export type ProfileStackParamList = {
   PrivacyPolicy: undefined;
 };
 
+export type OnboardingStackParamList = {
+  Onboarding: undefined;
+  PrivacyPolicy: undefined;
+  TermsOfUse: undefined;
+};
+
 export type GroupsStackParamList = {
   GroupsMain: undefined;
   GroupDetail: { groupId: string };

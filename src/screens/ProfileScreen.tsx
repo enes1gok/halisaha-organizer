@@ -16,7 +16,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   UIManager,
   View,
   Alert,
@@ -61,7 +60,7 @@ export function ProfileScreen() {
   const matches = useAppStore((s) => s.matches);
   const updateProfile = useAppStore((s) => s.updatePlayerProfile);
   const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
-  const { configured, session, loading: authLoading, signInWithEmail, signUpWithEmail, signOut, refreshRemoteProfile } =
+  const { configured, session, loading: authLoading, signOut, refreshRemoteProfile } =
     useSupabaseAuth();
 
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -72,9 +71,6 @@ export function ProfileScreen() {
   const [position, setPosition] = useState<Position>(player?.position ?? 'MID');
   const [foot, setFoot] = useState<PreferredFoot>(player?.preferredFoot ?? 'both');
   const [refreshing, setRefreshing] = useState(false);
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authBusy, setAuthBusy] = useState(false);
 
   const { iban, syncFromStored, onChange: onIbanChange, onFocus: onIbanFocus } = useTurkishIbanField(
     player?.iban,
@@ -226,68 +222,7 @@ export function ProfileScreen() {
               accessibilityLabel="Çıkış yap"
             />
           </>
-        ) : (
-          <>
-            <Text style={styles.authTitle}>Giriş / kayıt</Text>
-            <TextInput
-              style={styles.authInput}
-              placeholder="E-posta"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={authEmail}
-              onChangeText={setAuthEmail}
-              testID="profile:auth:email:input"
-              accessibilityLabel="E-posta"
-            />
-            <TextInput
-              style={styles.authInput}
-              placeholder="Şifre"
-              placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              value={authPassword}
-              onChangeText={setAuthPassword}
-              testID="profile:auth:password:input"
-              accessibilityLabel="Şifre"
-            />
-            <View style={styles.authActions}>
-              <PillButton
-                title="Giriş Yap"
-                loading={authBusy}
-                onPress={async () => {
-                  setAuthBusy(true);
-                  const { error } = await signInWithEmail(authEmail, authPassword);
-                  setAuthBusy(false);
-                  if (error) Alert.alert('Giriş', error.message);
-                }}
-                disabled={authBusy}
-                testID="profile:auth:signin:press"
-                accessibilityLabel="Giriş yap"
-              />
-              <PillButton
-                title="Kayıt Ol"
-                variant="ghost"
-                loading={authBusy}
-                onPress={async () => {
-                  setAuthBusy(true);
-                  const { error } = await signUpWithEmail(authEmail, authPassword);
-                  setAuthBusy(false);
-                  if (error) Alert.alert('Kayıt', error.message);
-                  else {
-                    Alert.alert(
-                      'Kayıt',
-                      'Hesabınız oluşturuldu. E-posta doğrulaması açıksa gelen kutunuzu kontrol edin.',
-                    );
-                  }
-                }}
-                disabled={authBusy}
-                testID="profile:auth:signup:press"
-                accessibilityLabel="Kayıt ol"
-              />
-            </View>
-          </>
-        )}
+        ) : null}
       </View>
 
       <View style={[styles.hero, { paddingTop: spacing.lg }]}>
@@ -437,10 +372,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
   },
-  authTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-  },
   authLabel: {
     ...typography.caption,
     color: colors.textMuted,
@@ -449,18 +380,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontFamily: 'Inter_600SemiBold',
-  },
-  authInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: spacing.sm,
-    color: colors.text,
-    fontFamily: 'Inter_400Regular',
-  },
-  authActions: {
-    gap: spacing.sm,
-    marginTop: spacing.xs,
   },
   screen: {
     flex: 1,
