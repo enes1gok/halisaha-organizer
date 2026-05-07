@@ -23,6 +23,7 @@ type Props = {
   titleColor?: string;
   accessibilityLabel?: string;
   accessibilityState?: AccessibilityState;
+  testID?: string;
 };
 
 export function PillButton({
@@ -35,6 +36,7 @@ export function PillButton({
   titleColor,
   accessibilityLabel,
   accessibilityState,
+  testID,
 }: Props) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({
@@ -61,6 +63,7 @@ export function PillButton({
 
   return (
     <AnimatedPressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={accessibilityState}

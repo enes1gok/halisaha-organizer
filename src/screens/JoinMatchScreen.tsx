@@ -15,7 +15,7 @@ export function JoinMatchScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const onSubmit = useCallback(() => {
+  const onSubmit = useCallback(async () => {
     const trimmed = code.trim();
     if (!trimmed) {
       Alert.alert('Eksik bilgi', 'Katılım kodunu girin.');
@@ -23,12 +23,14 @@ export function JoinMatchScreen() {
     }
     setBusy(true);
     try {
-      const m = joinMatchByJoinCode(trimmed);
+      const m = await joinMatchByJoinCode(trimmed);
       if (!m) {
         Alert.alert('Bulunamadı', 'Bu koda ait yaklaşan bir maç yok.');
         return;
       }
       navigation.replace('MatchDetail', { matchId: m.id });
+    } catch (e) {
+      Alert.alert('Hata', e instanceof Error ? e.message : 'Katılım başarısız.');
     } finally {
       setBusy(false);
     }

@@ -34,6 +34,8 @@ export function HomeScreen() {
   const userId = useAppStore((s) => s.getCurrentUserId());
   const matches = useAppStore((s) => s.matches);
   const getPlayer = useAppStore((s) => s.getPlayer);
+  const remoteUserId = useAppStore((s) => s.remoteUserId);
+  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
   const [refreshing, setRefreshing] = useState(false);
 
   const upcoming = useMemo(() => {
@@ -44,11 +46,15 @@ export function HomeScreen() {
   const nextMatch = upcoming[0] ?? null;
   const restUpcoming = upcoming.length > 1 ? upcoming.slice(1) : [];
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    try {
+      if (remoteUserId) await hydrateRemoteMatches();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [hydrateRemoteMatches, remoteUserId]);
 
   const organizerName = nextMatch ? getPlayer(nextMatch.organizerId)?.name : undefined;
   const userAttendee = nextMatch?.attendees.find((a) => a.playerId === userId);

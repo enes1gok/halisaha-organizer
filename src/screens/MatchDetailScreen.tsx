@@ -8,6 +8,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -55,6 +56,7 @@ export function MatchDetailScreen() {
   const setSelfReportEnabled = useAppStore((s) => s.setSelfReportEnabled);
   const addSelfReport = useAppStore((s) => s.addSelfReport);
   const respondSelfReport = useAppStore((s) => s.respondSelfReport);
+  const refreshRemoteMatch = useAppStore((s) => s.refreshRemoteMatch);
 
   const match = useAppStore((s) => s.matches.find((m) => m.id === matchId));
 
@@ -102,10 +104,14 @@ export function MatchDetailScreen() {
     rsvpRef.current?.present();
   };
 
-  const applyRsvp = (status: RSVPStatus) => {
+  const applyRsvp = async (status: RSVPStatus) => {
     if (!match) return;
-    setRSVP(match.id, userId, status);
-    rsvpRef.current?.dismiss();
+    try {
+      await setRSVP(match.id, userId, status);
+      rsvpRef.current?.dismiss();
+    } catch (e) {
+      Alert.alert('Hata', e instanceof Error ? e.message : 'Kaydedilemedi.');
+    }
   };
 
   const renderBackdrop = useCallback(
@@ -115,9 +121,15 @@ export function MatchDetailScreen() {
     [],
   );
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
+    try {
+      await refreshRemoteMatch(matchId);
+    } catch (e) {
+      Alert.alert('Hata', e instanceof Error ? e.message : 'Yenilenemedi.');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   if (!match) {
@@ -202,7 +214,11 @@ export function MatchDetailScreen() {
             <Text style={styles.body}>Oyuncular kendi bildirsin</Text>
             <Switch
               value={match.selfReportEnabled}
-              onValueChange={(v) => setSelfReportEnabled(match.id, v)}
+              onValueChange={(v) =>
+                void setSelfReportEnabled(match.id, v).catch((err) =>
+                  Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                )
+              }
               trackColor={{ false: colors.border, true: colors.accentMuted }}
               thumbColor={match.selfReportEnabled ? colors.accent : '#888'}
             />
@@ -224,9 +240,20 @@ export function MatchDetailScreen() {
                   <PillButton
                     title="Reddet"
                     variant="ghost"
-                    onPress={() => respondSelfReport(match.id, r.id, false)}
+                    onPress={() =>
+                      void respondSelfReport(match.id, r.id, false).catch((err) =>
+                        Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                      )
+                    }
                   />
-                  <PillButton title="Onayla" onPress={() => respondSelfReport(match.id, r.id, true)} />
+                  <PillButton
+                    title="Onayla"
+                    onPress={() =>
+                      void respondSelfReport(match.id, r.id, true).catch((err) =>
+                        Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                      )
+                    }
+                  />
                 </View>
               </View>
             );
@@ -250,7 +277,11 @@ export function MatchDetailScreen() {
                   <Text style={styles.micro}>{a.paid ? 'Ödendi' : 'Ödenmedi'}</Text>
                   <Switch
                     value={a.paid}
-                    onValueChange={(v) => setPaid(match.id, p!.id, v, userId)}
+                    onValueChange={(v) =>
+                      void setPaid(match.id, p!.id, v, userId).catch((err) =>
+                        Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                      )
+                    }
                     trackColor={{ false: colors.border, true: colors.accentMuted }}
                     thumbColor={a.paid ? colors.accent : '#888'}
                   />
@@ -270,13 +301,21 @@ export function MatchDetailScreen() {
             <PillButton
               title="Gol Attım"
               variant="ghost"
-              onPress={() => addSelfReport(match.id, userId, 'goal')}
+              onPress={() =>
+                void addSelfReport(match.id, userId, 'goal').catch((err) =>
+                  Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                )
+              }
               style={styles.flex}
             />
             <PillButton
               title="Asist Yaptım"
               variant="ghost"
-              onPress={() => addSelfReport(match.id, userId, 'assist')}
+              onPress={() =>
+                void addSelfReport(match.id, userId, 'assist').catch((err) =>
+                  Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                )
+              }
               style={styles.flex}
             />
           </View>

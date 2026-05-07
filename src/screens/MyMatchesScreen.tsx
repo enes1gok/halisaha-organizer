@@ -16,6 +16,8 @@ export function MyMatchesScreen() {
   const navigation = useNavigation<Nav>();
   const userId = useAppStore((s) => s.getCurrentUserId());
   const matches = useAppStore((s) => s.matches);
+  const remoteUserId = useAppStore((s) => s.remoteUserId);
+  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
   const [refreshing, setRefreshing] = useState(false);
 
   const mine = useMemo(() => {
@@ -27,10 +29,14 @@ export function MyMatchesScreen() {
     return [...list].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   }, [matches, userId]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    try {
+      if (remoteUserId) await hydrateRemoteMatches();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [hydrateRemoteMatches, remoteUserId]);
 
   return (
     <View style={styles.screen}>

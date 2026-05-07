@@ -68,7 +68,7 @@ export function CreateMatchTabScreen() {
     navigation.navigate('HomeTab' as never);
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!venue.trim()) {
       Alert.alert('Eksik bilgi', 'Saha adını girin.');
       return;
@@ -84,22 +84,26 @@ export function CreateMatchTabScreen() {
     }
     const mp = Math.min(22, Math.max(4, parseInt(maxPlayers || '14', 10) || 14));
     const priceNum = price.trim() ? parseFloat(price.replace(',', '.')) : undefined;
-    const m = createMatch({
-      venue: venue.trim(),
-      startsAt: startsAt.toISOString(),
-      maxPlayers: mp,
-      pricePerPerson: priceNum && priceNum > 0 ? priceNum : undefined,
-      iban: ibanNormForMatch || undefined,
-    });
-    Alert.alert(
-      'Maç oluşturuldu',
-      `Katılım kodu: ${m.joinCode}\nBağlantı: halisaha://match/${m.id}`,
-      [{ text: 'Tamam', onPress: () => sheetRef.current?.dismiss() }],
-    );
-    setVenue('');
-    setPrice('');
-    syncFromStored('');
-    setOverrideIban(!hasValidProfileIban);
+    try {
+      const m = await createMatch({
+        venue: venue.trim(),
+        startsAt: startsAt.toISOString(),
+        maxPlayers: mp,
+        pricePerPerson: priceNum && priceNum > 0 ? priceNum : undefined,
+        iban: ibanNormForMatch || undefined,
+      });
+      Alert.alert(
+        'Maç oluşturuldu',
+        `Katılım kodu: ${m.joinCode}\nBağlantı: halisaha://match/${m.id}`,
+        [{ text: 'Tamam', onPress: () => sheetRef.current?.dismiss() }],
+      );
+      setVenue('');
+      setPrice('');
+      syncFromStored('');
+      setOverrideIban(!hasValidProfileIban);
+    } catch (e) {
+      Alert.alert('Hata', e instanceof Error ? e.message : 'Maç oluşturulamadı.');
+    }
   };
 
   const renderBackdrop = useCallback(

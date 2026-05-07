@@ -2,6 +2,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   LayoutChangeEvent,
   ScrollView,
   StyleSheet,
@@ -186,7 +187,11 @@ export function LineupBuilderScreen() {
 
     setTeamAIds(nextA);
     setTeamBIds(nextB);
-    if (match) setMatchTeams(match.id, nextA, nextB);
+    if (match) {
+      void setMatchTeams(match.id, nextA, nextB).catch((err) =>
+        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+      );
+    }
     setTimeout(measure, 50);
   };
 
@@ -194,7 +199,11 @@ export function LineupBuilderScreen() {
     const { A, B } = autoBalance(goingPlayers);
     setTeamAIds(A);
     setTeamBIds(B);
-    if (match) setMatchTeams(match.id, A, B);
+    if (match) {
+      void setMatchTeams(match.id, A, B).catch((err) =>
+        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+      );
+    }
     setTimeout(measure, 50);
   };
 
@@ -202,9 +211,16 @@ export function LineupBuilderScreen() {
     measure();
   };
 
-  const confirmLineup = () => {
+  const confirmLineup = async () => {
     setConfirmOpen(false);
-    if (match) lockLineup(match.id);
+    if (match) {
+      try {
+        await lockLineup(match.id);
+      } catch (err) {
+        Alert.alert('Hata', err instanceof Error ? err.message : 'Kilitlenemedi.');
+        return;
+      }
+    }
     navigation.goBack();
   };
 

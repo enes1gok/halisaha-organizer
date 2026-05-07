@@ -1,0 +1,2 @@
+-- Optional seed data for local `supabase db reset`.
+-- Production data is created via the app / auth.

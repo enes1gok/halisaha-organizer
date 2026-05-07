@@ -45,6 +45,8 @@ export function LeaderboardScreen() {
   const players = useAppStore((s) => s.players);
   const matches = useAppStore((s) => s.matches);
   const userId = useAppStore((s) => s.getCurrentUserId());
+  const remoteUserId = useAppStore((s) => s.remoteUserId);
+  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
 
   const [metric, setMetric] = useState<LeaderMetric>('goals');
   const [tf, setTf] = useState<Timeframe>('all');
@@ -95,10 +97,18 @@ export function LeaderboardScreen() {
         data={top}
         keyExtractor={(item) => item.playerId}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => {
-            setRefreshing(true);
-            setTimeout(() => setRefreshing(false), 400);
-          }} tintColor={colors.accent} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              try {
+                if (remoteUserId) await hydrateRemoteMatches();
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+            tintColor={colors.accent}
+          />
         }
         contentContainerStyle={[
           styles.list,

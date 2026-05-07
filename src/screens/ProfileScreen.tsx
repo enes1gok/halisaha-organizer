@@ -6,6 +6,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   UIManager,
   View,
   Alert,
@@ -23,6 +25,8 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
 import { colors, spacing, typography } from '../theme';
 import type { Position, PreferredFoot } from '../types/domain';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
+import { updateCurrentUserProfile } from '../services/supabase/profiles';
 import { useAppStore } from '../store/useAppStore';
 import { formatShortDate } from '../utils/dates';
 import { levelLabelFromScore, playerScore, winRate } from '../utils/stats';
@@ -49,6 +53,9 @@ export function ProfileScreen() {
   const player = useAppStore((s) => s.players.find((p) => p.id === userId));
   const matches = useAppStore((s) => s.matches);
   const updateProfile = useAppStore((s) => s.updatePlayerProfile);
+  const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
+  const { configured, session, loading: authLoading, signInWithEmail, signUpWithEmail, signOut, refreshRemoteProfile } =
+    useSupabaseAuth();
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['55%'], []);
@@ -58,6 +65,9 @@ export function ProfileScreen() {
   const [position, setPosition] = useState<Position>(player?.position ?? 'MID');
   const [foot, setFoot] = useState<PreferredFoot>(player?.preferredFoot ?? 'both');
   const [refreshing, setRefreshing] = useState(false);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
 
   const { iban, syncFromStored, onChange: onIbanChange, onFocus: onIbanFocus } = useTurkishIbanField(
     player?.iban,
@@ -97,7 +107,7 @@ export function ProfileScreen() {
     sheetRef.current?.present();
   };
 
-  const save = () => {
+  const save = async () => {
     if (!player) return;
     const ibanNorm = normalizeIban(iban);
     if (ibanNorm.length > 0 && !isValidTurkishIban(ibanNorm)) {
@@ -115,6 +125,19 @@ export function ProfileScreen() {
       iban: ibanNorm || undefined,
     });
     sheetRef.current?.dismiss();
+    if (configured && session?.user?.id === player.id) {
+      try {
+        await updateCurrentUserProfile({
+          display_name: name.trim() || player.name,
+          photo_uri: photoUri.trim() || null,
+          position,
+          preferred_foot: foot,
+          iban: ibanNorm || null,
+        });
+      } catch {
+        Alert.alert('Sunucu', 'Profil sunucuya yazılamadı; yerel kayıt güncellendi.');
+      }
+    }
   };
 
   const renderBackdrop = useCallback(
@@ -137,13 +160,108 @@ export function ProfileScreen() {
       style={styles.screen}
       contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => {
-          setRefreshing(true);
-          setTimeout(() => setRefreshing(false), 400);
-        }} tintColor={colors.accent} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={async () => {
+            setRefreshing(true);
+            try {
+              if (session) {
+                await refreshRemoteProfile();
+                await hydrateRemoteMatches();
+              }
+            } finally {
+              setRefreshing(false);
+            }
+          }}
+          tintColor={colors.accent}
+        />
       }
     >
-      <View style={[styles.hero, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={[styles.authCard, { marginTop: insets.top + spacing.md }]}>
+        {!configured ? (
+          <Text style={styles.authHint}>
+            Supabase için kök dizinde `.env` içinde EXPO_PUBLIC_SUPABASE_URL ve EXPO_PUBLIC_SUPABASE_ANON_KEY tanımlayın;
+            Metro’yu yeniden başlatın.
+          </Text>
+        ) : authLoading ? (
+          <ActivityIndicator color={colors.accent} />
+        ) : session ? (
+          <>
+            <Text style={styles.authLabel}>Hesap</Text>
+            <Text style={styles.authEmail}>{session.user.email ?? session.user.id}</Text>
+            <PillButton
+              title="Çıkış Yap"
+              variant="ghost"
+              onPress={() => void signOut()}
+              testID="profile:auth:signout:press"
+              accessibilityLabel="Çıkış yap"
+            />
+          </>
+        ) : (
+          <>
+            <Text style={styles.authTitle}>Giriş / kayıt</Text>
+            <TextInput
+              style={styles.authInput}
+              placeholder="E-posta"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={authEmail}
+              onChangeText={setAuthEmail}
+              testID="profile:auth:email:input"
+              accessibilityLabel="E-posta"
+            />
+            <TextInput
+              style={styles.authInput}
+              placeholder="Şifre"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              value={authPassword}
+              onChangeText={setAuthPassword}
+              testID="profile:auth:password:input"
+              accessibilityLabel="Şifre"
+            />
+            <View style={styles.authActions}>
+              <PillButton
+                title="Giriş Yap"
+                loading={authBusy}
+                onPress={async () => {
+                  setAuthBusy(true);
+                  const { error } = await signInWithEmail(authEmail, authPassword);
+                  setAuthBusy(false);
+                  if (error) Alert.alert('Giriş', error.message);
+                }}
+                disabled={authBusy}
+                testID="profile:auth:signin:press"
+                accessibilityLabel="Giriş yap"
+              />
+              <PillButton
+                title="Kayıt Ol"
+                variant="ghost"
+                loading={authBusy}
+                onPress={async () => {
+                  setAuthBusy(true);
+                  const { error } = await signUpWithEmail(authEmail, authPassword);
+                  setAuthBusy(false);
+                  if (error) Alert.alert('Kayıt', error.message);
+                  else {
+                    Alert.alert(
+                      'Kayıt',
+                      'Hesabınız oluşturuldu. E-posta doğrulaması açıksa gelen kutunuzu kontrol edin.',
+                    );
+                  }
+                }}
+                disabled={authBusy}
+                testID="profile:auth:signup:press"
+                accessibilityLabel="Kayıt ol"
+              />
+            </View>
+          </>
+        )}
+      </View>
+
+      <View style={[styles.hero, { paddingTop: spacing.lg }]}>
         <PlayerAvatar name={player.name} uri={player.photoUri} size={88} />
         <Text style={styles.heroName}>{player.name}</Text>
         <View style={styles.badges}>
@@ -261,6 +379,44 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  authCard: {
+    marginHorizontal: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  authHint: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  authTitle: {
+    ...typography.subtitle,
+    color: colors.text,
+  },
+  authLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  authEmail: {
+    ...typography.body,
+    color: colors.text,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  authInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: spacing.sm,
+    color: colors.text,
+    fontFamily: 'Inter_400Regular',
+  },
+  authActions: {
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background,

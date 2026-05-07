@@ -10,9 +10,29 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { colors } from './src/theme';
 import { useAppStore } from './src/store/useAppStore';
+
+function AppShell() {
+  const { configured, loading } = useSupabaseAuth();
+
+  if (configured && loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <AppNavigator />
+      <StatusBar style="light" />
+    </>
+  );
+}
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -39,8 +59,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <BottomSheetModalProvider>
-          <AppNavigator />
-          <StatusBar style="light" />
+          <SupabaseAuthProvider>
+            <AppShell />
+          </SupabaseAuthProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

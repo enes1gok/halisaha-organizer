@@ -1,7 +1,7 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
@@ -86,7 +86,7 @@ export function ScoreEntryScreen() {
       return next;
     });
 
-  const applySubmit = () => {
+  const applySubmit = async () => {
     if (!match) return;
     const result: ScoreResult = {
       scoreA,
@@ -94,9 +94,13 @@ export function ScoreEntryScreen() {
       scorers: toLines(goals),
       assists: toLines(assists),
     };
-    submitScore(match.id, result);
-    setConfirmOpen(false);
-    navigation.goBack();
+    try {
+      await submitScore(match.id, result);
+      setConfirmOpen(false);
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert('Hata', e instanceof Error ? e.message : 'Skor kaydedilemedi.');
+    }
   };
 
   if (!match) {
@@ -171,7 +175,11 @@ export function ScoreEntryScreen() {
         <Text style={styles.toggleLabel}>Oyuncular kendi bildirsin</Text>
         <Switch
           value={match.selfReportEnabled}
-          onValueChange={(v) => setSelfReportEnabled(match.id, v)}
+          onValueChange={(v) =>
+            void setSelfReportEnabled(match.id, v).catch((err) =>
+              Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+            )
+          }
           trackColor={{ false: colors.border, true: colors.accentMuted }}
           thumbColor={match.selfReportEnabled ? colors.accent : '#888'}
         />
