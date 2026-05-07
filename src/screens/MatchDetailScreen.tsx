@@ -33,6 +33,7 @@ import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services
 import { toUserMessage } from '../services/supabase/errors';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { isRemoteMatchId } from '../utils/matchId';
 
@@ -55,16 +56,29 @@ export function MatchDetailScreen() {
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const getPlayer = usePlayersStore((s) => s.getPlayer);
-  const setRSVP = useMatchesStore((s) => s.setRSVP);
-  const setPaid = useMatchesStore((s) => s.setPaid);
-  const setSelfReportEnabled = useMatchesStore((s) => s.setSelfReportEnabled);
-  const addSelfReport = useMatchesStore((s) => s.addSelfReport);
-  const respondSelfReport = useMatchesStore((s) => s.respondSelfReport);
-  const refreshRemoteMatch = useMatchesStore((s) => s.refreshRemoteMatch);
-  const loadMatchRatingSummary = useMatchesStore((s) => s.loadMatchRatingSummary);
-
-  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
-  const ratingSummary = useMatchesStore((s) => s.matchRatingSummariesById[matchId]);
+  const {
+    setRSVP,
+    setPaid,
+    setSelfReportEnabled,
+    addSelfReport,
+    respondSelfReport,
+    refreshRemoteMatch,
+    loadMatchRatingSummary,
+    match,
+    ratingSummary,
+  } = useMatchesStore(
+    useShallow((s) => ({
+      setRSVP: s.setRSVP,
+      setPaid: s.setPaid,
+      setSelfReportEnabled: s.setSelfReportEnabled,
+      addSelfReport: s.addSelfReport,
+      respondSelfReport: s.respondSelfReport,
+      refreshRemoteMatch: s.refreshRemoteMatch,
+      loadMatchRatingSummary: s.loadMatchRatingSummary,
+      match: s.getMatch(matchId),
+      ratingSummary: s.matchRatingSummariesById[matchId],
+    })),
+  );
 
   const [ratingHints, setRatingHints] = useState({ peer: false, motm: false });
 

@@ -9,6 +9,7 @@ import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList 
 import { toUserMessage } from '../services/supabase/errors';
 import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
 import { colors, radius, spacing, typography } from '../theme';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 
 type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
@@ -26,9 +27,13 @@ export function MatchRatingsScreen() {
   const { matchId } = route.params;
   const userId = useAuthStore((s) => s.getCurrentUserId());
 
-  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
   const getPlayer = usePlayersStore((s) => s.getPlayer);
-  const submitMatchRatings = useMatchesStore((s) => s.submitMatchRatings);
+  const { match, submitMatchRatings } = useMatchesStore(
+    useShallow((s) => ({
+      match: s.getMatch(matchId),
+      submitMatchRatings: s.submitMatchRatings,
+    })),
+  );
 
   const [scores, setScores] = useState<Record<string, number>>({});
   const [motmId, setMotmId] = useState<string | null>(null);

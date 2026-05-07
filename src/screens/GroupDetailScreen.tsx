@@ -1,6 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { MatchCard } from '../components/MatchCard';
 import { PillButton } from '../components/PillButton';
@@ -25,7 +25,10 @@ export function GroupDetailScreen() {
   const isOwner = group?.ownerId === userId;
   const isMember = memberships.some((item) => item.groupId === groupId && item.playerId === userId);
   const memberCount = memberships.filter((item) => item.groupId === groupId).length;
-  const groupMatches = matches.filter((item) => item.groupId === groupId);
+  const groupMatches = useMemo(
+    () => matches.filter((item) => item.groupId === groupId),
+    [matches, groupId],
+  );
 
   if (!group || !isMember) {
     return (

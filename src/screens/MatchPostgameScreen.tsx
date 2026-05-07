@@ -24,7 +24,7 @@ export function MatchPostgameScreen() {
   const { matchId } = route.params;
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
-  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
+  const match = useMatchesStore((s) => s.getMatch(matchId));
 
   const isOrg = match?.organizerId === userId;
   const lineup = useMemo(

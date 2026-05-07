@@ -88,22 +88,34 @@ function aggregateForMatches(
       for (const pid of ids) map.set(pid, (map.get(pid) ?? 0) + 1);
     }
   } else {
+    const playerIds = new Set(players.map((p) => p.id));
+    const winsMap = new Map<string, number>();
+    const gamesMap = new Map<string, number>();
     for (const p of players) {
-      let wins = 0;
-      let games = 0;
-      for (const m of scoped) {
-        const inA = m.teamAIds.includes(p.id);
-        const inB = m.teamBIds.includes(p.id);
-        if (!inA && !inB) continue;
-        const r = m.result!;
-        games++;
+      winsMap.set(p.id, 0);
+      gamesMap.set(p.id, 0);
+    }
+    for (const m of scoped) {
+      const r = m.result;
+      if (!r) continue;
+      const draw = r.scoreA === r.scoreB;
+      const ids = new Set<string>();
+      for (const pid of m.teamAIds) ids.add(pid);
+      for (const pid of m.teamBIds) ids.add(pid);
+      for (const pid of ids) {
+        if (!playerIds.has(pid)) continue;
+        const inA = m.teamAIds.includes(pid);
+        const inB = m.teamBIds.includes(pid);
+        gamesMap.set(pid, (gamesMap.get(pid) ?? 0) + 1);
+        if (draw) continue;
         const won =
-          r.scoreA === r.scoreB
-            ? false
-            : (inA && r.scoreA > r.scoreB) || (inB && r.scoreB > r.scoreA);
-        if (won) wins++;
+          (inA && r.scoreA > r.scoreB) || (inB && r.scoreB > r.scoreA);
+        if (won) winsMap.set(pid, (winsMap.get(pid) ?? 0) + 1);
       }
-      map.set(p.id, games === 0 ? 0 : wins / games);
+    }
+    for (const p of players) {
+      const g = gamesMap.get(p.id) ?? 0;
+      map.set(p.id, g === 0 ? 0 : (winsMap.get(p.id) ?? 0) / g);
     }
   }
 

@@ -22,6 +22,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
 import { colors, radius, spacing, typography } from '../theme';
 import type { Player, Position } from '../types/domain';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 
@@ -106,9 +107,13 @@ export function LineupBuilderScreen() {
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const playersAll = usePlayersStore((s) => s.players);
-  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
-  const setMatchTeams = useMatchesStore((s) => s.setMatchTeams);
-  const lockLineup = useMatchesStore((s) => s.lockLineup);
+  const { match, setMatchTeams, lockLineup } = useMatchesStore(
+    useShallow((s) => ({
+      match: s.getMatch(matchId),
+      setMatchTeams: s.setMatchTeams,
+      lockLineup: s.lockLineup,
+    })),
+  );
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 

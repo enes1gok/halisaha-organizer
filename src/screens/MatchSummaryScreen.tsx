@@ -9,6 +9,7 @@ import { colors, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 import { formatMatchDateTime } from '../utils/dates';
 import { isRemoteMatchId } from '../utils/matchId';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore } from '../store';
 
 type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
@@ -24,11 +25,14 @@ export function MatchSummaryScreen() {
   const { matchId } = route.params;
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
-  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
-
-  const hasSubmittedRatings = useMatchesStore((s) => !!s.matchRatingsSubmissionByMatchId[matchId]);
-  const loadSummary = useMatchesStore((s) => s.loadMatchRatingSummary);
-  const ratingSummary = useMatchesStore((s) => s.matchRatingSummariesById[matchId]);
+  const { match, hasSubmittedRatings, loadSummary, ratingSummary } = useMatchesStore(
+    useShallow((s) => ({
+      match: s.getMatch(matchId),
+      hasSubmittedRatings: !!s.matchRatingsSubmissionByMatchId[matchId],
+      loadSummary: s.loadMatchRatingSummary,
+      ratingSummary: s.matchRatingSummariesById[matchId],
+    })),
+  );
 
   React.useEffect(() => {
     if (

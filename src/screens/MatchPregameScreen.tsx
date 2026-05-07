@@ -9,6 +9,7 @@ import { toUserMessage } from '../services/supabase/errors';
 import { colors, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
 import { countGoing } from '../utils/matchRoster';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore } from '../store';
 
 type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
@@ -24,8 +25,12 @@ export function MatchPregameScreen() {
   const { matchId } = route.params;
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
-  const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
-  const setRSVP = useMatchesStore((s) => s.setRSVP);
+  const { match, setRSVP } = useMatchesStore(
+    useShallow((s) => ({
+      match: s.getMatch(matchId),
+      setRSVP: s.setRSVP,
+    })),
+  );
 
   const isOrg = match?.organizerId === userId;
 
