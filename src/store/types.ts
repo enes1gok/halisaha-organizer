@@ -1,4 +1,8 @@
 import type {
+  MatchRatingPublicSummaryDb,
+  PeerRatingInput,
+} from '../services/supabase/matchRatings';
+import type {
   Group,
   GroupMembership,
   Match,
@@ -8,6 +12,8 @@ import type {
   ScoreResult,
   SelfReportType,
 } from '../types/domain';
+
+export type { MatchRatingPublicSummaryDb, PeerRatingInput };
 
 export type CreateMatchInput = {
   venue: string;
@@ -46,6 +52,13 @@ export interface PlayersSlice {
 export interface MatchesSlice {
   matches: Match[];
   getMatch: (id: string) => Match | undefined;
+
+  /** Uzak maç derecelendirme özeti (persist dışı; sayfa yeniden açılınca tekrar yüklenir). */
+  matchRatingSummariesById: Record<string, MatchRatingPublicSummaryDb | undefined>;
+  /** Bitmiş uzak maç için `get_match_rating_public_summary`. */
+  loadMatchRatingSummary: (matchId: string) => Promise<void>;
+  /** Kadro uygun kullanıcı: puanlar + MOTM. */
+  submitMatchRatings: (matchId: string, scores: PeerRatingInput[], motmPickId: string) => Promise<void>;
 
   /** Oturum + Supabase maçları yeniden yükler. */
   hydrateRemoteMatches: () => Promise<void>;

@@ -15,6 +15,7 @@ import {
   createMatchUseCase,
   hydrateRemoteMatchesUseCase,
   joinMatchByJoinCodeUseCase,
+  loadMatchRatingSummaryUseCase,
   lockLineupUseCase,
   refreshRemoteMatchUseCase,
   respondSelfReportUseCase,
@@ -23,8 +24,10 @@ import {
   setPaidUseCase,
   setRsvpUseCase,
   setSelfReportEnabledUseCase,
+  submitMatchRatingsUseCase,
   submitScoreUseCase,
 } from '../../usecases/matches';
+import { isRemoteMatchId } from '../../utils/matchId';
 import {
   mergeHydratedRemoteMatches,
   mergeRemoteGraph,
@@ -33,7 +36,7 @@ import {
   withSyncedStats,
 } from '../helpers';
 import { storeSeed } from '../storeSeed';
-import type { AppState, CreateMatchInput, MatchesSlice } from '../types';
+import type { AppState, CreateMatchInput, MatchesSlice, PeerRatingInput } from '../types';
 
 function applyHydratedRemoteMatches(set: Parameters<StateCreator<AppState>>[0], graphs: MatchGraphPayload[]) {
   set((state) => mergeHydratedRemoteMatches(state, graphs));
@@ -266,11 +269,39 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
 export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = (set, get) => ({
   matches: storeSeed.matches,
 
+  matchRatingSummariesById: {},
+
   getMatch: (id) => get().matches.find((m) => m.id === id),
+
+  loadMatchRatingSummary: async (matchId) => {
+    if (!get().remoteUserId || !isRemoteMatchId(matchId)) return;
+    try {
+      const summary = await loadMatchRatingSummaryUseCase(matchId);
+      set((s) => ({
+        matchRatingSummariesById: { ...s.matchRatingSummariesById, [matchId]: summary ?? undefined },
+      }));
+    } catch {
+      set((s) => ({
+        matchRatingSummariesById: { ...s.matchRatingSummariesById, [matchId]: undefined },
+      }));
+    }
+  },
+
+  submitMatchRatings: async (matchId: string, scores: PeerRatingInput[], motmPickId: string) => {
+    await submitMatchRatingsUseCase(matchId, { scores, motmPickId });
+    await get().loadMatchRatingSummary(matchId);
+  },
 
   hydrateRemoteMatches: () => hydrateRemoteMatchesUseCase(buildMatchesUseCaseDeps(set, get)),
 
-  refreshRemoteMatch: (matchId) => refreshRemoteMatchUseCase(buildMatchesUseCaseDeps(set, get), matchId),
+  refreshRemoteMatch: async (matchId) => {
+    await refreshRemoteMatchUseCase(buildMatchesUseCaseDeps(set, get), matchId);
+    set((s) => {
+      const next = { ...s.matchRatingSummariesById };
+      delete next[matchId];
+      return { matchRatingSummariesById: next };
+    });
+  },
 
   createMatch: (input) => createMatchUseCase(buildMatchesUseCaseDeps(set, get), input),
 

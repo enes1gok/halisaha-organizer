@@ -2,6 +2,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
 import { MyMatchesScreen } from '../screens/MyMatchesScreen';
 import { ScoreEntryScreen } from '../screens/ScoreEntryScreen';
 import { defaultStackScreenOptions } from './defaultStackScreenOptions';
@@ -31,6 +32,11 @@ export function MyMatchesStackNav() {
         name="ScoreEntry"
         component={ScoreEntryScreen}
         options={{ title: 'Skor Gir' }}
+      />
+      <Stack.Screen
+        name="MatchRatings"
+        component={MatchRatingsScreen}
+        options={{ title: 'Oyuncu derecelendirme' }}
       />
     </Stack.Navigator>
   );

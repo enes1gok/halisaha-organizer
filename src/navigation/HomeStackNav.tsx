@@ -4,6 +4,7 @@ import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
 import { ScoreEntryScreen } from '../screens/ScoreEntryScreen';
 import { defaultStackScreenOptions } from './defaultStackScreenOptions';
 import type { HomeStackParamList } from './types';
@@ -37,6 +38,11 @@ export function HomeStackNav() {
         name="ScoreEntry"
         component={ScoreEntryScreen}
         options={{ title: 'Skor Gir' }}
+      />
+      <Stack.Screen
+        name="MatchRatings"
+        component={MatchRatingsScreen}
+        options={{ title: 'Oyuncu derecelendirme' }}
       />
     </Stack.Navigator>
   );

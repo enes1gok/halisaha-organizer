@@ -4,7 +4,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -23,22 +23,25 @@ import {
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
-import { colors, spacing, typography } from '../theme';
+import { colors, spacing, typography, radius } from '../theme';
 import type { RSVPStatus } from '../types/domain';
 import { maskIban } from '../utils/iban';
 import { formatMatchDateTime } from '../utils/dates';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
-import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
 import { toUserMessage } from '../services/supabase/errors';
-import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { isRemoteMatchId } from '../utils/matchId';
 
+type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type MatchDetailRoute =
   | RouteProp<HomeStackParamList, 'MatchDetail'>
-  | RouteProp<MyMatchesStackParamList, 'MatchDetail'>;
-
-type Nav = StackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
+  | RouteProp<MyMatchesStackParamList, 'MatchDetail'>
+  | RouteProp<GroupsStackParamList, 'MatchDetail'>;
+type Nav = StackNavigationProp<MatchStacks>;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -58,8 +61,12 @@ export function MatchDetailScreen() {
   const addSelfReport = useMatchesStore((s) => s.addSelfReport);
   const respondSelfReport = useMatchesStore((s) => s.respondSelfReport);
   const refreshRemoteMatch = useMatchesStore((s) => s.refreshRemoteMatch);
+  const loadMatchRatingSummary = useMatchesStore((s) => s.loadMatchRatingSummary);
 
   const match = useMatchesStore((s) => s.matches.find((m) => m.id === matchId));
+  const ratingSummary = useMatchesStore((s) => s.matchRatingSummariesById[matchId]);
+
+  const [ratingHints, setRatingHints] = useState({ peer: false, motm: false });
 
   const rsvpRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['32%'], []);
@@ -69,6 +76,66 @@ export function MatchDetailScreen() {
 
   const organizer = match ? getPlayer(match.organizerId) : undefined;
   const isOrganizer = match?.organizerId === userId;
+  const userOnMatchLineup = Boolean(
+    match &&
+      (match.teamAIds.includes(userId) || match.teamBIds.includes(userId)),
+  );
+
+  const rosterSize = useMemo(
+    () => (match ? new Set([...match.teamAIds, ...match.teamBIds]).size : 0),
+    [match?.teamAIds, match?.teamBIds],
+  );
+
+  const showFinishedRatingsChrome = Boolean(
+    match && match.status === 'finished' && isRemoteMatchId(match.id) && rosterSize > 0,
+  );
+
+  const motmWinnerIds = useMemo(() => {
+    const ranks = ratingSummary?.motm ?? [];
+    if (!ranks.length) return new Set<string>();
+    const max = ranks[0]?.votes ?? 0;
+    if (max <= 0) return new Set<string>();
+    return new Set(ranks.filter((x) => x.votes === max).map((x) => x.player_id));
+  }, [ratingSummary]);
+
+  const ratingByPid = useMemo(() => {
+    const m = new Map<string, { avg: number | null; votes_count: number }>();
+    for (const row of ratingSummary?.players ?? []) {
+      m.set(row.player_id, { avg: row.avg, votes_count: row.votes_count });
+    }
+    return m;
+  }, [ratingSummary]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!match || match.status !== 'finished' || !isRemoteMatchId(match.id) || rosterSize === 0) {
+        return undefined;
+      }
+      void loadMatchRatingSummary(match.id);
+      if (!userOnMatchLineup) {
+        setRatingHints({ peer: false, motm: false });
+        return undefined;
+      }
+
+      let cancelled = false;
+      void (async () => {
+        try {
+          const [scores, motm] = await Promise.all([
+            fetchMyPeerRatingsForMatch(match.id),
+            fetchMyMotmPickForMatch(match.id),
+          ]);
+          if (!cancelled) {
+            setRatingHints({ peer: scores.length > 0, motm: Boolean(motm) });
+          }
+        } catch {
+          /* pull-to-refresh veya yeniden odak için sessiz geç */
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [match, rosterSize, userOnMatchLineup, loadMatchRatingSummary]),
+  );
 
   const { label: joinCopyLabel, runCopy: runJoinCopy, isCopied: joinCopied } = useClipboardCopyFeedback({
     idleLabel: 'Kodu Kopyala',
@@ -126,6 +193,9 @@ export function MatchDetailScreen() {
     setRefreshing(true);
     try {
       await refreshRemoteMatch(matchId);
+      if (showFinishedRatingsChrome) {
+        void loadMatchRatingSummary(matchId);
+      }
     } catch (e) {
       Alert.alert('Hata', toUserMessage(e, 'Yenilenemedi.'));
     } finally {
@@ -155,6 +225,11 @@ export function MatchDetailScreen() {
         <Text style={styles.heroVenue}>{match.venue}</Text>
         <Text style={styles.heroDate}>{formatMatchDateTime(match.startsAt)}</Text>
         <Text style={styles.heroCd}>{match.status === 'upcoming' ? countdown : 'Maç Bitti'}</Text>
+        {match.status === 'finished' && match.result ? (
+          <Text style={styles.heroScore}>
+            Skor: {match.result.scoreA} – {match.result.scoreB}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -227,6 +302,26 @@ export function MatchDetailScreen() {
         </View>
       ) : null}
 
+      {showFinishedRatingsChrome ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Derecelendirme</Text>
+          <Text style={styles.muted}>
+            Kadrodaki oyuncuların ortalama oyları listede gösterilir; bireysel oylar anonimdir. En çok seçilen maçın adamı
+            vurgulanır.
+          </Text>
+          {userOnMatchLineup ? (
+            <PillButton
+              title={
+                ratingHints.peer || ratingHints.motm ? 'Derecelendirmeyi düzenle' : 'Oyuncuları derecelendir'
+              }
+              onPress={() => navigation.navigate('MatchRatings', { matchId })}
+              testID="match:ratings:cta:press"
+              style={styles.mt}
+            />
+          ) : null}
+        </View>
+      ) : null}
+
       {isOrganizer && pending.length > 0 ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Bekleyen bildirimler</Text>
@@ -266,12 +361,28 @@ export function MatchDetailScreen() {
         <Text style={styles.sectionTitle}>Oyuncular</Text>
         {attendeesSorted.map(({ a, p }) => {
           const showPaidToggle = isOrganizer || p!.id === userId;
+          const inMatchLineup =
+            match.teamAIds.includes(a.playerId) || match.teamBIds.includes(a.playerId);
+          const rr = inMatchLineup ? ratingByPid.get(a.playerId) : undefined;
           return (
             <View key={a.playerId} style={styles.playerRow}>
               <PlayerAvatar name={p!.name} uri={p!.photoUri} showPaid={a.paid} />
               <View style={styles.playerMeta}>
                 <Text style={styles.playerName}>{p!.name}</Text>
-                <PositionBadge position={p!.position} />
+                <View style={styles.badgesRow}>
+                  <PositionBadge position={p!.position} />
+                  {match.status === 'finished' && inMatchLineup && motmWinnerIds.has(a.playerId) ? (
+                    <View style={styles.motmBadge}>
+                      <Text style={styles.motmBadgeTxt}>Maçın adamı</Text>
+                    </View>
+                  ) : null}
+                </View>
+                {match.status === 'finished' && inMatchLineup ? (
+                  <Text style={styles.micro}>
+                    Oy ort.:{' '}
+                    {rr && rr.votes_count > 0 && rr.avg != null ? rr.avg.toFixed(1) : '—'}
+                  </Text>
+                ) : null}
               </View>
               {showPaidToggle ? (
                 <View style={styles.paidRow}>
@@ -377,6 +488,11 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginTop: spacing.sm,
   },
+  heroScore: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
   section: {
     padding: spacing.md,
     borderBottomWidth: 1,
@@ -435,6 +551,25 @@ const styles = StyleSheet.create({
   playerMeta: {
     flex: 1,
     gap: spacing.xs,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  motmBadge: {
+    backgroundColor: colors.accentMuted,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  motmBadgeTxt: {
+    ...typography.micro,
+    color: colors.accent,
+    fontWeight: '600',
   },
   playerName: {
     ...typography.body,

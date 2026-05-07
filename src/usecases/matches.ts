@@ -9,6 +9,12 @@ import {
 import { fetchMatchGraph, fetchMyMatchesGraph } from '../services/supabase/matchGraph';
 import { scoreResultToRpcPayload } from '../services/supabase/mappers';
 import {
+  fetchMatchRatingPublicSummary,
+  upsertMatchMotmVoteRemote,
+  upsertMatchPeerRatingsRemote,
+  type PeerRatingInput,
+} from '../services/supabase/matchRatings';
+import {
   insertMatchWithOrganizerAttendee,
   joinMatchByJoinCode as joinMatchByJoinCodeRpc,
   submitMatchResultRpc,
@@ -235,4 +241,34 @@ export async function submitScoreUseCase(
     return;
   }
   deps.submitLocalScore(matchId, result);
+}
+
+export async function loadMatchRatingSummaryUseCase(matchId: string) {
+  if (!isRemoteMatchId(matchId)) return null;
+  try {
+    return await fetchMatchRatingPublicSummary(matchId);
+  } catch (error) {
+    rethrowUseCaseError(
+      'loadMatchRatingSummary',
+      error,
+      'Derecelendirme özeti yüklenemedi. Yeniden deneyin.',
+    );
+  }
+}
+
+export async function submitMatchRatingsUseCase(
+  matchId: string,
+  args: { scores: PeerRatingInput[]; motmPickId: string },
+): Promise<void> {
+  if (!isRemoteMatchId(matchId)) return;
+  try {
+    await upsertMatchPeerRatingsRemote(matchId, args.scores);
+    await upsertMatchMotmVoteRemote(matchId, args.motmPickId);
+  } catch (error) {
+    rethrowUseCaseError(
+      'submitMatchRatings',
+      error,
+      'Derecelendirme kaydedilemedi. Kontrol edip tekrar deneyin.',
+    );
+  }
 }

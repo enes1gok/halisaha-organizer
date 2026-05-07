@@ -6,6 +6,7 @@ export type HomeStackParamList = {
   MatchDetail: { matchId: string };
   LineupBuilder: { matchId: string };
   ScoreEntry: { matchId: string };
+  MatchRatings: { matchId: string };
 };
 
 export type MyMatchesStackParamList = {
@@ -13,6 +14,7 @@ export type MyMatchesStackParamList = {
   MatchDetail: { matchId: string };
   LineupBuilder: { matchId: string };
   ScoreEntry: { matchId: string };
+  MatchRatings: { matchId: string };
 };
 
 export type ProfileStackParamList = {
@@ -36,6 +38,7 @@ export type GroupsStackParamList = {
   MatchDetail: { matchId: string };
   LineupBuilder: { matchId: string };
   ScoreEntry: { matchId: string };
+  MatchRatings: { matchId: string };
 };
 
 export type RootTabParamList = {
