@@ -2,6 +2,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { defaultStackScreenOptions } from './defaultStackScreenOptions';
 import type { ProfileStackParamList } from './types';
 
@@ -11,6 +12,7 @@ export function ProfileStackNav() {
   return (
     <Stack.Navigator screenOptions={defaultStackScreenOptions}>
       <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'Profil' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
       <Stack.Screen
         name="PrivacyPolicy"
         component={PrivacyPolicyScreen}

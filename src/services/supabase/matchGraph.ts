@@ -118,6 +118,14 @@ type NestedMatchRow = MatchRow & {
   self_report_requests?: SelfReportRequestRow[] | null;
 };
 
+type MatchGraphRpcRow = MatchRow & {
+  attendees?: MatchAttendeeRow[] | null;
+  team_players?: MatchTeamPlayerRow[] | null;
+  stat_lines?: MatchStatLineRow[] | null;
+  self_reports?: SelfReportRequestRow[] | null;
+  profiles?: PublicProfileRow[] | null;
+};
+
 function collectProfileIds(
   row: NestedMatchRow,
   attendees: MatchAttendeeRow[],
@@ -138,6 +146,10 @@ export type MatchGraphPayload = {
   match: Match;
   profiles: PublicProfileRow[];
 };
+
+function jsonArrayOrEmpty<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
 
 export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayload> {
   const supabase = getSupabaseClient();
@@ -184,9 +196,24 @@ export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayloa
 }
 
 export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
-  const summaries = await fetchMatchesForCurrentUser();
-  const graphs = await Promise.all(summaries.map((s) => fetchMatchGraph(s.id)));
-  return graphs;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc('list_visible_match_graphs_for_user');
+  if (error) {
+    // Safe rollout fallback: keep existing behavior if new RPC is not yet applied in DB.
+    const summaries = await fetchMatchesForCurrentUser();
+    return Promise.all(summaries.map((s) => fetchMatchGraph(s.id)));
+  }
+
+  const rows = (data ?? []) as MatchGraphRpcRow[];
+  return rows.map((row) => {
+    const attendees = jsonArrayOrEmpty(row.attendees);
+    const teamPlayers = jsonArrayOrEmpty(row.team_players);
+    const statLines = jsonArrayOrEmpty(row.stat_lines);
+    const selfReports = jsonArrayOrEmpty(row.self_reports);
+    const profiles = jsonArrayOrEmpty(row.profiles);
+    const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
+    return { match, profiles };
+  });
 }
 
 /** RPC `submit_match_result` için gövde (onaylı self-report birleştirmesi sunucuda). */

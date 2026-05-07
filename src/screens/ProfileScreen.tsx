@@ -4,11 +4,13 @@ import {
   BottomSheetScrollView,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -18,10 +20,7 @@ import {
   Text,
   UIManager,
   View,
-  Alert,
-  Linking,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
@@ -36,7 +35,6 @@ import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
 import { isValidTurkishIban, maskIban, normalizeIban } from '../utils/iban';
-import { readDeleteAccountUrl } from '../lib/publicConfig';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -54,14 +52,29 @@ function footLabel(f: PreferredFoot): string {
 
 export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
-  const insets = useSafeAreaInsets();
   const userId = useAppStore((s) => s.getCurrentUserId());
   const player = useAppStore((s) => s.players.find((p) => p.id === userId));
   const matches = useAppStore((s) => s.matches);
   const updateProfile = useAppStore((s) => s.updatePlayerProfile);
   const hydrateRemoteMatches = useAppStore((s) => s.hydrateRemoteMatches);
-  const { configured, session, loading: authLoading, signOut, refreshRemoteProfile } =
-    useSupabaseAuth();
+  const { configured, session, refreshRemoteProfile } = useSupabaseAuth();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => navigation.navigate('Settings')}
+          style={styles.headerBtn}
+          hitSlop={8}
+          testID="profile:settings:press"
+          accessibilityRole="button"
+          accessibilityLabel="Ayarlar"
+        >
+          <Ionicons name="settings-outline" size={22} color={colors.text} />
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['55%'], []);
@@ -79,7 +92,7 @@ export function ProfileScreen() {
   const score = player ? playerScore(player) : 0;
   const level = levelLabelFromScore(score);
   const wr = player ? Math.round(winRate(player.stats) * 100) : 0;
-  const deleteAccountUrl = readDeleteAccountUrl();
+  const effectiveUserId = player?.id ?? userId;
 
   const recent = useMemo(() => {
     const finished = matches
@@ -89,9 +102,9 @@ export function ProfileScreen() {
 
     return finished.map((m) => {
       const r = m.result!;
-      const inA = m.teamAIds.includes(userId);
-      const inB = m.teamBIds.includes(userId);
-      const myGoals = r.scorers.find((s) => s.playerId === userId)?.count ?? 0;
+      const inA = m.teamAIds.includes(effectiveUserId);
+      const inB = m.teamBIds.includes(effectiveUserId);
+      const myGoals = r.scorers.find((s) => s.playerId === effectiveUserId)?.count ?? 0;
       let outcome: 'W' | 'L' | 'D';
       if (r.scoreA === r.scoreB) outcome = 'D';
       else if (inA) outcome = r.scoreA > r.scoreB ? 'W' : 'L';
@@ -99,7 +112,7 @@ export function ProfileScreen() {
       else outcome = 'D';
       return { m, outcome, myGoals };
     });
-  }, [matches, userId]);
+  }, [effectiveUserId, matches]);
 
   const openEdit = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -151,26 +164,19 @@ export function ProfileScreen() {
     [],
   );
 
-  const openDeleteAccountUrl = useCallback(async () => {
-    if (!deleteAccountUrl) {
-      Alert.alert(
-        'Hesap Silme',
-        'Hesap silme baglantisi su an tanimli degil. Lutfen privacy@halisaha.app adresine e-posta gonderin.',
-      );
-      return;
-    }
+  const awaitingRemoteProfile =
+    configured &&
+    !!session?.user?.id &&
+    session.user.id === userId &&
+    !player;
 
-    const canOpen = await Linking.canOpenURL(deleteAccountUrl);
-    if (!canOpen) {
-      Alert.alert(
-        'Hesap Silme',
-        'Baglanti acilamadi. Lutfen privacy@halisaha.app adresine e-posta gonderin.',
-      );
-      return;
-    }
-
-    await Linking.openURL(deleteAccountUrl);
-  }, [deleteAccountUrl]);
+  if (awaitingRemoteProfile) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.accent} accessibilityLabel="Profil yükleniyor" />
+      </View>
+    );
+  }
 
   if (!player) {
     return (
@@ -202,30 +208,7 @@ export function ProfileScreen() {
         />
       }
     >
-      <View style={[styles.authCard, { marginTop: insets.top + spacing.md }]}>
-        {!configured ? (
-          <Text style={styles.authHint}>
-            Supabase için kök dizinde `.env` içinde EXPO_PUBLIC_SUPABASE_URL ve EXPO_PUBLIC_SUPABASE_ANON_KEY tanımlayın;
-            Metro’yu yeniden başlatın.
-          </Text>
-        ) : authLoading ? (
-          <ActivityIndicator color={colors.accent} />
-        ) : session ? (
-          <>
-            <Text style={styles.authLabel}>Hesap</Text>
-            <Text style={styles.authEmail}>{session.user.email ?? session.user.id}</Text>
-            <PillButton
-              title="Çıkış Yap"
-              variant="ghost"
-              onPress={() => void signOut()}
-              testID="profile:auth:signout:press"
-              accessibilityLabel="Çıkış yap"
-            />
-          </>
-        ) : null}
-      </View>
-
-      <View style={[styles.hero, { paddingTop: spacing.lg }]}>
+      <View style={styles.hero}>
         <PlayerAvatar name={player.name} uri={player.photoUri} size={88} />
         <Text style={styles.heroName}>{player.name}</Text>
         <View style={styles.badges}>
@@ -282,22 +265,6 @@ export function ProfileScreen() {
       </View>
 
       <PillButton title="Profili Düzenle" variant="ghost" onPress={openEdit} style={styles.editBtn} />
-      <PillButton
-        title="Gizlilik Politikasi"
-        variant="ghost"
-        onPress={() => navigation.navigate('PrivacyPolicy')}
-        style={styles.privacyBtn}
-        testID="profile:privacy-policy:press"
-        accessibilityLabel="Gizlilik politikasi ekranina git"
-      />
-      <PillButton
-        title="Hesabimi ve Verilerimi Sil"
-        variant="ghost"
-        onPress={() => void openDeleteAccountUrl()}
-        style={styles.accountDeletionBtn}
-        testID="profile:account-deletion:press"
-        accessibilityLabel="Hesap ve veri silme baglantisini ac"
-      />
 
       <BottomSheetModal
         ref={sheetRef}
@@ -359,27 +326,8 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  authCard: {
-    marginHorizontal: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  authHint: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  authLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  authEmail: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
+  headerBtn: {
+    paddingHorizontal: spacing.md,
   },
   screen: {
     flex: 1,
@@ -393,6 +341,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
@@ -511,14 +460,6 @@ const styles = StyleSheet.create({
   editBtn: {
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
-  },
-  privacyBtn: {
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
-  },
-  accountDeletionBtn: {
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
   },
   sheetBg: {
     backgroundColor: colors.surface,

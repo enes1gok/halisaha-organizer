@@ -17,6 +17,7 @@ export type MyMatchesStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
+  Settings: undefined;
   PrivacyPolicy: undefined;
 };
 

@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from '../lib/supabase';
 import { registerForPushToken } from '../services/notifications';
-import { fetchProfileById } from '../services/supabase/profiles';
+import { ensureThenFetchProfile } from '../services/supabase/profiles';
 import { deactivatePushToken, upsertPushToken } from '../services/supabase/pushTokens';
 import { useAppStore } from '../store/useAppStore';
 import { isRemoteMatchId } from '../utils/matchId';
@@ -29,9 +29,19 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [activePushToken, setActivePushToken] = useState<string | null>(null);
 
   const pushProfileToStore = useCallback(
-    async (userId: string) => {
+    async (userId: string, fallbackEmail?: string | null) => {
+      if (!configured) return;
+      const stub = () =>
+        syncPlayerFromRemoteProfile({
+          id: userId,
+          display_name: fallbackEmail?.split('@')[0]?.trim() || 'Oyuncu',
+          photo_uri: null,
+          position: 'MID',
+          preferred_foot: 'both',
+          iban: null,
+        });
       try {
-        const profile = await fetchProfileById(userId);
+        const profile = await ensureThenFetchProfile(userId);
         if (profile) {
           syncPlayerFromRemoteProfile({
             id: profile.id,
@@ -41,12 +51,15 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
             preferred_foot: profile.preferred_foot,
             iban: profile.iban,
           });
+        } else {
+          stub();
         }
       } catch (e) {
         console.warn('Supabase profile sync failed', e);
+        stub();
       }
     },
-    [syncPlayerFromRemoteProfile],
+    [configured, syncPlayerFromRemoteProfile],
   );
 
   const applySession = useCallback(
@@ -55,7 +68,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       const uid = sess?.user.id ?? null;
       setRemoteUserId(uid);
       if (uid) {
-        await pushProfileToStore(uid);
+        await pushProfileToStore(uid, sess?.user.email ?? null);
         try {
           await Promise.all([useAppStore.getState().hydrateRemoteMatches(), hydrateRemoteGroups()]);
         } catch (e) {
@@ -111,8 +124,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const refreshRemoteProfile = useCallback(async () => {
     const uid = session?.user.id;
     if (!configured || !uid) return;
-    await pushProfileToStore(uid);
-  }, [configured, session?.user.id, pushProfileToStore]);
+    await pushProfileToStore(uid, session?.user.email ?? null);
+  }, [configured, session?.user.email, session?.user.id, pushProfileToStore]);
 
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {
