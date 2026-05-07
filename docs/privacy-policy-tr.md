@@ -90,18 +90,30 @@ Bu haklarinizi kullanmak icin `privacy@halisaha.app` adresine ulasabilirsiniz.
 - Basvurular, GDPR kapsamindaki yasal sureler icinde (kural olarak 1 ay) sonuclandirilir.
 - Gerektiginde bu sure mevzuata uygun olarak uzatilabilir; uzatma nedeni tarafiniza bildirilir.
 
-## 10. Cocuklarin Gizliligi
+## 10. Hesap ve Veri Silme Talebi
+
+Hesabinizin ve iliskili kisisel verilerinizin silinmesini talep etmek icin:
+
+- `privacy@halisaha.app` adresine `Hesap Silme Talebi` konulu e-posta gonderin.
+- Hesabinizla iliskili e-posta adresinizi ve mumkunse kullanici kimliginizi belirtin.
+- Kimlik dogrulama sonrasi silme islemi baslatilir.
+
+Detayli adimlar, silinen/tutulan veri tipleri ve saklama sureleri icin:
+
+- `https://www.notion.so/Hesap-Silme-35940f6636088042b4fff790b917bfc9?source=copy_link`
+
+## 11. Cocuklarin Gizliligi
 
 Uygulama, cocuklara yonelik olarak tasarlanmamistir. Uygulanabilir yasalara gore gerekli yas altindaki bireylerden bilerek veri toplanmasi hedeflenmez. Boylesi bir durumun tespiti halinde makul surede silme islemi uygulanir.
 
-## 11. Ucuncu Taraf Baglantilar
+## 12. Ucuncu Taraf Baglantilar
 
 Uygulama, ucuncu taraf baglantilar veya servislerle etkilesime girebilir. Bu servislerin gizlilik uygulamalari kendi politikalarina tabidir.
 
-## 12. Politika Degisiklikleri
+## 13. Politika Degisiklikleri
 
 Bu Gizlilik Politikasi zaman zaman guncellenebilir. Onemli degisikliklerde uygulama ici bildirim veya uygun diger iletisim yontemleri kullanilabilir. Guncel metin her zaman yayinlanan son versiyondur.
 
-## 13. Uygulama Magazasi Bilgilendirmeleri
+## 14. Uygulama Magazasi Bilgilendirmeleri
 
 Uygulama, App Store/Google Play gizlilik beyanlarinda belirtilen veri kategorileriyle tutarli olacak sekilde guncel tutulur. Politika metni ile magaza beyanlari arasinda tutarlilik esas alinir.

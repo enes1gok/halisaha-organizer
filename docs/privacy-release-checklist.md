@@ -20,6 +20,7 @@ Bu kontrol listesi, uygulama surumu cikmadan once gizlilik politikasi ve magaza 
 
 - [ ] Magaza gizlilik formlari politika ile tutarli.
 - [ ] Hesap/veri silme akisi gereksinimleri karsilaniyor.
+- [ ] Google Play "Delete account URL" alani `https://www.notion.so/Hesap-Silme-35940f6636088042b4fff790b917bfc9?source=copy_link` ile dolduruldu ve herkese acik erisilebilir.
 - [ ] Toplanan veri kategorileri magaza beyaninda eksiksiz.
 
 ## Hukuki ve operasyonel kontrol

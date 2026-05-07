@@ -20,6 +20,7 @@ import {
   UIManager,
   View,
   Alert,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
@@ -36,6 +37,7 @@ import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
 import { isValidTurkishIban, maskIban, normalizeIban } from '../utils/iban';
+import { readDeleteAccountUrl } from '../lib/publicConfig';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -81,6 +83,7 @@ export function ProfileScreen() {
   const score = player ? playerScore(player) : 0;
   const level = levelLabelFromScore(score);
   const wr = player ? Math.round(winRate(player.stats) * 100) : 0;
+  const deleteAccountUrl = readDeleteAccountUrl();
 
   const recent = useMemo(() => {
     const finished = matches
@@ -151,6 +154,27 @@ export function ProfileScreen() {
     ),
     [],
   );
+
+  const openDeleteAccountUrl = useCallback(async () => {
+    if (!deleteAccountUrl) {
+      Alert.alert(
+        'Hesap Silme',
+        'Hesap silme baglantisi su an tanimli degil. Lutfen privacy@halisaha.app adresine e-posta gonderin.',
+      );
+      return;
+    }
+
+    const canOpen = await Linking.canOpenURL(deleteAccountUrl);
+    if (!canOpen) {
+      Alert.alert(
+        'Hesap Silme',
+        'Baglanti acilamadi. Lutfen privacy@halisaha.app adresine e-posta gonderin.',
+      );
+      return;
+    }
+
+    await Linking.openURL(deleteAccountUrl);
+  }, [deleteAccountUrl]);
 
   if (!player) {
     return (
@@ -330,6 +354,14 @@ export function ProfileScreen() {
         style={styles.privacyBtn}
         testID="profile:privacy-policy:press"
         accessibilityLabel="Gizlilik politikasi ekranina git"
+      />
+      <PillButton
+        title="Hesabimi ve Verilerimi Sil"
+        variant="ghost"
+        onPress={() => void openDeleteAccountUrl()}
+        style={styles.accountDeletionBtn}
+        testID="profile:account-deletion:press"
+        accessibilityLabel="Hesap ve veri silme baglantisini ac"
       />
 
       <BottomSheetModal
@@ -562,6 +594,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   privacyBtn: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  accountDeletionBtn: {
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
   },

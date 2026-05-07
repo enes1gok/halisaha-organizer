@@ -71,6 +71,18 @@ Please contact `privacy@halisaha.app`. We aim to respond within one month, subje
 
 The App is not intended for children below the applicable minimum legal age. If we become aware of improper collection, we will take reasonable deletion steps.
 
-## 10. Updates to This Policy
+## 10. Account and Data Deletion Requests
+
+To request deletion of your account and associated personal data:
+
+- Send an email to `privacy@halisaha.app` with subject `Account Deletion Request`.
+- Include your account email and, if available, your user identifier.
+- Deletion starts after identity verification.
+
+For full steps, deleted/retained data categories, and retention details:
+
+- `https://www.notion.so/Hesap-Silme-35940f6636088042b4fff790b917bfc9?source=copy_link`
+
+## 11. Updates to This Policy
 
 We may update this policy from time to time. The latest version date above governs.
