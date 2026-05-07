@@ -38,6 +38,8 @@ export interface PublicProfileRow {
 export interface MatchRow {
   id: string;
   group_id: string | null;
+  series_id: string | null;
+  spawned_from_match_id: string | null;
   starts_at: string;
   venue: string;
   organizer_id: string;
@@ -67,6 +69,22 @@ export interface GroupMemberRow {
   player_id: string;
   role: 'owner' | 'member';
   created_at: string;
+}
+
+export interface GroupWeeklySeriesRow {
+  id: string;
+  group_id: string;
+  is_active: boolean;
+  weekday_isodow: number;
+  local_time: string;
+  timezone: string;
+  venue: string;
+  max_players: number;
+  price_per_person: number | null;
+  iban: string | null;
+  default_organizer_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PushTokenRow {

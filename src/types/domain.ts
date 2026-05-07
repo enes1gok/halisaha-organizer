@@ -57,9 +57,32 @@ export interface SelfReportRequest {
   status: SelfReportApprovalStatus;
 }
 
+/** Haftalık sabit gün/saat şablonu (Supabase `group_weekly_series`). */
+export interface GroupWeeklySeries {
+  id: string;
+  groupId: string;
+  isActive: boolean;
+  /** 1 = Pazartesi … 7 = Pazar (ISO dow). */
+  weekdayIsodow: number;
+  /** `HH:mm:ss` (yerel). */
+  localTime: string;
+  timezone: string;
+  venue: string;
+  maxPlayers: number;
+  pricePerPerson?: number;
+  iban?: string;
+  defaultOrganizerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Match {
   id: string;
   groupId?: string;
+  /** Üretildiği haftalık seri (varsa). */
+  seriesId?: string;
+  /** Bu maç hangi bitmiş maçtan otomatik üretildiyse. */
+  spawnedFromMatchId?: string;
   startsAt: string;
   venue: string;
   organizerId: string;

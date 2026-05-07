@@ -22,6 +22,7 @@ export function GroupDetailScreen() {
   const matches = useMatchesStore((s) => s.matches);
 
   const group = groups.find((item) => item.id === groupId);
+  const isOwner = group?.ownerId === userId;
   const isMember = memberships.some((item) => item.groupId === groupId && item.playerId === userId);
   const memberCount = memberships.filter((item) => item.groupId === groupId).length;
   const groupMatches = matches.filter((item) => item.groupId === groupId);
@@ -48,6 +49,14 @@ export function GroupDetailScreen() {
           onPress={() => navigation.navigate('GroupLeaderboard', { groupId })}
           testID="groups:leaderboard:open"
         />
+        {isOwner ? (
+          <PillButton
+            title="Haftalık maç tekrarı"
+            variant="ghost"
+            onPress={() => navigation.navigate('GroupWeeklySeries', { groupId })}
+            testID="groups:weekly:open"
+          />
+        ) : null}
       </View>
       <FlatList
         contentContainerStyle={styles.list}

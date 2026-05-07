@@ -45,3 +45,43 @@ export async function insertMatchAsOrganizer(
 
   return { id: match.id, join_code: match.join_code };
 }
+
+/** Gruba bağlı maç (haftalık spawn testleri için). */
+export async function insertGroupMatchAsOrganizer(
+  organizer: SupabaseClient,
+  joinCode: string,
+  groupId: string,
+  startsAtIso: string,
+): Promise<InsertedMatch> {
+  const {
+    data: { user },
+  } = await organizer.auth.getUser();
+  if (!user) throw new Error('insertGroupMatchAsOrganizer: not signed in');
+
+  const { data: match, error } = await organizer
+    .from('matches')
+    .insert({
+      starts_at: startsAtIso,
+      venue: 'Grup serisi sahası',
+      organizer_id: user.id,
+      max_players: 14,
+      join_code: joinCode,
+      group_id: groupId,
+      self_report_enabled: false,
+    })
+    .select('id, join_code')
+    .single();
+
+  if (error) throw error;
+  if (!match) throw new Error('insertGroupMatchAsOrganizer: no row');
+
+  const att = await organizer.from('match_attendees').insert({
+    match_id: match.id,
+    player_id: user.id,
+    status: 'going',
+    paid: false,
+  });
+  if (att.error) throw att.error;
+
+  return { id: match.id, join_code: match.join_code };
+}

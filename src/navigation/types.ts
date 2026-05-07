@@ -36,6 +36,7 @@ export type OnboardingStackParamList = {
 export type GroupsStackParamList = {
   GroupsMain: undefined;
   GroupDetail: { groupId: string };
+  GroupWeeklySeries: { groupId: string };
   GroupLeaderboard: { groupId: string };
   CreateGroup: undefined;
   JoinGroup: undefined;

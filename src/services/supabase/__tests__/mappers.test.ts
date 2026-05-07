@@ -27,6 +27,8 @@ function baseMatchRow(overrides: Partial<MatchRow> = {}): MatchRow {
   return {
     id: 'm1',
     group_id: null,
+    series_id: null,
+    spawned_from_match_id: null,
     starts_at: iso,
     venue: 'Field',
     organizer_id: 'org1',

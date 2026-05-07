@@ -1,12 +1,15 @@
 import type { StateCreator } from 'zustand';
-import type { Group, GroupMembership } from '../../types/domain';
+import type { Group, GroupMembership, GroupWeeklySeries } from '../../types/domain';
 import {
   buildLocalGroup,
   createGroupUseCase,
+  fetchGroupWeeklySeriesUseCase,
   hydrateRemoteGroupsUseCase,
   joinGroupUseCase,
   leaveGroupUseCase,
+  upsertGroupWeeklySeriesUseCase,
 } from '../../usecases/groups';
+import type { UpsertGroupWeeklySeriesInput } from '../../services/supabase/groupWeeklySeries';
 import type { AppState, GroupsSlice } from '../types';
 
 function hydrateGroupsState(
@@ -86,12 +89,17 @@ function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get:
     createLocalGroup: (name: string) => createLocalGroup(set, get, name),
     joinLocalGroup: (joinCode: string) => joinLocalGroup(set, get, joinCode),
     leaveLocalGroup: (groupId: string) => leaveLocalGroup(set, get, groupId),
+    setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) =>
+      set((s) => ({
+        weeklySeriesByGroupId: { ...s.weeklySeriesByGroupId, [groupId]: series },
+      })),
   };
 }
 
 export const createGroupsSlice: StateCreator<AppState, [], [], GroupsSlice> = (set, get) => ({
   groups: [],
   groupMemberships: [],
+  weeklySeriesByGroupId: {},
 
   hydrateRemoteGroups: () => hydrateRemoteGroupsUseCase(buildGroupsUseCaseDeps(set, get)),
 
@@ -100,4 +108,9 @@ export const createGroupsSlice: StateCreator<AppState, [], [], GroupsSlice> = (s
   joinGroup: (joinCode) => joinGroupUseCase(buildGroupsUseCaseDeps(set, get), joinCode),
 
   leaveGroup: (groupId) => leaveGroupUseCase(buildGroupsUseCaseDeps(set, get), groupId),
+
+  fetchGroupWeeklySeries: (groupId) => fetchGroupWeeklySeriesUseCase(buildGroupsUseCaseDeps(set, get), groupId),
+
+  upsertGroupWeeklySeries: (input: UpsertGroupWeeklySeriesInput) =>
+    upsertGroupWeeklySeriesUseCase(buildGroupsUseCaseDeps(set, get), input),
 });

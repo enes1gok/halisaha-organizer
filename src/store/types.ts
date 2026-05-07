@@ -1,3 +1,4 @@
+import type { UpsertGroupWeeklySeriesInput } from '../services/supabase/groupWeeklySeries';
 import type {
   MatchRatingPublicSummaryDb,
   PeerRatingInput,
@@ -5,6 +6,7 @@ import type {
 import type {
   Group,
   GroupMembership,
+  GroupWeeklySeries,
   Match,
   MatchStatus,
   Player,
@@ -87,12 +89,17 @@ export interface MatchesSlice {
 export interface GroupsSlice {
   groups: Group[];
   groupMemberships: GroupMembership[];
+  /** Uzak `group_weekly_series` önbelleği (persist dışı). */
+  weeklySeriesByGroupId: Record<string, GroupWeeklySeries | null | undefined>;
 
   hydrateRemoteGroups: () => Promise<void>;
 
   createGroup: (name: string) => Promise<Group>;
   joinGroup: (joinCode: string) => Promise<Group | null>;
   leaveGroup: (groupId: string) => Promise<void>;
+
+  fetchGroupWeeklySeries: (groupId: string) => Promise<void>;
+  upsertGroupWeeklySeries: (input: UpsertGroupWeeklySeriesInput) => Promise<void>;
 }
 
 export type AppState = AuthSlice &

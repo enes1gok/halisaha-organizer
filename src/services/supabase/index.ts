@@ -18,9 +18,11 @@ export {
   toUserMessage,
 } from './errors';
 export { fetchMatchGraph, fetchMyMatchesGraph, type MatchGraphPayload } from './matchGraph';
+export { fetchGroupWeeklySeries, upsertGroupWeeklySeriesRemote, type UpsertGroupWeeklySeriesInput } from './groupWeeklySeries';
 export {
   jsonArrayOrEmpty,
   mapGroup,
+  mapGroupWeeklySeries,
   mapLeaderboardRow,
   mapMembership,
   mapSelfReportStatus,
@@ -46,6 +48,7 @@ export {
   type ProfileUpdate,
 } from './profiles';
 export type {
+  GroupWeeklySeriesRow,
   MatchAttendeeRow,
   MatchRow,
   MatchStatLineRow,

@@ -28,6 +28,7 @@ export const useAppStore = create<AppState>()(
           matches: s.matches,
           groups: [],
           groupMemberships: [],
+          weeklySeriesByGroupId: {},
           remoteUserId: null,
           matchRatingSummariesById: {},
           matchRatingsSubmissionByMatchId: {},

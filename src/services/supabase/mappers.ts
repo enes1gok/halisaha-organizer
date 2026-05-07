@@ -2,6 +2,7 @@ import type {
   Attendee,
   Group,
   GroupMembership,
+  GroupWeeklySeries,
   Match,
   MatchStatus,
   RSVPStatus,
@@ -14,6 +15,7 @@ import type {
 import type {
   GroupMemberRow,
   GroupRow,
+  GroupWeeklySeriesRow,
   MatchAttendeeRow,
   MatchRow,
   MatchStatLineRow,
@@ -96,6 +98,8 @@ export function rowsToMatch(
   return {
     id: row.id,
     groupId: row.group_id ?? undefined,
+    seriesId: row.series_id ?? undefined,
+    spawnedFromMatchId: row.spawned_from_match_id ?? undefined,
     startsAt: row.starts_at,
     venue: row.venue,
     organizerId: row.organizer_id,
@@ -138,6 +142,25 @@ export function mapMembership(row: GroupMemberRow): GroupMembership {
     playerId: row.player_id,
     role: row.role,
     createdAt: row.created_at,
+  };
+}
+
+export function mapGroupWeeklySeries(row: GroupWeeklySeriesRow): GroupWeeklySeries {
+  const price = numOrUndef(row.price_per_person);
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    isActive: row.is_active,
+    weekdayIsodow: row.weekday_isodow,
+    localTime: row.local_time,
+    timezone: row.timezone,
+    venue: row.venue,
+    maxPlayers: row.max_players,
+    pricePerPerson: price !== undefined ? price : undefined,
+    iban: row.iban ?? undefined,
+    defaultOrganizerId: row.default_organizer_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 

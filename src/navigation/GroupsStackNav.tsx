@@ -2,6 +2,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { CreateGroupScreen } from '../screens/CreateGroupScreen';
 import { GroupDetailScreen } from '../screens/GroupDetailScreen';
+import { GroupWeeklySeriesScreen } from '../screens/GroupWeeklySeriesScreen';
 import { GroupsScreen } from '../screens/GroupsScreen';
 import { JoinGroupScreen } from '../screens/JoinGroupScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
@@ -21,6 +22,11 @@ export function GroupsStackNav() {
     <Stack.Navigator screenOptions={defaultStackScreenOptions}>
       <Stack.Screen name="GroupsMain" component={GroupsScreen} options={{ title: 'Gruplarım' }} />
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Grup Detayı' }} />
+      <Stack.Screen
+        name="GroupWeeklySeries"
+        component={GroupWeeklySeriesScreen}
+        options={{ title: 'Haftalık maç tekrarı' }}
+      />
       <Stack.Screen
         name="GroupLeaderboard"
         component={LeaderboardScreen}
