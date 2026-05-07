@@ -1,6 +1,9 @@
 -- Shared helpers for pgTAP RLS tests (run first: 000_ prefix).
 -- Assumes superuser/session can SET ROLE and insert into auth.users.
 
+-- crypt / gen_salt for tests.create_user (encrypted_password).
+create extension if not exists pgcrypto with schema extensions;
+
 create schema if not exists tests;
 
 -- Fixed UUIDs for deterministic tests (v4-style).
