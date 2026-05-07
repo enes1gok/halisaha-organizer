@@ -1,0 +1,36 @@
+import { insertMatchAsOrganizer } from './fixtures';
+import { createAuthedUser, describeIntegration } from './setup';
+
+describeIntegration('flows organizer lifecycle', () => {
+  it('create match → join by code → submit score', async () => {
+    const org = await createAuthedUser('life_org');
+    const player = await createAuthedUser('life_player');
+    const joinCode = `LIFE${Date.now().toString(36).toUpperCase().slice(-8)}`;
+    const match = await insertMatchAsOrganizer(org.client, joinCode);
+
+    const { data: joinedId, error: joinErr } = await player.client.rpc('join_match_by_join_code', {
+      p_code: joinCode,
+    });
+    expect(joinErr).toBeNull();
+    expect(joinedId).toBe(match.id);
+
+    const { error: scoreErr } = await org.client.rpc('submit_match_result', {
+      p_match_id: match.id,
+      p_score_a: 2,
+      p_score_b: 1,
+      p_scorers: [{ player_id: org.userId, count: 2 }],
+      p_assists: [],
+    });
+    expect(scoreErr).toBeNull();
+
+    const { data: finished, error: mErr } = await org.client
+      .from('matches')
+      .select('status, score_a, score_b')
+      .eq('id', match.id)
+      .single();
+    expect(mErr).toBeNull();
+    expect(finished?.status).toBe('finished');
+    expect(finished?.score_a).toBe(2);
+    expect(finished?.score_b).toBe(1);
+  });
+});

@@ -1,0 +1,47 @@
+name: Supabase RLS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rls-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Apply migrations + seed
+        run: supabase db reset --yes
+
+      - name: pgTAP database tests
+        run: supabase test db
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Jest RLS integration (PostgREST + Auth)
+        run: |
+          set -euo pipefail
+          STATUS=$(supabase status -o json)
+          export SUPABASE_URL="$(echo "$STATUS" | jq -r '.API.url // .api.url // empty')"
+          export SUPABASE_ANON_KEY="$(echo "$STATUS" | jq -r '.anon_key // empty')"
+          export SUPABASE_SERVICE_ROLE_KEY="$(echo "$STATUS" | jq -r '.service_role_key // empty')"
+          test -n "$SUPABASE_URL" && test -n "$SUPABASE_ANON_KEY" && test -n "$SUPABASE_SERVICE_ROLE_KEY"
+          npm run test:rls:integration

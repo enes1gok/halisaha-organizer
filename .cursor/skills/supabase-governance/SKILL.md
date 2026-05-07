@@ -37,6 +37,13 @@ Apply this skill when a request includes one or more of the following:
    - Validate role access with positive and negative test cases.
    - Validate query behavior and latency on realistic dataset size.
 
+## RLS / policy regression tests (this repo)
+
+- **SQL (pgTAP):** `npm run test:rls:sql` → `supabase test db` after `supabase start` + `supabase db reset`. Files live under `supabase/tests/` (helpers in `000_helpers.sql`).
+- **HTTP integration:** `npm run test:rls:integration` needs `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (local: parse `supabase status -o json` with `jq`, or `eval "$(supabase status -o env)"` if your CLI exports `API_URL` / `ANON_KEY` / `SERVICE_ROLE_KEY`). Tests are under `src/services/supabase/__tests__/rls/`.
+- **Both:** `npm run test:rls` (CI runs this sequence in `.github/workflows/supabase-rls.yml`).
+- **Secrets:** `service_role` is only for test/CI automation — never ship it in the Expo app.
+
 ## Playbook scenarios
 
 ### 1) New table with RLS

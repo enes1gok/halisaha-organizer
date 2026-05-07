@@ -38,3 +38,10 @@ Apply this rule whenever a task touches Supabase auth, database, RLS policies, m
 - [ ] Migrations are descriptive and reviewable
 - [ ] Critical auth + query paths verified after change
 ```
+
+## RLS automated tests (repo)
+
+- **pgTAP (SQL):** `supabase/tests/*.sql` — policy matrix against `authenticated` / `anon` using `tests.*` helpers in [`supabase/tests/000_helpers.sql`](../../supabase/tests/000_helpers.sql). Run: `npm run test:rls:sql` (requires Supabase CLI and `supabase start` / CI stack).
+- **Jest integration:** [`src/services/supabase/__tests__/rls/`](../../src/services/supabase/__tests__/rls/) — real `anon` + signed-in clients and RPCs. Requires `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (e.g. `eval "$(supabase status -o env)"` then map to those names). Run: `npm run test:rls:integration` or `npm run test:rls` after SQL tests.
+- **CI:** [`.github/workflows/supabase-rls.yml`](../../.github/workflows/supabase-rls.yml) runs `supabase db reset`, `supabase test db`, then Jest with keys from `supabase status -o env`.
+- **Service role:** Only in test/CI env for `auth.admin` and optional `FORCE_DB_RESET=1` local resets — never in Expo client env.
