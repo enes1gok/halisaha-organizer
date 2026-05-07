@@ -16,7 +16,7 @@ values (
   'Saha',
   tests.uuid_organizer(),
   'SCORELINE40',
-  true
+  false
 );
 
 insert into public.match_attendees (match_id, player_id, status, paid)
@@ -28,6 +28,10 @@ insert into public.match_team_players (match_id, player_id, team)
 values
   ('b0000000-0000-4000-8000-000000000040'::uuid, tests.uuid_organizer(), 'A'::public.team_side),
   ('b0000000-0000-4000-8000-000000000040'::uuid, tests.uuid_participant(), 'B'::public.team_side);
+
+update public.matches
+set lineup_locked = true
+where id = 'b0000000-0000-4000-8000-000000000040'::uuid;
 
 -- Participant on lineup can submit
 select tests.authenticate_as(tests.uuid_participant());

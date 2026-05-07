@@ -118,5 +118,5 @@ begin
 end;
 $$;
 
-grant usage on schema tests to postgres;
-grant execute on all functions in schema tests to postgres;
+grant usage on schema tests to postgres, authenticated, anon;
+grant execute on all functions in schema tests to postgres, authenticated, anon;
