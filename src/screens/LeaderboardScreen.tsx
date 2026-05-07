@@ -1,0 +1,234 @@
+import React, { useMemo, useState } from 'react';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { PlayerAvatar } from '../components/PlayerAvatar';
+import {
+  TAB_BAR_LIST_PADDING_BOTTOM,
+  TAB_BAR_LIST_PADDING_PINNED_EXTRA,
+} from '../navigation/tabBarLayout';
+import { colors, spacing, typography } from '../theme';
+import { useAppStore } from '../store/useAppStore';
+import {
+  buildLeaderboard,
+  metricLabel,
+  timeframeLabel,
+  type LeaderMetric,
+  type Timeframe,
+} from '../utils/leaderboard';
+
+function Chip({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.chip, active && styles.chipActive]}
+    >
+      <Text style={[styles.chipTxt, active && styles.chipTxtActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+export function LeaderboardScreen() {
+  const players = useAppStore((s) => s.players);
+  const matches = useAppStore((s) => s.matches);
+  const userId = useAppStore((s) => s.getCurrentUserId());
+
+  const [metric, setMetric] = useState<LeaderMetric>('goals');
+  const [tf, setTf] = useState<Timeframe>('all');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const rows = useMemo(
+    () => buildLeaderboard(players, matches, metric, tf, new Date()),
+    [players, matches, metric, tf],
+  );
+
+  const top = rows.slice(0, 10);
+  const mine = rows.find((r) => r.playerId === userId);
+  const showPinned = !!(mine && mine.rank > 10);
+  const me = players.find((p) => p.id === userId);
+
+  const fmt = (v: number) =>
+    metric === 'winRate' ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
+
+  return (
+    <View style={styles.screen}>
+      <View style={styles.toggleBlock}>
+        <Text style={styles.toggleHdr}>Metrik</Text>
+        <View style={styles.rowWrap}>
+          {(['goals', 'assists', 'winRate', 'matches'] as LeaderMetric[]).map((m) => (
+            <Chip
+              key={m}
+              active={metric === m}
+              label={metricLabel(m)}
+              onPress={() => setMetric(m)}
+            />
+          ))}
+        </View>
+        <Text style={[styles.toggleHdr, styles.mt]}>Zaman</Text>
+        <View style={styles.rowWrap}>
+          {(['all', 'month', 'week'] as Timeframe[]).map((t) => (
+            <Chip
+              key={t}
+              active={tf === t}
+              label={timeframeLabel(t)}
+              onPress={() => setTf(t)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <FlatList
+        style={{ flex: 1 }}
+        data={top}
+        keyExtractor={(item) => item.playerId}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => {
+            setRefreshing(true);
+            setTimeout(() => setRefreshing(false), 400);
+          }} tintColor={colors.accent} />
+        }
+        contentContainerStyle={[
+          styles.list,
+          {
+            paddingBottom: showPinned
+              ? TAB_BAR_LIST_PADDING_BOTTOM + TAB_BAR_LIST_PADDING_PINNED_EXTRA
+              : TAB_BAR_LIST_PADDING_BOTTOM,
+          },
+        ]}
+        renderItem={({ item }) => {
+          const p = players.find((x) => x.id === item.playerId);
+          if (!p) return null;
+          return (
+            <View style={styles.row}>
+              <Text style={styles.rank}>{item.rank}</Text>
+              <PlayerAvatar name={p.name} uri={p.photoUri} size={40} />
+              <Text style={styles.name}>{p.name}</Text>
+              <Text style={styles.val}>{fmt(item.value)}</Text>
+            </View>
+          );
+        }}
+      />
+
+      {showPinned && mine ? (
+        <View style={styles.pinned}>
+          <Text style={styles.pinnedLbl}>Sen</Text>
+          <PlayerAvatar name={me?.name ?? ''} uri={me?.photoUri} size={36} />
+          <Text style={styles.name}>{me?.name}</Text>
+          <Text style={styles.val}>{fmt(mine.value)}</Text>
+          <Text style={styles.rankSm}>#{mine.rank}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  toggleBlock: {
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: spacing.sm,
+  },
+  toggleHdr: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  mt: {
+    marginTop: spacing.sm,
+  },
+  rowWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+  },
+  chipTxt: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  chipTxtActive: {
+    color: colors.accent,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  list: {
+    padding: spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  rank: {
+    ...typography.body,
+    color: colors.textMuted,
+    width: 28,
+    fontFamily: 'Inter_700Bold',
+  },
+  name: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  val: {
+    ...typography.subtitle,
+    color: colors.accent,
+    minWidth: 48,
+    textAlign: 'right',
+    fontFamily: 'Inter_700Bold',
+  },
+  pinned: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  pinnedLbl: {
+    ...typography.micro,
+    color: colors.accent,
+    fontFamily: 'Inter_700Bold',
+    width: 36,
+  },
+  rankSm: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+});
