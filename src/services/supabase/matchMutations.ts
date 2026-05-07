@@ -1,5 +1,6 @@
 import type { MatchStatus, RSVPStatus, SelfReportType } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
+import { mapSupabaseError } from './errors';
 import type { MatchStatusRow, SelfReportStatusRow } from './types';
 import { rsvpToDb } from './matchGraph';
 
@@ -17,7 +18,7 @@ export async function updateMatchAttendeeRemote(
     .update(row)
     .eq('match_id', matchId)
     .eq('player_id', playerId);
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'updateMatchAttendeeRemote');
 }
 
 export async function replaceMatchTeamPlayersRemote(
@@ -27,7 +28,7 @@ export async function replaceMatchTeamPlayersRemote(
 ): Promise<void> {
   const supabase = getSupabaseClient();
   const del = await supabase.from('match_team_players').delete().eq('match_id', matchId);
-  if (del.error) throw del.error;
+  if (del.error) throw mapSupabaseError(del.error, 'replaceMatchTeamPlayersRemote.delete_existing');
 
   const rows = [
     ...teamAIds.map((player_id) => ({ match_id: matchId, player_id, team: 'A' as const })),
@@ -36,7 +37,7 @@ export async function replaceMatchTeamPlayersRemote(
   if (rows.length === 0) return;
 
   const ins = await supabase.from('match_team_players').insert(rows);
-  if (ins.error) throw ins.error;
+  if (ins.error) throw mapSupabaseError(ins.error, 'replaceMatchTeamPlayersRemote.insert_new');
 }
 
 export async function updateMatchOrganizerFieldsRemote(
@@ -54,7 +55,7 @@ export async function updateMatchOrganizerFieldsRemote(
   if (patch.status !== undefined) dbPatch.status = patch.status as MatchStatusRow;
 
   const { error } = await supabase.from('matches').update(dbPatch).eq('id', matchId);
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'updateMatchOrganizerFieldsRemote');
 }
 
 export async function insertSelfReportRemote(
@@ -69,7 +70,7 @@ export async function insertSelfReportRemote(
     type,
     status: 'pending',
   });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'insertSelfReportRemote');
 }
 
 export async function updateSelfReportStatusRemote(
@@ -78,5 +79,5 @@ export async function updateSelfReportStatusRemote(
 ): Promise<void> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from('self_report_requests').update({ status }).eq('id', requestId);
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'updateSelfReportStatusRemote');
 }

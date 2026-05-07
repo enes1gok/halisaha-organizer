@@ -9,6 +9,15 @@ export {
   type CreateMatchRowInput,
 } from './matches';
 export {
+  AppError,
+  createAuthRequiredError,
+  createNotFoundError,
+  isAppError,
+  mapSupabaseError,
+  shouldRetry,
+  toUserMessage,
+} from './errors';
+export {
   fetchMatchGraph,
   fetchMyMatchesGraph,
   rsvpFromDb,

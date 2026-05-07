@@ -1,4 +1,5 @@
 import { getSupabaseClient, isSupabaseConfigured } from '../../lib/supabase';
+import { createAuthRequiredError, mapSupabaseError } from './errors';
 import type { PlayerPositionRow, PreferredFootRow, ProfileRow, PublicProfileRow } from './types';
 
 /** Creates `profiles` row for `auth.uid()` when missing (RPC is SECURITY DEFINER). No-op if Supabase env is absent. */
@@ -6,7 +7,7 @@ export async function ensureMyProfile(): Promise<void> {
   if (!isSupabaseConfigured()) return;
   const supabase = getSupabaseClient();
   const { error } = await supabase.rpc('ensure_my_profile');
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'ensureMyProfile');
 }
 
 export async function fetchProfilesByIds(ids: string[]): Promise<PublicProfileRow[]> {
@@ -17,14 +18,14 @@ export async function fetchProfilesByIds(ids: string[]): Promise<PublicProfileRo
     .from('profiles_public')
     .select('id,display_name,photo_uri,position,preferred_foot')
     .in('id', uniq);
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'fetchProfilesByIds');
   return (data ?? []) as PublicProfileRow[];
 }
 
 export async function fetchProfileById(playerId: string): Promise<ProfileRow | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.from('profiles').select('*').eq('id', playerId).maybeSingle();
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'fetchProfileById');
   return data as ProfileRow | null;
 }
 
@@ -61,7 +62,7 @@ export async function updateCurrentUserProfile(patch: ProfileUpdate): Promise<Pr
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error('Oturum gerekli');
+  if (!user) throw createAuthRequiredError('updateCurrentUserProfile');
 
   const { data, error } = await supabase
     .from('profiles')
@@ -69,6 +70,6 @@ export async function updateCurrentUserProfile(patch: ProfileUpdate): Promise<Pr
     .eq('id', user.id)
     .select('*')
     .single();
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'updateCurrentUserProfile');
   return data as ProfileRow;
 }

@@ -1,6 +1,7 @@
 import { RouteProp, useRoute } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -17,6 +18,7 @@ import { colors, spacing, typography } from '../theme';
 import { useAppStore } from '../store/useAppStore';
 import type { GroupsStackParamList } from '../navigation/types';
 import { fetchPlayerLeaderboardStats } from '../services/supabase/leaderboard';
+import { toUserMessage } from '../services/supabase/errors';
 import {
   buildLeaderboard,
   metricLabel,
@@ -66,27 +68,33 @@ export function LeaderboardScreen() {
       setRemoteRows(null);
       return;
     }
-    void fetchPlayerLeaderboardStats(tf, new Date().toISOString(), groupId ?? null, metric).then((stats) => {
-      if (cancelled) return;
-      const byMetric = stats.map((row) => {
-        const value =
-          metric === 'goals'
-            ? row.goals
-            : metric === 'assists'
-              ? row.assists
-              : metric === 'matches'
-                ? row.matches_played
-                : row.matches_played === 0
-                  ? 0
-                  : row.wins / row.matches_played;
-        return { playerId: row.player_id, value };
+    void fetchPlayerLeaderboardStats(tf, new Date().toISOString(), groupId ?? null, metric)
+      .then((stats) => {
+        if (cancelled) return;
+        const byMetric = stats.map((row) => {
+          const value =
+            metric === 'goals'
+              ? row.goals
+              : metric === 'assists'
+                ? row.assists
+                : metric === 'matches'
+                  ? row.matches_played
+                  : row.matches_played === 0
+                    ? 0
+                    : row.wins / row.matches_played;
+          return { playerId: row.player_id, value };
+        });
+        const sorted = byMetric.sort((a, b) => b.value - a.value).map((item, index) => ({
+          ...item,
+          rank: index + 1,
+        }));
+        setRemoteRows(sorted);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setRemoteRows(null);
+        Alert.alert('Hata', toUserMessage(error, 'Liderlik verileri alınamadı.'));
       });
-      const sorted = byMetric.sort((a, b) => b.value - a.value).map((item, index) => ({
-        ...item,
-        rank: index + 1,
-      }));
-      setRemoteRows(sorted);
-    });
     return () => {
       cancelled = true;
     };

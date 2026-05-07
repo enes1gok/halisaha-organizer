@@ -5,6 +5,7 @@ import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, Vie
 import { PillButton } from '../components/PillButton';
 import { colors, spacing, typography } from '../theme';
 import { useAppStore } from '../store/useAppStore';
+import { isAppError, toUserMessage } from '../services/supabase/errors';
 import type { HomeStackParamList } from '../navigation/types';
 
 type Nav = StackNavigationProp<HomeStackParamList, 'JoinMatch'>;
@@ -30,7 +31,11 @@ export function JoinMatchScreen() {
       }
       navigation.replace('MatchDetail', { matchId: m.id });
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Katılım başarısız.');
+      if (isAppError(e) && e.code === 'NOT_FOUND') {
+        Alert.alert('Bulunamadı', 'Bu koda ait yaklaşan bir maç bulunamadı.');
+        return;
+      }
+      Alert.alert('Hata', toUserMessage(e, 'Katılım başarısız.'));
     } finally {
       setBusy(false);
     }

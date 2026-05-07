@@ -8,6 +8,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { colors, spacing, typography } from '../theme';
 import type { ScoreResult } from '../types/domain';
 import { useAppStore } from '../store/useAppStore';
+import { toUserMessage } from '../services/supabase/errors';
 import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 
 type Route =
@@ -99,7 +100,7 @@ export function ScoreEntryScreen() {
       setConfirmOpen(false);
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Skor kaydedilemedi.');
+      Alert.alert('Hata', toUserMessage(e, 'Skor kaydedilemedi.'));
     }
   };
 
@@ -177,7 +178,7 @@ export function ScoreEntryScreen() {
           value={match.selfReportEnabled}
           onValueChange={(v) =>
             void setSelfReportEnabled(match.id, v).catch((err) =>
-              Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+              Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
             )
           }
           trackColor={{ false: colors.border, true: colors.accentMuted }}

@@ -1,5 +1,6 @@
 import type { Group, GroupMembership } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
+import { createAuthRequiredError, mapSupabaseError } from './errors';
 import type { GroupMemberRow, GroupRow } from './types';
 
 function mapGroup(row: GroupRow): Group {
@@ -32,7 +33,7 @@ export async function fetchMyGroups(): Promise<{ groups: Group[]; memberships: G
     .from('group_members')
     .select('*')
     .eq('player_id', user.id);
-  if (membershipsError) throw membershipsError;
+  if (membershipsError) throw mapSupabaseError(membershipsError, 'fetchMyGroups.memberships');
 
   const memberships = (membershipsRaw ?? []).map((row) => mapMembership(row as GroupMemberRow));
   const groupIds = memberships.map((item) => item.groupId);
@@ -42,7 +43,7 @@ export async function fetchMyGroups(): Promise<{ groups: Group[]; memberships: G
     .from('groups')
     .select('*')
     .in('id', groupIds);
-  if (groupsError) throw groupsError;
+  if (groupsError) throw mapSupabaseError(groupsError, 'fetchMyGroups.groups');
 
   return {
     groups: (groupsRaw ?? []).map((row) => mapGroup(row as GroupRow)),
@@ -53,14 +54,14 @@ export async function fetchMyGroups(): Promise<{ groups: Group[]; memberships: G
 export async function createGroupRemote(name: string): Promise<Group> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('create_group', { p_name: name });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'createGroupRemote');
   return mapGroup(data as GroupRow);
 }
 
 export async function joinGroupRemote(joinCode: string): Promise<Group | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('join_group_by_code', { p_code: joinCode });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'joinGroupRemote');
   if (!data) return null;
   return mapGroup(data as GroupRow);
 }
@@ -70,11 +71,11 @@ export async function leaveGroupRemote(groupId: string): Promise<void> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error('Oturum gerekli');
+  if (!user) throw createAuthRequiredError('leaveGroupRemote');
   const { error } = await supabase
     .from('group_members')
     .delete()
     .eq('group_id', groupId)
     .eq('player_id', user.id);
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'leaveGroupRemote');
 }

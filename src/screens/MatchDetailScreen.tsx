@@ -31,6 +31,7 @@ import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { useAppStore } from '../store/useAppStore';
+import { toUserMessage } from '../services/supabase/errors';
 import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 
 type MatchDetailRoute =
@@ -110,7 +111,7 @@ export function MatchDetailScreen() {
       await setRSVP(match.id, userId, status);
       rsvpRef.current?.dismiss();
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Kaydedilemedi.');
+      Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.'));
     }
   };
 
@@ -126,7 +127,7 @@ export function MatchDetailScreen() {
     try {
       await refreshRemoteMatch(matchId);
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Yenilenemedi.');
+      Alert.alert('Hata', toUserMessage(e, 'Yenilenemedi.'));
     } finally {
       setRefreshing(false);
     }
@@ -216,7 +217,7 @@ export function MatchDetailScreen() {
               value={match.selfReportEnabled}
               onValueChange={(v) =>
                 void setSelfReportEnabled(match.id, v).catch((err) =>
-                  Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                  Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
                 )
               }
               trackColor={{ false: colors.border, true: colors.accentMuted }}
@@ -242,7 +243,7 @@ export function MatchDetailScreen() {
                     variant="ghost"
                     onPress={() =>
                       void respondSelfReport(match.id, r.id, false).catch((err) =>
-                        Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                        Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
                       )
                     }
                   />
@@ -250,7 +251,7 @@ export function MatchDetailScreen() {
                     title="Onayla"
                     onPress={() =>
                       void respondSelfReport(match.id, r.id, true).catch((err) =>
-                        Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                        Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
                       )
                     }
                   />
@@ -279,7 +280,7 @@ export function MatchDetailScreen() {
                     value={a.paid}
                     onValueChange={(v) =>
                       void setPaid(match.id, p!.id, v, userId).catch((err) =>
-                        Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                        Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
                       )
                     }
                     trackColor={{ false: colors.border, true: colors.accentMuted }}
@@ -303,7 +304,7 @@ export function MatchDetailScreen() {
               variant="ghost"
               onPress={() =>
                 void addSelfReport(match.id, userId, 'goal').catch((err) =>
-                  Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                  Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
                 )
               }
               style={styles.flex}
@@ -313,7 +314,7 @@ export function MatchDetailScreen() {
               variant="ghost"
               onPress={() =>
                 void addSelfReport(match.id, userId, 'assist').catch((err) =>
-                  Alert.alert('Hata', err instanceof Error ? err.message : 'Kaydedilemedi.'),
+                  Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
                 )
               }
               style={styles.flex}

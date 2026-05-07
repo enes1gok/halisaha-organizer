@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../../lib/supabase';
+import { mapSupabaseError } from './errors';
 import type { LeaderboardMetricFilter, PlayerLeaderboardStatsRow } from './types';
 
 export type LeaderboardTimeframe = 'all' | 'week' | 'month';
@@ -20,7 +21,7 @@ export async function fetchPlayerLeaderboardStats(
     p_group_id: groupId,
     p_metric: metric,
   });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'fetchPlayerLeaderboardStats');
   const rows = (data ?? []) as PlayerLeaderboardStatsRow[];
   return rows.map((r) => ({
     ...r,

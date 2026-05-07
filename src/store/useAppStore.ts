@@ -15,6 +15,7 @@ import type {
   SelfReportType,
 } from '../types/domain';
 import { createGroupRemote, fetchMyGroups, joinGroupRemote, leaveGroupRemote } from '../services/supabase/groups';
+import { isAppError, shouldRetry, toUserMessage } from '../services/supabase/errors';
 import { fetchMatchGraph, fetchMyMatchesGraph, scoreResultToRpcPayload } from '../services/supabase/matchGraph';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import {
@@ -79,6 +80,18 @@ function emptyPlayerStats(): Player['stats'] {
     losses: 0,
     draws: 0,
   };
+}
+
+function rethrowStoreActionError(action: string, error: unknown, fallbackMessage: string): never {
+  if (isAppError(error)) {
+    console.warn(`[store] ${action} failed`, {
+      code: error.code,
+      operation: error.operation,
+      retryable: shouldRetry(error),
+    });
+    throw error;
+  }
+  throw new Error(toUserMessage(error, fallbackMessage));
 }
 
 function upsertProfilesIntoPlayers(players: Player[], profiles: PublicProfileRow[] | ProfileRow[]): Player[] {
@@ -243,8 +256,16 @@ export const useAppStore = create<AppState>()(
       hydrateRemoteMatches: async () => {
         const uid = get().remoteUserId;
         if (!uid) return;
-        const graphs = await fetchMyMatchesGraph();
-        set((state) => mergeHydratedRemoteMatches(state, graphs));
+        try {
+          const graphs = await fetchMyMatchesGraph();
+          set((state) => mergeHydratedRemoteMatches(state, graphs));
+        } catch (error) {
+          rethrowStoreActionError(
+            'hydrateRemoteMatches',
+            error,
+            'Maçlar yenilenemedi. Lütfen tekrar deneyin.',
+          );
+        }
       },
 
       hydrateRemoteGroups: async () => {
@@ -255,8 +276,16 @@ export const useAppStore = create<AppState>()(
 
       refreshRemoteMatch: async (matchId) => {
         if (!get().remoteUserId || !isRemoteMatchId(matchId)) return;
-        const graph = await fetchMatchGraph(matchId);
-        set((state) => mergeRemoteGraph(state, graph));
+        try {
+          const graph = await fetchMatchGraph(matchId);
+          set((state) => mergeRemoteGraph(state, graph));
+        } catch (error) {
+          rethrowStoreActionError(
+            'refreshRemoteMatch',
+            error,
+            'Maç bilgileri yenilenemedi. Lütfen tekrar deneyin.',
+          );
+        }
       },
 
       createMatch: async (input) => {
@@ -264,19 +293,23 @@ export const useAppStore = create<AppState>()(
         const uid = get().remoteUserId;
 
         if (uid) {
-          const joinCode = createJoinCode();
-          const row = await insertMatchWithOrganizerAttendee({
-            startsAt: input.startsAt,
-            venue: input.venue,
-            maxPlayers: input.maxPlayers || 14,
-            joinCode,
-            groupId: input.groupId,
-            pricePerPerson: input.pricePerPerson ?? null,
-            iban: input.iban ?? null,
-          });
-          const graph = await fetchMatchGraph(row.id);
-          set((state) => mergeRemoteGraph(state, graph));
-          return graph.match;
+          try {
+            const joinCode = createJoinCode();
+            const row = await insertMatchWithOrganizerAttendee({
+              startsAt: input.startsAt,
+              venue: input.venue,
+              maxPlayers: input.maxPlayers || 14,
+              joinCode,
+              groupId: input.groupId,
+              pricePerPerson: input.pricePerPerson ?? null,
+              iban: input.iban ?? null,
+            });
+            const graph = await fetchMatchGraph(row.id);
+            set((state) => mergeRemoteGraph(state, graph));
+            return graph.match;
+          } catch (error) {
+            rethrowStoreActionError('createMatch', error, 'Maç oluşturulamadı.');
+          }
         }
 
         const match: Match = {
@@ -310,11 +343,15 @@ export const useAppStore = create<AppState>()(
 
         const uid = get().remoteUserId;
         if (uid) {
-          const mid = await joinMatchByJoinCodeRpc(code);
-          if (!mid) return null;
-          const graph = await fetchMatchGraph(mid);
-          set((state) => mergeRemoteGraph(state, graph));
-          return graph.match;
+          try {
+            const mid = await joinMatchByJoinCodeRpc(code);
+            if (!mid) return null;
+            const graph = await fetchMatchGraph(mid);
+            set((state) => mergeRemoteGraph(state, graph));
+            return graph.match;
+          } catch (error) {
+            rethrowStoreActionError('joinMatchByJoinCode', error, 'Katılım işlemi başarısız oldu.');
+          }
         }
 
         const state = get();

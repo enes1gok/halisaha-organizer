@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../../lib/supabase';
+import { createAuthRequiredError, mapSupabaseError } from './errors';
 import type { MatchRow, StatLinePayload } from './types';
 
 export type CreateMatchRowInput = {
@@ -17,7 +18,7 @@ export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInpu
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error('Oturum gerekli');
+  if (!user) throw createAuthRequiredError('insertMatchWithOrganizerAttendee');
 
   const { data: match, error } = await supabase
     .from('matches')
@@ -34,7 +35,7 @@ export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInpu
     .select('*')
     .single();
 
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'insertMatchWithOrganizerAttendee.match_insert');
 
   const ins = await supabase.from('match_attendees').insert({
     match_id: match.id,
@@ -42,7 +43,7 @@ export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInpu
     status: 'going',
     paid: false,
   });
-  if (ins.error) throw ins.error;
+  if (ins.error) throw mapSupabaseError(ins.error, 'insertMatchWithOrganizerAttendee.organizer_attendee_insert');
 
   return match as MatchRow;
 }
@@ -50,7 +51,7 @@ export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInpu
 export async function fetchMatchById(matchId: string): Promise<MatchRow | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('get_match_detail_for_user', { p_match_id: matchId });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'fetchMatchById');
   const row = Array.isArray(data) ? data[0] : data;
   return (row ?? null) as MatchRow | null;
 }
@@ -59,14 +60,14 @@ export async function fetchMatchById(matchId: string): Promise<MatchRow | null> 
 export async function fetchMatchesForCurrentUser(): Promise<MatchRow[]> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('list_visible_matches_for_user');
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'fetchMatchesForCurrentUser');
   return (data ?? []) as MatchRow[];
 }
 
 export async function getMatchByJoinCodePreview(joinCode: string) {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('get_match_by_join_code', { p_code: joinCode });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'getMatchByJoinCodePreview');
   const row = Array.isArray(data) ? data[0] : null;
   return row ?? null;
 }
@@ -74,7 +75,7 @@ export async function getMatchByJoinCodePreview(joinCode: string) {
 export async function joinMatchByJoinCode(joinCode: string): Promise<string | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('join_match_by_join_code', { p_code: joinCode });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'joinMatchByJoinCode');
   return data as string | null;
 }
 
@@ -93,5 +94,5 @@ export async function submitMatchResultRpc(params: {
     p_scorers: params.scorers,
     p_assists: params.assists,
   });
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'submitMatchResultRpc');
 }

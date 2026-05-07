@@ -18,6 +18,7 @@ import {
 import { PillButton } from '../components/PillButton';
 import { colors, spacing, typography } from '../theme';
 import { useAppStore } from '../store/useAppStore';
+import { toUserMessage } from '../services/supabase/errors';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import {
   formatIbanForInput,
@@ -115,7 +116,7 @@ export function CreateMatchTabScreen() {
       syncFromStored('');
       setOverrideIban(!hasValidProfileIban);
     } catch (e) {
-      Alert.alert('Hata', e instanceof Error ? e.message : 'Maç oluşturulamadı.');
+      Alert.alert('Hata', toUserMessage(e, 'Maç oluşturulamadı.'));
     }
   };
 

@@ -23,6 +23,7 @@ import type {
 import { fetchMatchesForCurrentUser } from './matches';
 import { fetchProfilesByIds } from './profiles';
 import { getSupabaseClient } from '../../lib/supabase';
+import { createNotFoundError, mapSupabaseError } from './errors';
 
 export function rsvpFromDb(row: RsvpStatusRow): RSVPStatus {
   if (row === 'not_going') return 'notGoing';
@@ -151,6 +152,9 @@ function jsonArrayOrEmpty<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
+let matchGraphRpcSuccessCount = 0;
+let matchGraphRpcFallbackCount = 0;
+
 export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayload> {
   const supabase = getSupabaseClient();
   const [matchRes, attendeesRes, teamsRes, statsRes, selfReportsRes] = await Promise.all([
@@ -173,14 +177,14 @@ export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayloa
       .eq('match_id', matchId),
   ]);
 
-  if (matchRes.error) throw matchRes.error;
-  if (attendeesRes.error) throw attendeesRes.error;
-  if (teamsRes.error) throw teamsRes.error;
-  if (statsRes.error) throw statsRes.error;
-  if (selfReportsRes.error) throw selfReportsRes.error;
+  if (matchRes.error) throw mapSupabaseError(matchRes.error, 'fetchMatchGraph.match_detail');
+  if (attendeesRes.error) throw mapSupabaseError(attendeesRes.error, 'fetchMatchGraph.attendees');
+  if (teamsRes.error) throw mapSupabaseError(teamsRes.error, 'fetchMatchGraph.team_players');
+  if (statsRes.error) throw mapSupabaseError(statsRes.error, 'fetchMatchGraph.stat_lines');
+  if (selfReportsRes.error) throw mapSupabaseError(selfReportsRes.error, 'fetchMatchGraph.self_reports');
 
   const matchData = Array.isArray(matchRes.data) ? matchRes.data[0] : matchRes.data;
-  if (!matchData) throw new Error('Maç bulunamadı');
+  if (!matchData) throw createNotFoundError('fetchMatchGraph', 'Maç bulunamadı');
 
   const row = matchData as NestedMatchRow;
   const attendees = (attendeesRes.data ?? []) as MatchAttendeeRow[];
@@ -196,16 +200,31 @@ export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayloa
 }
 
 export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
+  const startedAt = Date.now();
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('list_visible_match_graphs_for_user');
   if (error) {
     // Safe rollout fallback: keep existing behavior if new RPC is not yet applied in DB.
+    matchGraphRpcFallbackCount += 1;
+    console.warn('[matchGraph] list_visible_match_graphs_for_user failed; fallback enabled', {
+      fallbackCount: matchGraphRpcFallbackCount,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     const summaries = await fetchMatchesForCurrentUser();
-    return Promise.all(summaries.map((s) => fetchMatchGraph(s.id)));
+    const graphs = await Promise.all(summaries.map((s) => fetchMatchGraph(s.id)));
+    console.info('[matchGraph] fallback fetch completed', {
+      matchCount: graphs.length,
+      durationMs: Date.now() - startedAt,
+    });
+    return graphs;
   }
 
+  matchGraphRpcSuccessCount += 1;
   const rows = (data ?? []) as MatchGraphRpcRow[];
-  return rows.map((row) => {
+  const graphs = rows.map((row) => {
     const attendees = jsonArrayOrEmpty(row.attendees);
     const teamPlayers = jsonArrayOrEmpty(row.team_players);
     const statLines = jsonArrayOrEmpty(row.stat_lines);
@@ -214,6 +233,14 @@ export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
     const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
     return { match, profiles };
   });
+  if (matchGraphRpcSuccessCount === 1 || matchGraphRpcSuccessCount % 10 === 0) {
+    console.info('[matchGraph] rpc fetch completed', {
+      successCount: matchGraphRpcSuccessCount,
+      matchCount: graphs.length,
+      durationMs: Date.now() - startedAt,
+    });
+  }
+  return graphs;
 }
 
 /** RPC `submit_match_result` için gövde (onaylı self-report birleştirmesi sunucuda). */

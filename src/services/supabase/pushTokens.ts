@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../../lib/supabase';
+import { mapSupabaseError } from './errors';
 
 export async function upsertPushToken(token: string, platform: string): Promise<void> {
   const supabase = getSupabaseClient();
@@ -16,11 +17,11 @@ export async function upsertPushToken(token: string, platform: string): Promise<
     },
     { onConflict: 'user_id,token' },
   );
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'upsertPushToken');
 }
 
 export async function deactivatePushToken(token: string): Promise<void> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from('push_tokens').update({ is_active: false }).eq('token', token);
-  if (error) throw error;
+  if (error) throw mapSupabaseError(error, 'deactivatePushToken');
 }
