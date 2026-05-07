@@ -55,6 +55,7 @@ export type ProfileUpdate = Partial<{
   position: PlayerPositionRow;
   preferred_foot: PreferredFootRow;
   iban: string | null;
+  notification_preferences: Record<string, unknown>;
 }>;
 
 export async function updateCurrentUserProfile(patch: ProfileUpdate): Promise<ProfileRow> {

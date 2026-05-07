@@ -23,6 +23,8 @@ export interface ProfileRow {
   position: PlayerPositionRow;
   preferred_foot: PreferredFootRow;
   iban: string | null;
+  /** JSON preferences; use `normalizeNotificationPreferences` at UI boundary. */
+  notification_preferences?: unknown;
   created_at: string;
   updated_at: string;
 }

@@ -18,6 +18,7 @@ type ClaimedDeliveryRow = {
   delivery_token: string;
   match_id: string;
   group_id: string;
+  recipient_id: string;
   delivery_type: DeliveryType;
   reminder_date: string | null;
   match_starts_at: string | null;
@@ -30,11 +31,26 @@ type ClaimedDelivery = {
   token: string;
   match_id: string;
   group_id: string;
+  recipient_id: string;
   type: DeliveryType;
   reminder_date: string | null;
   match_starts_at: string | null;
   match_venue: string | null;
   group_name: string | null;
+};
+
+type NotificationPreferences = {
+  push_enabled?: boolean;
+  types?: {
+    group_match_initial?: boolean;
+    group_match_reminder?: boolean;
+  };
+  quiet_hours?: {
+    enabled?: boolean;
+    start?: string;
+    end?: string;
+    timezone?: string;
+  };
 };
 
 function normalizeClaimed(row: ClaimedDeliveryRow): ClaimedDelivery {
@@ -43,12 +59,93 @@ function normalizeClaimed(row: ClaimedDeliveryRow): ClaimedDelivery {
     token: row.delivery_token,
     match_id: row.match_id,
     group_id: row.group_id,
+    recipient_id: row.recipient_id,
     type: row.delivery_type,
     reminder_date: row.reminder_date ?? null,
     match_starts_at: row.match_starts_at ?? null,
     match_venue: row.match_venue ?? null,
     group_name: row.group_name ?? null,
   };
+}
+
+function asPrefs(raw: unknown): NotificationPreferences | null {
+  if (!raw || typeof raw !== 'object') return null;
+  return raw as NotificationPreferences;
+}
+
+/** Mirrors SQL `notification_delivery_allowed` + optional quiet-hours block at send time. */
+function shouldSendPush(
+  prefs: NotificationPreferences | null,
+  type: DeliveryType,
+  now: Date,
+): { ok: boolean; reason?: 'preferences' | 'quiet_hours' } {
+  const p = prefs;
+  if (p?.push_enabled === false) return { ok: false, reason: 'preferences' };
+  const key = type === 'initial' ? 'group_match_initial' : 'group_match_reminder';
+  if (p?.types?.[key] === false) return { ok: false, reason: 'preferences' };
+
+  const qh = p?.quiet_hours;
+  if (qh?.enabled && isWithinQuietHours(now, qh)) {
+    return { ok: false, reason: 'quiet_hours' };
+  }
+  return { ok: true };
+}
+
+function parseMinutes(hhmm: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function isWithinQuietHours(
+  now: Date,
+  qh: { start?: string; end?: string; timezone?: string },
+): boolean {
+  const tz = qh.timezone?.trim() || 'Europe/Istanbul';
+  const startStr = qh.start ?? '22:30';
+  const endStr = qh.end ?? '07:00';
+  const startM = parseMinutes(startStr);
+  const endM = parseMinutes(endStr);
+  if (startM === null || endM === null) return false;
+
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: tz,
+  });
+  const parts = formatter.formatToParts(now);
+  const hour = Number(parts.find((x) => x.type === 'hour')?.value ?? 0);
+  const minute = Number(parts.find((x) => x.type === 'minute')?.value ?? 0);
+  const cur = hour * 60 + minute;
+
+  if (startM <= endM) {
+    return cur >= startM && cur < endM;
+  }
+  return cur >= startM || cur < endM;
+}
+
+async function fetchNotificationPreferencesByUserIds(
+  ids: string[],
+): Promise<Map<string, NotificationPreferences | null>> {
+  const map = new Map<string, NotificationPreferences | null>();
+  for (const id of ids) map.set(id, null);
+  const uniq = [...new Set(ids)].filter(Boolean);
+  if (uniq.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, notification_preferences')
+    .in('id', uniq);
+  if (error) throw error;
+  for (const row of data ?? []) {
+    const r = row as { id: string; notification_preferences: unknown };
+    map.set(r.id, asPrefs(r.notification_preferences));
+  }
+  return map;
 }
 
 const matchTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
@@ -127,7 +224,22 @@ async function markFailed(deliveryId: string, message: string): Promise<void> {
     .eq('id', deliveryId);
 }
 
-async function processClaimed(delivery: ClaimedDelivery): Promise<boolean> {
+type ProcessOutcome = 'sent' | 'skipped' | 'failed';
+
+async function processClaimed(
+  delivery: ClaimedDelivery,
+  prefMap: Map<string, NotificationPreferences | null>,
+  now: Date,
+): Promise<ProcessOutcome> {
+  const prefs = prefMap.get(delivery.recipient_id) ?? null;
+  const gate = shouldSendPush(prefs, delivery.type, now);
+  if (!gate.ok) {
+    const msg =
+      gate.reason === 'quiet_hours' ? 'skipped: quiet hours' : 'skipped: notification preferences';
+    await markFailed(delivery.id, msg);
+    return 'skipped';
+  }
+
   try {
     const { title, body } = buildMessage(delivery);
     await sendExpoPush(delivery.token, title, body, {
@@ -137,19 +249,20 @@ async function processClaimed(delivery: ClaimedDelivery): Promise<boolean> {
       target: 'matchDetail',
     });
     await markSent(delivery.id);
-    return true;
+    return 'sent';
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bilinmeyen hata';
     await markFailed(delivery.id, message);
-    return false;
+    return 'failed';
   }
 }
 
 async function drainPending(
   limit: number,
-): Promise<{ processed: number; failed: number; iterations: number }> {
+): Promise<{ processed: number; failed: number; skipped: number; iterations: number }> {
   let processed = 0;
   let failed = 0;
+  let skipped = 0;
   let iterations = 0;
 
   while (iterations < MAX_DRAIN_ITERATIONS) {
@@ -159,22 +272,29 @@ async function drainPending(
     const claimed = ((data ?? []) as ClaimedDeliveryRow[]).map(normalizeClaimed);
     if (claimed.length === 0) break;
 
-    const results = await Promise.all(claimed.map((row) => processClaimed(row)));
-    for (const ok of results) {
-      if (ok) processed += 1;
+    const ids = claimed.map((c) => c.recipient_id);
+    const prefMap = await fetchNotificationPreferencesByUserIds(ids);
+    const now = new Date();
+
+    const results = await Promise.all(
+      claimed.map((row) => processClaimed(row, prefMap, now)),
+    );
+    for (const outcome of results) {
+      if (outcome === 'sent') processed += 1;
+      else if (outcome === 'skipped') skipped += 1;
       else failed += 1;
     }
     if (claimed.length < limit) break;
   }
 
-  return { processed, failed, iterations };
+  return { processed, failed, skipped, iterations };
 }
 
 async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery | null> {
   const { data, error } = await supabase
     .from('notification_deliveries')
     .select(
-      `id, token, match_id, group_id, type, reminder_date,
+      `id, token, match_id, group_id, recipient_id, type, reminder_date,
        match:matches(starts_at, venue),
        group:groups(name)`,
     )
@@ -191,6 +311,7 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
     token: (data as any).token,
     match_id: (data as any).match_id,
     group_id: (data as any).group_id,
+    recipient_id: (data as any).recipient_id,
     type: (data as any).type as DeliveryType,
     reminder_date: (data as any).reminder_date ?? null,
     match_starts_at: match?.starts_at ?? null,
@@ -199,11 +320,16 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
   };
 }
 
-async function processSingle(deliveryId: string): Promise<{ processed: number; failed: number }> {
+async function processSingle(
+  deliveryId: string,
+): Promise<{ processed: number; failed: number; skipped: number }> {
   const delivery = await fetchSingleDelivery(deliveryId);
-  if (!delivery) return { processed: 0, failed: 0 };
-  const ok = await processClaimed(delivery);
-  return ok ? { processed: 1, failed: 0 } : { processed: 0, failed: 1 };
+  if (!delivery) return { processed: 0, failed: 0, skipped: 0 };
+  const prefMap = await fetchNotificationPreferencesByUserIds([delivery.recipient_id]);
+  const outcome = await processClaimed(delivery, prefMap, new Date());
+  if (outcome === 'sent') return { processed: 1, failed: 0, skipped: 0 };
+  if (outcome === 'skipped') return { processed: 0, failed: 0, skipped: 1 };
+  return { processed: 0, failed: 1, skipped: 0 };
 }
 
 Deno.serve(async (req) => {

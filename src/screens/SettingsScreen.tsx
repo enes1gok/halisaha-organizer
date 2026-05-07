@@ -69,6 +69,17 @@ export function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Bildirimler</Text>
+        <PillButton
+          title="Bildirim tercihleri"
+          variant="ghost"
+          onPress={() => navigation.navigate('NotificationSettings')}
+          testID="profile:settings:notifications:press"
+          accessibilityLabel="Bildirim tercihleri ekranına git"
+        />
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Gizlilik</Text>
         <PillButton
           title="Gizlilik Politikasi"

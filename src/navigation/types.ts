@@ -24,6 +24,7 @@ export type MyMatchesStackParamList = {
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   Settings: undefined;
+  NotificationSettings: undefined;
   PrivacyPolicy: undefined;
 };
 
