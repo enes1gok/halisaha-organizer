@@ -8,7 +8,6 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -27,6 +26,7 @@ import { colors, spacing, typography } from '../theme';
 import type { RSVPStatus } from '../types/domain';
 import { maskIban } from '../utils/iban';
 import { formatMatchDateTime } from '../utils/dates';
+import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { useAppStore } from '../store/useAppStore';
@@ -67,6 +67,13 @@ export function MatchDetailScreen() {
   const organizer = match ? getPlayer(match.organizerId) : undefined;
   const isOrganizer = match?.organizerId === userId;
 
+  const { label: joinCopyLabel, runCopy: runJoinCopy, isCopied: joinCopied } = useClipboardCopyFeedback({
+    idleLabel: 'Kodu Kopyala',
+  });
+  const { label: ibanCopyLabel, runCopy: runIbanCopy, isCopied: ibanCopied } = useClipboardCopyFeedback({
+    idleLabel: 'IBAN Kopyala',
+  });
+
   const attendeesSorted = useMemo(() => {
     if (!match) return [];
     return [...match.attendees]
@@ -75,17 +82,20 @@ export function MatchDetailScreen() {
       .sort((x, y) => (x.p!.name > y.p!.name ? 1 : -1));
   }, [match, getPlayer]);
 
-  const copyIban = async () => {
-    if (!match?.iban) return;
-    await Clipboard.setStringAsync(match.iban.replace(/\s/g, ''));
-    Alert.alert('Panoya kopyalandı', 'IBAN kopyalandı.');
-  };
-
-  const copyJoin = async () => {
+  const onPressCopyJoin = useCallback(() => {
     if (!match) return;
-    await Clipboard.setStringAsync(`halisaha://match/${match.id}`);
-    Alert.alert('Bağlantı kopyalandı', match.joinCode);
-  };
+    runJoinCopy(async () => {
+      await Clipboard.setStringAsync(`halisaha://match/${match.id}`);
+    });
+  }, [match, runJoinCopy]);
+
+  const onPressCopyIban = useCallback(() => {
+    const iban = match?.iban;
+    if (!iban) return;
+    runIbanCopy(async () => {
+      await Clipboard.setStringAsync(iban.replace(/\s/g, ''));
+    });
+  }, [match?.iban, runIbanCopy]);
 
   const openRsvp = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -143,7 +153,13 @@ export function MatchDetailScreen() {
         <Text style={styles.sectionTitle}>Katılım kodu</Text>
         <View style={styles.rowBetween}>
           <Text style={styles.code}>{match.joinCode}</Text>
-          <PillButton title="Kodu Kopyala" variant="ghost" onPress={copyJoin} />
+          <PillButton
+            title={joinCopyLabel}
+            variant="ghost"
+            onPress={onPressCopyJoin}
+            titleColor={joinCopied ? colors.copyFeedbackLight : undefined}
+            accessibilityLabel={joinCopied ? 'Kopyalandı' : 'Katılım bağlantısını panoya kopyala'}
+          />
         </View>
       </View>
 
@@ -152,7 +168,13 @@ export function MatchDetailScreen() {
           <Text style={styles.sectionTitle}>Ödeme</Text>
           <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text>
           <Text style={styles.iban}>{maskIban(match.iban)}</Text>
-          <PillButton title="IBAN Kopyala" onPress={copyIban} style={styles.mt} />
+          <PillButton
+            title={ibanCopyLabel}
+            onPress={onPressCopyIban}
+            style={styles.mt}
+            titleColor={ibanCopied ? colors.copyFeedbackLight : undefined}
+            accessibilityLabel={ibanCopied ? 'Kopyalandı' : 'IBAN\'ı panoya kopyala'}
+          />
         </View>
       ) : null}
 

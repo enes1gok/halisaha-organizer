@@ -8,6 +8,8 @@ export const colors = {
   textMuted: '#A3A3A3',
   accent: '#00D26A',
   accentMuted: 'rgba(0, 210, 106, 0.15)',
+  /** “Kopyalandı” gibi kısa geri bildirim metinleri — açık ton */
+  copyFeedbackLight: '#F0FFF7',
   danger: '#FF4D4D',
   position: {
     GK: '#EAB308',

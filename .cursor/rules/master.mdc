@@ -1,0 +1,30 @@
+---
+description: Rule routing table — maps task types to specialist rules and skills
+alwaysApply: true
+---
+
+# Rule routing map
+
+`index.mdc` is always active (project constitution). This table routes additional context.
+
+## When to apply each rule
+
+| You are working on | Activate |
+|--------------------|----------|
+| TypeScript, Zustand, hooks, services, performance in `src/` | `technical-excellence.mdc` |
+| UI components, screens, layout, styling, animations | `ui-ux-design.mdc` |
+
+Rules apply when matching files are open (`globs`) or when the task clearly fits the column.
+
+## Skills
+
+Skills live in `.cursor/skills/{name}/SKILL.md`. Read the matching skill when the trigger applies.
+
+| Skill | Trigger |
+|-------|---------|
+| `add-screen` | New route/screen, new stack entry, or new tab surface |
+| `add-domain-feature` | Extending matches, players, RSVP, lineup, scoring, leaderboard, or store behavior |
+
+## Maintenance contract
+
+**New rule:** add `.cursor/rules/*.mdc` with a tight `globs` pattern (or `alwaysApply`), then add a row to the table above. **New skill:** add `.cursor/skills/{name}/SKILL.md`, then add a row here. Prefer narrow `globs` over broad ones.

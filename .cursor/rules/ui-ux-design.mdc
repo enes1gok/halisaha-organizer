@@ -1,0 +1,74 @@
+---
+description: UI/UX principles, design tokens, and component conventions for Halisaha Organizer
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+# UI/UX and design hierarchy
+
+Halisaha Organizer is a **dark-only** match organizer: layout and copy should keep flows obvious (create → join → lineup → score → leaderboard).
+
+## Visual hierarchy
+
+- **Spacing:** Use [`spacing`](../../src/theme/index.ts) (`xs`–`xl`) and consistent `padding`/`margin`/`gap` rather than one-off magic numbers for new UI.
+- **Contrast:** Do not rely on font size alone; use **weight** (`typography.title`, `subtitle`, …) and **color** (`text` vs `textMuted`) for hierarchy.
+- **Surfaces:** Prefer `colors.background`, `colors.surface`, `colors.border` from theme — avoid ad-hoc hex that duplicates tokens.
+- **Accent:** `colors.accent` for primary CTAs and active states; `accentMuted` for subtle fills.
+
+## Design tokens (from theme)
+
+| Role | Source |
+|------|--------|
+| Canvas / screen bg | `colors.background` |
+| Cards / elevated panels | `colors.surface` |
+| Borders | `colors.border` |
+| Primary text / muted | `colors.text`, `colors.textMuted` |
+| CTA / success accent | `colors.accent`, `colors.accentMuted` |
+| Errors / destructive | `colors.danger` |
+| Position chips | `colors.position.GK` … `FWD` |
+| Corner radius | `radius.card`, `radius.pill`, `radius.sm` |
+| Type scale | `typography.title`, `subtitle`, `body`, `caption`, `micro` |
+
+Import from [`../../src/theme/index.ts`](../../src/theme/index.ts) (or a local relative path from the file).
+
+## Styling approach
+
+- **New UI:** Build with **`StyleSheet.create`** and theme tokens — match patterns in existing components ([`Card.tsx`](../../src/components/Card.tsx), [`PillButton.tsx`](../../src/components/PillButton.tsx)).
+- **Consistency:** Reuse shared components before adding new primitives.
+
+## Motion (Reanimated)
+
+Prefer **`react-native-reanimated`** for motion:
+
+- `useSharedValue`, `useAnimatedStyle`, `withSpring`, `withTiming` for interactive feedback.
+- Tab/scene transitions follow [`TabSceneTransitionContext.tsx`](../../src/navigation/TabSceneTransitionContext.tsx) — do not bypass the provider without a reason.
+
+Avoid **`LayoutAnimation`** in new code where Reanimated can express the same behavior.
+
+## testID
+
+Every interactive control (pressable, text input, switch) should expose **`testID`** for future E2E. Suggested format:
+
+```
+{domain}:{component}:{action}
+```
+
+Examples: `match:rsvp-going:press`, `lineup:lock:press`, `home:create-match:press`.
+
+## Accessibility
+
+For new or heavily touched interactives, set at least:
+
+- `accessibilityRole` (`button`, `header`, `switch`, …)
+- `accessibilityLabel` with the same language as on-screen copy (Turkish today)
+
+## Component placement
+
+| Scope | Path |
+|--------|------|
+| Shared (2+ screens) | [`src/components/`](../../src/components/) |
+| Single screen | Colocate in the screen file or `src/screens/{Name}/` if the screen grows |
+
+## Copy
+
+There is **no i18n** layer yet — keep user-visible strings **Turkish** and consistent with existing screens. When i18n is added, migrate strings in a dedicated change.

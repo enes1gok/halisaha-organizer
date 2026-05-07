@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import React, { useCallback } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { colors, radius, spacing, typography } from '../theme';
 import type { Match, Player } from '../types/domain';
 import { formatMatchDateTimeWithWeekday } from '../utils/dates';
@@ -25,21 +26,32 @@ export function HomeUpcomingHeroCard({
   getPlayer,
   onOpenDetail,
 }: Props) {
-  const copyIban = useCallback(async () => {
-    if (!match?.iban) return;
-    await Clipboard.setStringAsync(match.iban.replace(/\s/g, ''));
-    Alert.alert('Panoya kopyalandı', 'IBAN kopyalandı.');
-  }, [match?.iban]);
+  const { label: ibanBtnLabel, runCopy: runIbanCopy, isCopied: ibanCopied } = useClipboardCopyFeedback({
+    idleLabel: 'Kopyala',
+  });
+  const { label: organizerBtnLabel, runCopy: runOrganizerCopy, isCopied: organizerCopied } =
+    useClipboardCopyFeedback({ idleLabel: 'Kopyala' });
 
-  const copyOrganizerName = useCallback(async () => {
+  const onPressCopyIban = useCallback(() => {
+    runIbanCopy(async () => {
+      if (!match?.iban) return false;
+      await Clipboard.setStringAsync(match.iban.replace(/\s/g, ''));
+    });
+  }, [runIbanCopy, match?.iban]);
+
+  const onPressCopyOrganizer = useCallback(() => {
     const name = (organizerName ?? '').trim();
     if (!name) {
       Alert.alert('Kopyalanamadı', 'Organizatör adı bulunamadı.');
       return;
     }
-    await Clipboard.setStringAsync(name);
-    Alert.alert('Panoya kopyalandı', 'İsim kopyalandı.');
-  }, [organizerName]);
+    runOrganizerCopy(async () => {
+      await Clipboard.setStringAsync(name);
+    });
+  }, [runOrganizerCopy, organizerName]);
+
+  const copyRowProps =
+    Platform.OS === 'android' ? ({ collapsable: false } as const) : {};
 
   if (!match) {
     return (
@@ -77,16 +89,23 @@ export function HomeUpcomingHeroCard({
 
   const ibanLine =
     userHasPaid ? null : match.iban ? (
-      <View style={[styles.copyRow, styles.afterTitle]}>
+      <View style={[styles.copyRow, styles.afterTitle]} {...copyRowProps}>
         <Text style={[typography.body, styles.ibanMasked]} numberOfLines={2}>
           {maskIban(match.iban)}
         </Text>
         <Pressable
-          onPress={copyIban}
+          onPress={onPressCopyIban}
           style={({ pressed }) => [styles.copyBtn, pressed && styles.copyBtnPressed]}
           hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={ibanCopied ? 'Kopyalandı' : 'IBAN\'ı panoya kopyala'}
         >
-          <Text style={styles.copyBtnText}>Kopyala</Text>
+          <Text
+            style={[styles.copyBtnText, ibanCopied && styles.copyBtnTextCopied]}
+            accessibilityLiveRegion="polite"
+          >
+            {ibanBtnLabel}
+          </Text>
         </Pressable>
       </View>
     ) : (
@@ -96,16 +115,23 @@ export function HomeUpcomingHeroCard({
     );
 
   const organizerLine = (
-    <View style={[styles.copyRow, styles.organizerSlot]}>
+    <View style={[styles.copyRow, styles.organizerSlot]} {...copyRowProps}>
       <Text style={[typography.subtitle, styles.orgName, styles.orgNameLg]} numberOfLines={2}>
         {organizerName ?? 'Organizatör'}
       </Text>
       <Pressable
-        onPress={copyOrganizerName}
+        onPress={onPressCopyOrganizer}
         style={({ pressed }) => [styles.copyBtn, pressed && styles.copyBtnPressed]}
         hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={organizerCopied ? 'Kopyalandı' : 'Organizatör adını panoya kopyala'}
       >
-        <Text style={styles.copyBtnText}>Kopyala</Text>
+        <Text
+          style={[styles.copyBtnText, organizerCopied && styles.copyBtnTextCopied]}
+          accessibilityLiveRegion="polite"
+        >
+          {organizerBtnLabel}
+        </Text>
       </Pressable>
     </View>
   );
@@ -227,6 +253,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'stretch',
     gap: spacing.sm,
+    zIndex: 1,
   },
   organizerSlot: {
     marginTop: spacing.md,
@@ -246,6 +273,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     flexShrink: 0,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   copyBtnPressed: {
     opacity: 0.82,
@@ -255,6 +285,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
     color: '#8CF0C0',
+  },
+  copyBtnTextCopied: {
+    color: colors.copyFeedbackLight,
   },
   ibanMissing: {
     textAlign: 'left',

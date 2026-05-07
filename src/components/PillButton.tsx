@@ -1,5 +1,12 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  type AccessibilityState,
+  Pressable,
+  StyleSheet,
+  Text,
+  ViewStyle,
+} from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { colors, radius, spacing, typography } from '../theme';
 
@@ -12,6 +19,10 @@ type Props = {
   disabled?: boolean;
   loading?: boolean;
   style?: ViewStyle;
+  /** Varsayılan varyant rengini geçersiz kılar (ör. “Kopyalandı” için açık ton) */
+  titleColor?: string;
+  accessibilityLabel?: string;
+  accessibilityState?: AccessibilityState;
 };
 
 export function PillButton({
@@ -21,6 +32,9 @@ export function PillButton({
   disabled,
   loading,
   style,
+  titleColor,
+  accessibilityLabel,
+  accessibilityState,
 }: Props) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({
@@ -43,10 +57,13 @@ export function PillButton({
         : variant === 'danger'
           ? colors.text
           : colors.text;
+  const resolvedTitleColor = titleColor ?? textColor;
 
   return (
     <AnimatedPressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
       disabled={disabled || loading}
       onPress={onPress}
       onPressIn={() => {
@@ -58,9 +75,14 @@ export function PillButton({
       style={[styles.base, { backgroundColor: bg }, border, animStyle, style]}
     >
       {loading ? (
-        <ActivityIndicator color={textColor} />
+        <ActivityIndicator color={resolvedTitleColor} />
       ) : (
-        <Text style={[typography.subtitle, { color: textColor, fontSize: 15 }]}>{title}</Text>
+        <Text
+          style={[typography.subtitle, { color: resolvedTitleColor, fontSize: 15 }]}
+          accessibilityLiveRegion="polite"
+        >
+          {title}
+        </Text>
       )}
     </AnimatedPressable>
   );
