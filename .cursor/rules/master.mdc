@@ -35,6 +35,8 @@ Skills live in `.cursor/skills/{name}/SKILL.md`. Read the matching skill when th
 | `refactor-screen-to-modules` | A screen is large/coupled and needs extraction into screen + hooks + components + adapters |
 | `add-store-slice` | Adding or splitting a Zustand slice with selectors, exports, and migration-safe persistence |
 | `supabase-governance` | Supabase auth/RLS/migration/storage/query-performance tasks that need security + operational playbooks |
+| `add-atomic-rpc` | New/upgraded Postgres RPC; atomic multi-table writes; migration + RLS/grants + pgTAP |
+| `refactor-to-idempotent-logic` | Cron/retry-safe DB logic; idempotent refactor using ON CONFLICT, EXISTS, status guards |
 
 ## Maintenance contract
 
