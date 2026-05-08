@@ -11,7 +11,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const DEFAULT_DRAIN_LIMIT = 50;
 const MAX_DRAIN_ITERATIONS = 10;
 
-type DeliveryType = 'initial' | 'reminder' | 'match_cancelled' | 'venue_change';
+type DeliveryType =
+  | 'initial'
+  | 'reminder'
+  | 'match_cancelled'
+  | 'venue_change'
+  | 'lineup_published';
 
 type ClaimedDeliveryRow = {
   delivery_id: string;
@@ -24,6 +29,7 @@ type ClaimedDeliveryRow = {
   match_starts_at: string | null;
   match_venue: string | null;
   group_name: string | null;
+  organizer_display_name: string | null;
 };
 
 type ClaimedDelivery = {
@@ -37,6 +43,7 @@ type ClaimedDelivery = {
   match_starts_at: string | null;
   match_venue: string | null;
   group_name: string | null;
+  organizer_display_name: string | null;
 };
 
 type NotificationPreferences = {
@@ -46,6 +53,7 @@ type NotificationPreferences = {
     group_match_reminder?: boolean;
     group_match_cancelled?: boolean;
     group_match_venue_change?: boolean;
+    group_match_lineup_published?: boolean;
   };
   quiet_hours?: {
     enabled?: boolean;
@@ -67,6 +75,7 @@ function normalizeClaimed(row: ClaimedDeliveryRow): ClaimedDelivery {
     match_starts_at: row.match_starts_at ?? null,
     match_venue: row.match_venue ?? null,
     group_name: row.group_name ?? null,
+    organizer_display_name: row.organizer_display_name ?? null,
   };
 }
 
@@ -83,6 +92,7 @@ const PREF_KEY_BY_DELIVERY_TYPE: Record<
   reminder: 'group_match_reminder',
   match_cancelled: 'group_match_cancelled',
   venue_change: 'group_match_venue_change',
+  lineup_published: 'group_match_lineup_published',
 };
 
 /** Mirrors SQL `notification_delivery_allowed` + optional quiet-hours block at send time. */
@@ -204,6 +214,13 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
       body: tail ? `${groupName} • ${tail}` : `${groupName} grubunda saha bilgisi güncellendi`,
     };
   }
+  if (delivery.type === 'lineup_published') {
+    const organizerLabel = (delivery.organizer_display_name ?? '').trim() || 'Organizatör';
+    return {
+      title: 'Kadro yayınlandı',
+      body: `${organizerLabel} kadroyu yayınladı • ${groupName}`,
+    };
+  }
   return {
     title: 'Yeni grup maçı',
     body: `${groupName} grubunda yeni maç açıldı`,
@@ -322,7 +339,11 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
     .from('notification_deliveries')
     .select(
       `id, token, match_id, group_id, recipient_id, type, reminder_date,
-       match:matches(starts_at, venue),
+       match:matches(
+         starts_at,
+         venue,
+         organizer:profiles!matches_organizer_id_fkey(display_name)
+       ),
        group:groups(name)`,
     )
     .eq('id', deliveryId)
@@ -330,7 +351,11 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
   if (error) throw error;
   if (!data) return null;
 
-  const match = (data as any).match as { starts_at: string | null; venue: string | null } | null;
+  const match = (data as any).match as {
+    starts_at: string | null;
+    venue: string | null;
+    organizer: { display_name: string | null } | null;
+  } | null;
   const group = (data as any).group as { name: string | null } | null;
 
   return {
@@ -344,6 +369,7 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
     match_starts_at: match?.starts_at ?? null,
     match_venue: match?.venue ?? null,
     group_name: group?.name ?? null,
+    organizer_display_name: match?.organizer?.display_name ?? null,
   };
 }
 

@@ -7,6 +7,7 @@ export type NotificationPreferences = {
     group_match_reminder: boolean;
     group_match_cancelled: boolean;
     group_match_venue_change: boolean;
+    group_match_lineup_published: boolean;
   };
   quiet_hours: {
     enabled: boolean;
@@ -24,6 +25,7 @@ export function defaultNotificationPreferences(): NotificationPreferences {
       group_match_reminder: true,
       group_match_cancelled: true,
       group_match_venue_change: true,
+      group_match_lineup_published: true,
     },
     quiet_hours: {
       enabled: false,
@@ -68,6 +70,10 @@ export function normalizeNotificationPreferences(raw: unknown): NotificationPref
         typeof typesIn.group_match_venue_change === 'boolean'
           ? typesIn.group_match_venue_change
           : base.types.group_match_venue_change,
+      group_match_lineup_published:
+        typeof typesIn.group_match_lineup_published === 'boolean'
+          ? typesIn.group_match_lineup_published
+          : base.types.group_match_lineup_published,
     },
     quiet_hours: {
       enabled:

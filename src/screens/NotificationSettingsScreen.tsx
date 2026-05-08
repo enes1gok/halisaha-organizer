@@ -31,6 +31,9 @@ function toJsonRecord(p: NotificationPreferences): Record<string, unknown> {
     types: {
       group_match_initial: p.types.group_match_initial,
       group_match_reminder: p.types.group_match_reminder,
+      group_match_cancelled: p.types.group_match_cancelled,
+      group_match_venue_change: p.types.group_match_venue_change,
+      group_match_lineup_published: p.types.group_match_lineup_published,
     },
     quiet_hours: {
       enabled: p.quiet_hours.enabled,
@@ -133,6 +136,36 @@ export function NotificationSettingsScreen() {
       void persist({
         ...prefs,
         types: { ...prefs.types, group_match_reminder: v },
+      });
+    },
+    [prefs, persist],
+  );
+
+  const onToggleCancelled = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_cancelled: v },
+      });
+    },
+    [prefs, persist],
+  );
+
+  const onToggleVenueChange = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_venue_change: v },
+      });
+    },
+    [prefs, persist],
+  );
+
+  const onToggleLineupPublished = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_lineup_published: v },
       });
     },
     [prefs, persist],
@@ -266,6 +299,51 @@ export function NotificationSettingsScreen() {
             thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_reminder ? colors.accent : colors.textMuted) : undefined}
             testID="settings:notifications:type-reminder:switch"
             accessibilityLabel="RSVP hatırlatma bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Maç iptali</Text>
+            <Text style={styles.caption}>Grubunuzdaki maç iptal edildiğinde</Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_cancelled}
+            onValueChange={onToggleCancelled}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_cancelled ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-cancelled:switch"
+            accessibilityLabel="Maç iptali bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Saha güncellemesi</Text>
+            <Text style={styles.caption}>Katıldığınız maçın sahası değiştiğinde</Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_venue_change}
+            onValueChange={onToggleVenueChange}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_venue_change ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-venue:switch"
+            accessibilityLabel="Saha güncelleme bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Kadro yayınlandı</Text>
+            <Text style={styles.caption}>Organizatör kadroyu yayınladığında (katıldığınız maçlar)</Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_lineup_published}
+            onValueChange={onToggleLineupPublished}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_lineup_published ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-lineup-published:switch"
+            accessibilityLabel="Kadro yayınlandı bildirimleri"
           />
         </View>
       </View>
