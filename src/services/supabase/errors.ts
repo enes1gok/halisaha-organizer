@@ -1,3 +1,7 @@
+import type { ErrorTranslationKey } from '../../i18n/errorTranslationKeys';
+import type { ErrorLocale } from '../../i18n/translateError';
+import { translateError } from '../../i18n/translateError';
+
 export type AppErrorCode =
   | 'AUTH_REQUIRED'
   | 'FORBIDDEN'
@@ -14,6 +18,10 @@ type AppErrorParams = {
   retryable?: boolean;
   cause?: unknown;
   meta?: Record<string, unknown>;
+  /** Stable key for i18n (Postgres constraint name or RPC ERR_* mapping). */
+  translationKey?: ErrorTranslationKey;
+  translationParams?: Record<string, string | number>;
+  locale?: ErrorLocale;
 };
 
 export class AppError extends Error {
@@ -22,15 +30,24 @@ export class AppError extends Error {
   retryable: boolean;
   cause?: unknown;
   meta?: Record<string, unknown>;
+  translationKey?: ErrorTranslationKey;
+  translationParams?: Record<string, string | number>;
 
   constructor(params: AppErrorParams) {
-    super(params.message ?? defaultMessageForCode(params.code));
+    const locale = params.locale ?? 'tr';
+    const resolved =
+      params.translationKey != null
+        ? translateError(params.translationKey, locale, params.translationParams)
+        : params.message ?? defaultMessageForCode(params.code);
+    super(resolved);
     this.name = 'AppError';
     this.code = params.code;
     this.operation = params.operation;
     this.retryable = params.retryable ?? isRetryableCode(params.code);
     this.cause = params.cause;
     this.meta = params.meta;
+    this.translationKey = params.translationKey;
+    this.translationParams = params.translationParams;
   }
 }
 
@@ -41,6 +58,71 @@ type SupabaseLikeError = {
   hint?: string | null;
   status?: number;
   name?: string;
+};
+
+/** Postgres CHECK / UNIQUE constraint name → translation key */
+const CONSTRAINT_TO_TRANSLATION_KEY: Record<string, ErrorTranslationKey> = {
+  matches_max_players_chk: 'errors.db.matches_max_players_chk',
+  matches_scores_consistency_chk: 'errors.db.matches_scores_consistency_chk',
+  matches_starts_at_upper_chk: 'errors.db.matches_starts_at_upper_chk',
+  profiles_display_name_len_chk: 'errors.db.profiles_display_name_len_chk',
+  groups_name_check: 'errors.db.groups_name_check',
+};
+
+/** RPC/trigger ERR_* message token → translation key + classification */
+const ERR_REGISTRY: Record<
+  string,
+  { key: ErrorTranslationKey; code: AppErrorCode }
+> = {
+  ERR_AUTH_REQUIRED: { key: 'errors.rpc.authRequired', code: 'AUTH_REQUIRED' },
+  ERR_FORBIDDEN: { key: 'errors.rpc.forbidden', code: 'FORBIDDEN' },
+  ERR_MATCH_LINEUP_LOCKED: {
+    key: 'errors.rpc.matchLineupLocked',
+    code: 'VALIDATION',
+  },
+  ERR_GROUP_LEADERBOARD_FORBIDDEN: {
+    key: 'errors.rpc.groupLeaderboardForbidden',
+    code: 'FORBIDDEN',
+  },
+  ERR_GROUP_NAME_MIN: { key: 'errors.rpc.groupNameMin', code: 'VALIDATION' },
+  ERR_GROUP_NAME_MAX: { key: 'errors.rpc.groupNameMax', code: 'VALIDATION' },
+  ERR_MATCH_NOT_FOUND: { key: 'errors.rpc.matchNotFound', code: 'NOT_FOUND' },
+  ERR_RATING_CANNOT_PARTICIPATE: {
+    key: 'errors.rpc.ratingCannotParticipate',
+    code: 'FORBIDDEN',
+  },
+  ERR_RATING_FINISHED_ONLY: {
+    key: 'errors.rpc.ratingFinishedOnly',
+    code: 'VALIDATION',
+  },
+  ERR_RATING_INVALID_RATEE: {
+    key: 'errors.rpc.ratingInvalidRatee',
+    code: 'VALIDATION',
+  },
+  ERR_RATING_SCORE_RANGE: {
+    key: 'errors.rpc.ratingScoreRange',
+    code: 'VALIDATION',
+  },
+  ERR_RATING_RATEE_INELIGIBLE: {
+    key: 'errors.rpc.ratingRateeIneligible',
+    code: 'VALIDATION',
+  },
+  ERR_MOTM_CANNOT_VOTE: {
+    key: 'errors.rpc.motmCannotVote',
+    code: 'FORBIDDEN',
+  },
+  ERR_MOTM_INVALID_PICK: {
+    key: 'errors.rpc.motmInvalidPick',
+    code: 'VALIDATION',
+  },
+  ERR_MOTM_FINISHED_ONLY: {
+    key: 'errors.rpc.motmFinishedOnly',
+    code: 'VALIDATION',
+  },
+  ERR_MOTM_PLAYER_NOT_ON_FIELD: {
+    key: 'errors.rpc.motmPlayerNotOnField',
+    code: 'VALIDATION',
+  },
 };
 
 export function isAppError(error: unknown): error is AppError {
@@ -55,6 +137,32 @@ export function mapSupabaseError(
   if (isAppError(error)) return error;
 
   const parsed = parseSupabaseLikeError(error);
+  const errToken = extractErrToken(combinedSupabaseText(parsed));
+  if (errToken && ERR_REGISTRY[errToken]) {
+    const { key, code } = ERR_REGISTRY[errToken];
+    return new AppError({
+      code,
+      operation,
+      translationKey: key,
+      cause: error,
+      retryable: isRetryableCode(code),
+      meta: { supabase: parsed, errToken },
+    });
+  }
+
+  const constraintName = extractConstraintName(combinedSupabaseText(parsed));
+  if (constraintName && CONSTRAINT_TO_TRANSLATION_KEY[constraintName]) {
+    const key = CONSTRAINT_TO_TRANSLATION_KEY[constraintName];
+    return new AppError({
+      code: 'VALIDATION',
+      operation,
+      translationKey: key,
+      cause: error,
+      retryable: false,
+      meta: { supabase: parsed, constraintName },
+    });
+  }
+
   const code = classifySupabaseError(parsed);
   const message =
     fallbackMessage ?? buildUserFacingMessage(parsed, code, operation);
@@ -89,8 +197,15 @@ export function createNotFoundError(operation: string, message = 'Kayıt bulunam
   });
 }
 
-export function toUserMessage(error: unknown, fallback = 'Bir hata oluştu.'): string {
+export function toUserMessage(
+  error: unknown,
+  fallback = 'Bir hata oluştu.',
+  locale: ErrorLocale = 'tr',
+): string {
   if (isAppError(error)) {
+    if (error.translationKey) {
+      return translateError(error.translationKey, locale, error.translationParams);
+    }
     return error.message || fallback;
   }
 
@@ -100,6 +215,18 @@ export function toUserMessage(error: unknown, fallback = 'Bir hata oluştu.'): s
 
 export function shouldRetry(error: unknown): boolean {
   return isAppError(error) ? error.retryable : false;
+}
+
+function extractErrToken(text: string): string | undefined {
+  const m = text.match(/\b(ERR_[A-Z0-9_]+)\b/);
+  return m?.[1];
+}
+
+function extractConstraintName(text: string): string | undefined {
+  const m = text.match(/check constraint "([^"]+)"/i);
+  if (m?.[1]) return m[1];
+  const m2 = text.match(/unique constraint "([^"]+)"/i);
+  return m2?.[1];
 }
 
 function parseSupabaseLikeError(error: unknown): SupabaseLikeError {
@@ -129,6 +256,11 @@ function combinedSupabaseText(parsed: SupabaseLikeError): string {
 }
 
 function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {
+  const token = extractErrToken(combinedSupabaseText(error));
+  if (token && ERR_REGISTRY[token]) {
+    return ERR_REGISTRY[token].code;
+  }
+
   const code = (error.code ?? '').toUpperCase();
   const message = (error.message ?? '').toLowerCase();
   const details = (error.details ?? '').toLowerCase();

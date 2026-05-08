@@ -58,6 +58,26 @@ describe('mapSupabaseError', () => {
     );
     expect(err.message).toContain('Katılım kodu üretilemedi');
   });
+
+  it('maps ERR_AUTH_REQUIRED token to translation', () => {
+    const err = mapSupabaseError({ message: 'ERR_AUTH_REQUIRED', code: 'P0001' }, 'ensureMyProfile');
+    expect(err.translationKey).toBe('errors.rpc.authRequired');
+    expect(err.code).toBe('AUTH_REQUIRED');
+    expect(err.message).toContain('giriş yapmanız');
+  });
+
+  it('maps named check constraint matches_max_players_chk', () => {
+    const err = mapSupabaseError(
+      {
+        message: 'new row for relation "matches" violates check constraint "matches_max_players_chk"',
+        code: '23514',
+      },
+      'insertMatch',
+    );
+    expect(err.translationKey).toBe('errors.db.matches_max_players_chk');
+    expect(err.code).toBe('VALIDATION');
+    expect(err.message).toContain('22');
+  });
 });
 
 describe('toUserMessage', () => {

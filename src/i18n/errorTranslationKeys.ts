@@ -1,0 +1,23 @@
+/** Stable keys for Postgres constraint names + RPC ERR_* codes (see supabase migrations). */
+export type ErrorTranslationKey =
+  | 'errors.db.matches_max_players_chk'
+  | 'errors.db.matches_scores_consistency_chk'
+  | 'errors.db.matches_starts_at_upper_chk'
+  | 'errors.db.profiles_display_name_len_chk'
+  | 'errors.db.groups_name_check'
+  | 'errors.rpc.authRequired'
+  | 'errors.rpc.forbidden'
+  | 'errors.rpc.matchLineupLocked'
+  | 'errors.rpc.groupLeaderboardForbidden'
+  | 'errors.rpc.groupNameMin'
+  | 'errors.rpc.groupNameMax'
+  | 'errors.rpc.matchNotFound'
+  | 'errors.rpc.ratingCannotParticipate'
+  | 'errors.rpc.ratingFinishedOnly'
+  | 'errors.rpc.ratingInvalidRatee'
+  | 'errors.rpc.ratingScoreRange'
+  | 'errors.rpc.ratingRateeIneligible'
+  | 'errors.rpc.motmCannotVote'
+  | 'errors.rpc.motmInvalidPick'
+  | 'errors.rpc.motmFinishedOnly'
+  | 'errors.rpc.motmPlayerNotOnField';
