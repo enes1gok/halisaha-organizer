@@ -1,0 +1,29 @@
+---
+description: Supabase service layer — Row ↔ domain separation and explicit RPC result types
+globs: src/services/supabase/**/*.{ts,tsx},src/types/domain.ts
+alwaysApply: false
+---
+
+# Backend type safety (Postgres ↔ TypeScript)
+
+Bridge [`src/services/supabase/types.ts`](../../src/services/supabase/types.ts) (DB row shapes) and [`src/types/domain.ts`](../../src/types/domain.ts) (app model) without mixing them at boundaries.
+
+## No cross-leakage
+
+- Do not expose `*Row` types or raw Supabase rows to UI, Zustand slices, or generic domain helpers. Convert via [`src/services/supabase/mappers.ts`](../../src/services/supabase/mappers.ts) or a dedicated mapper next to the RPC/service.
+
+```typescript
+// BAD: returning MatchRow from a hook used by screens for domain logic
+// GOOD: map to Match / Player / … before leaving the service layer
+```
+
+- Do not pass domain objects directly into `.insert()` / `.update()` payloads. Map fields to DB column names and enum strings expected by Postgres (`rsvpToDb`, row-shaped builders, etc.).
+
+## RPC return types
+
+- For every `supabase.rpc(...)`, define an explicit TypeScript type or interface for the success payload (reuse a `*Row` from `types.ts` when the shape matches; otherwise add a dedicated name, e.g. `RpcGetMatchByJoinCodeRow`).
+- Avoid leaving results as `unknown` or an untyped `as` cast. Narrow casts are acceptable when the declared target type is explicit (named).
+
+## Related
+
+- Domain model: [`src/types/domain.ts`](../../src/types/domain.ts).

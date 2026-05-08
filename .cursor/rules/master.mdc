@@ -18,6 +18,9 @@ alwaysApply: true
 | UI components, screens, layout, styling, animations | `ui-ux-design.mdc` |
 | Supabase auth, RLS, migrations, storage policies, or security-sensitive data access | `supabase-governance.mdc` |
 | SQL performance tuning, indexing, or Postgres-backed list/query optimization | `supabase-postgres-performance.mdc` |
+| Schema/migrations: new tables, enums, FK delete/update behavior | `supabase-schema-evolution.mdc` |
+| `src/services/supabase` or DB ↔ domain type boundaries | `backend-type-safety.mdc` |
+| Multi-table writes, RPC transactions, optimistic update ordering | `atomic-mutation-policy.mdc` |
 
 Rules apply when matching files are open (`globs`) or when the task clearly fits the column.
 

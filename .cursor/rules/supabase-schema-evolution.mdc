@@ -1,0 +1,34 @@
+---
+description: Schema evolution — updated_at triggers, enum compatibility, explicit FK ON DELETE/UPDATE
+globs: supabase/**/*.sql
+alwaysApply: false
+---
+
+# Supabase schema evolution
+
+Apply when authoring migrations or SQL under `supabase/` (alongside [`supabase-governance.mdc`](supabase-governance.mdc) for migration-first and security).
+
+## New tables
+
+- Include `updated_at timestamptz not null default now()` unless the table is strictly append-only with no row updates; if omitting, add a one-line rationale in the migration/PR.
+- Attach `BEFORE UPDATE` trigger using existing [`public.set_updated_at()`](../../supabase/migrations/20260507120000_initial_schema.sql): naming pattern `{table}_set_updated_at`.
+
+```sql
+-- Example pattern (names vary per migration)
+create trigger profiles_set_updated_at
+before update on public.profiles
+for each row execute procedure public.set_updated_at();
+```
+
+## Enum changes
+
+- Adding new enum values is usually backward compatible for readers; removing, renaming, or renumbering requires a multi-step migration and/or compatibility layer so older clients still see meaningful values.
+- Risky changes: plan data backfill and rollout order; document in the migration or PR checklist.
+
+## Foreign keys
+
+- Every `REFERENCES` clause must specify **both** `ON DELETE` and `ON UPDATE` explicitly (`CASCADE`, `SET NULL`, `RESTRICT`, etc.). Do not rely on implicit defaults.
+
+## Related
+
+- Migration workflow and RLS: [`supabase-governance.mdc`](supabase-governance.mdc).
