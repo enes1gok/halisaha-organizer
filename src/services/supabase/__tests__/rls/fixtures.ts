@@ -6,48 +6,29 @@ export type InsertedMatch = {
 };
 
 /**
- * Creates an upcoming match as the signed-in organizer (RLS insert + organizer attendee).
+ * Creates an upcoming match as the signed-in organizer (`create_match_with_organizer_attendee` RPC).
  */
 export async function insertMatchAsOrganizer(
   organizer: SupabaseClient,
   joinCode: string,
-  options?: { selfReportEnabled?: boolean },
 ): Promise<InsertedMatch> {
-  const {
-    data: { user },
-  } = await organizer.auth.getUser();
-  if (!user) throw new Error('insertMatchAsOrganizer: not signed in');
-
   const startsAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-  const { error } = await organizer.from('matches').insert({
-    starts_at: startsAt,
-    venue: 'RLS integration sahası',
-    organizer_id: user.id,
-    max_players: 14,
-    join_code: joinCode,
-    self_report_enabled: options?.selfReportEnabled ?? false,
+  const { data, error } = await organizer.rpc('create_match_with_organizer_attendee', {
+    p_starts_at: startsAt,
+    p_venue: 'RLS integration sahası',
+    p_max_players: 14,
+    p_join_code: joinCode,
+    p_group_id: null,
+    p_price_per_person: null,
+    p_iban: null,
   });
 
   if (error) throw error;
 
-  const { data: match, error: selErr } = await organizer
-    .from('matches')
-    .select('id, join_code')
-    .eq('join_code', joinCode)
-    .single();
+  const row = data as { id?: string; join_code?: string } | null;
+  if (!row?.id || !row.join_code) throw new Error('insertMatchAsOrganizer: no row');
 
-  if (selErr) throw selErr;
-  if (!match) throw new Error('insertMatchAsOrganizer: no row');
-
-  const att = await organizer.from('match_attendees').insert({
-    match_id: match.id,
-    player_id: user.id,
-    status: 'going',
-    paid: false,
-  });
-  if (att.error) throw att.error;
-
-  return { id: match.id, join_code: match.join_code };
+  return { id: row.id, join_code: row.join_code };
 }
 
 /** Gruba bağlı maç (haftalık spawn testleri için). */
@@ -57,39 +38,20 @@ export async function insertGroupMatchAsOrganizer(
   groupId: string,
   startsAtIso: string,
 ): Promise<InsertedMatch> {
-  const {
-    data: { user },
-  } = await organizer.auth.getUser();
-  if (!user) throw new Error('insertGroupMatchAsOrganizer: not signed in');
-
-  const { error } = await organizer.from('matches').insert({
-    starts_at: startsAtIso,
-    venue: 'Grup serisi sahası',
-    organizer_id: user.id,
-    max_players: 14,
-    join_code: joinCode,
-    group_id: groupId,
-    self_report_enabled: false,
+  const { data, error } = await organizer.rpc('create_match_with_organizer_attendee', {
+    p_starts_at: startsAtIso,
+    p_venue: 'Grup serisi sahası',
+    p_max_players: 14,
+    p_join_code: joinCode,
+    p_group_id: groupId,
+    p_price_per_person: null,
+    p_iban: null,
   });
 
   if (error) throw error;
 
-  const { data: match, error: selErr } = await organizer
-    .from('matches')
-    .select('id, join_code')
-    .eq('join_code', joinCode)
-    .single();
+  const row = data as { id?: string; join_code?: string } | null;
+  if (!row?.id || !row.join_code) throw new Error('insertGroupMatchAsOrganizer: no row');
 
-  if (selErr) throw selErr;
-  if (!match) throw new Error('insertGroupMatchAsOrganizer: no row');
-
-  const att = await organizer.from('match_attendees').insert({
-    match_id: match.id,
-    player_id: user.id,
-    status: 'going',
-    paid: false,
-  });
-  if (att.error) throw att.error;
-
-  return { id: match.id, join_code: match.join_code };
+  return { id: row.id, join_code: row.join_code };
 }

@@ -12,40 +12,33 @@ export type CreateMatchRowInput = {
   iban?: string | null;
 };
 
-/** Maç oluşturur ve organizatörü `going` davetli olarak ekler (yerel store ile aynı akış). */
+/** Maç oluşturur ve organizatörü `going` davetli olarak ekler (atomik RPC; yerel store ile aynı akış). */
 export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInput): Promise<MatchRow> {
   const supabase = getSupabaseClient();
+  await supabase.auth.refreshSession();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw createAuthRequiredError('insertMatchWithOrganizerAttendee');
 
-  const { data: match, error } = await supabase
-    .from('matches')
-    .insert({
-      starts_at: input.startsAt,
-      venue: input.venue,
-      organizer_id: user.id,
-      max_players: input.maxPlayers,
-      group_id: input.groupId ?? null,
-      price_per_person: input.pricePerPerson ?? null,
-      iban: input.iban ?? null,
-      join_code: input.joinCode,
-    })
-    .select('*')
-    .single();
-
-  if (error) throw mapSupabaseError(error, 'insertMatchWithOrganizerAttendee.match_insert');
-
-  const ins = await supabase.from('match_attendees').insert({
-    match_id: match.id,
-    player_id: user.id,
-    status: 'going',
-    paid: false,
+  const { data, error } = await supabase.rpc('create_match_with_organizer_attendee', {
+    p_starts_at: input.startsAt,
+    p_venue: input.venue,
+    p_max_players: input.maxPlayers,
+    p_join_code: input.joinCode,
+    p_group_id: input.groupId ?? null,
+    p_price_per_person: input.pricePerPerson ?? null,
+    p_iban: input.iban ?? null,
   });
-  if (ins.error) throw mapSupabaseError(ins.error, 'insertMatchWithOrganizerAttendee.organizer_attendee_insert');
 
-  return match as MatchRow;
+  if (error) throw mapSupabaseError(error, 'insertMatchWithOrganizerAttendee.create_match_rpc');
+
+  const match = data as MatchRow | null;
+  if (!match?.id) {
+    throw mapSupabaseError({ message: 'create_match_with_organizer_attendee returned no row' }, 'insertMatchWithOrganizerAttendee.create_match_rpc');
+  }
+
+  return match;
 }
 
 export async function fetchMatchById(matchId: string): Promise<MatchRow | null> {

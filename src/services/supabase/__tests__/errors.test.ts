@@ -66,6 +66,13 @@ describe('mapSupabaseError', () => {
     expect(err.message).toContain('giriş yapmanız');
   });
 
+  it('maps ERR_MATCH_CREATE_GROUP_FORBIDDEN token to translation', () => {
+    const err = mapSupabaseError({ message: 'ERR_MATCH_CREATE_GROUP_FORBIDDEN', code: 'P0001' }, 'createMatchRpc');
+    expect(err.translationKey).toBe('errors.rpc.matchCreateGroupForbidden');
+    expect(err.code).toBe('FORBIDDEN');
+    expect(err.message).toContain('grupta maç');
+  });
+
   it('maps named check constraint matches_max_players_chk', () => {
     const err = mapSupabaseError(
       {

@@ -91,6 +91,10 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.groupLeaderboardForbidden',
     code: 'FORBIDDEN',
   },
+  ERR_MATCH_CREATE_GROUP_FORBIDDEN: {
+    key: 'errors.rpc.matchCreateGroupForbidden',
+    code: 'FORBIDDEN',
+  },
   ERR_GROUP_NAME_MIN: { key: 'errors.rpc.groupNameMin', code: 'VALIDATION' },
   ERR_GROUP_NAME_MAX: { key: 'errors.rpc.groupNameMax', code: 'VALIDATION' },
   ERR_MATCH_NOT_FOUND: { key: 'errors.rpc.matchNotFound', code: 'NOT_FOUND' },

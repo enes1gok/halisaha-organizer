@@ -18,6 +18,8 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Kadro kilitli; takım ataması değiştirilemez.',
   'errors.rpc.groupLeaderboardForbidden':
     'Bu grubun istatistiklerini görme yetkiniz yok.',
+  'errors.rpc.matchCreateGroupForbidden':
+    'Bu grupta maç oluşturma yetkiniz yok.',
   'errors.rpc.groupNameMin': 'Grup adı en az 2 karakter olmalı.',
   'errors.rpc.groupNameMax': 'Grup adı en fazla 80 karakter olabilir.',
   'errors.rpc.matchNotFound': 'Maç bulunamadı.',

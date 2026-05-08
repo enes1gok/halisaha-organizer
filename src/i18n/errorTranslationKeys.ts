@@ -9,6 +9,7 @@ export type ErrorTranslationKey =
   | 'errors.rpc.forbidden'
   | 'errors.rpc.matchLineupLocked'
   | 'errors.rpc.groupLeaderboardForbidden'
+  | 'errors.rpc.matchCreateGroupForbidden'
   | 'errors.rpc.groupNameMin'
   | 'errors.rpc.groupNameMax'
   | 'errors.rpc.matchNotFound'
