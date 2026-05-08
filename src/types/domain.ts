@@ -4,7 +4,7 @@ export type PreferredFoot = 'left' | 'right' | 'both';
 
 export type RSVPStatus = 'going' | 'maybe' | 'notGoing';
 
-export type MatchStatus = 'upcoming' | 'ongoing' | 'finished';
+export type MatchStatus = 'upcoming' | 'ongoing' | 'finished' | 'cancelled';
 export type GroupRole = 'owner' | 'member';
 
 export interface PlayerStats {

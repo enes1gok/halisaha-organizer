@@ -11,7 +11,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const DEFAULT_DRAIN_LIMIT = 50;
 const MAX_DRAIN_ITERATIONS = 10;
 
-type DeliveryType = 'initial' | 'reminder';
+type DeliveryType = 'initial' | 'reminder' | 'match_cancelled' | 'venue_change';
 
 type ClaimedDeliveryRow = {
   delivery_id: string;
@@ -44,6 +44,8 @@ type NotificationPreferences = {
   types?: {
     group_match_initial?: boolean;
     group_match_reminder?: boolean;
+    group_match_cancelled?: boolean;
+    group_match_venue_change?: boolean;
   };
   quiet_hours?: {
     enabled?: boolean;
@@ -73,6 +75,16 @@ function asPrefs(raw: unknown): NotificationPreferences | null {
   return raw as NotificationPreferences;
 }
 
+const PREF_KEY_BY_DELIVERY_TYPE: Record<
+  DeliveryType,
+  keyof NonNullable<NotificationPreferences['types']>
+> = {
+  initial: 'group_match_initial',
+  reminder: 'group_match_reminder',
+  match_cancelled: 'group_match_cancelled',
+  venue_change: 'group_match_venue_change',
+};
+
 /** Mirrors SQL `notification_delivery_allowed` + optional quiet-hours block at send time. */
 function shouldSendPush(
   prefs: NotificationPreferences | null,
@@ -81,7 +93,7 @@ function shouldSendPush(
 ): { ok: boolean; reason?: 'preferences' | 'quiet_hours' } {
   const p = prefs;
   if (p?.push_enabled === false) return { ok: false, reason: 'preferences' };
-  const key = type === 'initial' ? 'group_match_initial' : 'group_match_reminder';
+  const key = PREF_KEY_BY_DELIVERY_TYPE[type];
   if (p?.types?.[key] === false) return { ok: false, reason: 'preferences' };
 
   const qh = p?.quiet_hours;
@@ -175,6 +187,21 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
       body: detail
         ? `${groupName} • ${detail} — RSVP'ni unutma`
         : `${groupName} grubu maçı için RSVP'ni unutma`,
+    };
+  }
+  if (delivery.type === 'match_cancelled') {
+    return {
+      title: 'Maç iptal edildi',
+      body: `${groupName} grubundaki maç iptal edildi`,
+    };
+  }
+  if (delivery.type === 'venue_change') {
+    const venue = (delivery.match_venue ?? '').trim();
+    const when = formatMatchTime(delivery.match_starts_at);
+    const tail = [when, venue].filter(Boolean).join(' • ');
+    return {
+      title: 'Saha güncellendi',
+      body: tail ? `${groupName} • ${tail}` : `${groupName} grubunda saha bilgisi güncellendi`,
     };
   }
   return {

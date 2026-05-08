@@ -6,7 +6,7 @@ export type PreferredFootRow = 'left' | 'right' | 'both';
 
 export type RsvpStatusRow = 'going' | 'maybe' | 'not_going';
 
-export type MatchStatusRow = 'upcoming' | 'ongoing' | 'finished';
+export type MatchStatusRow = 'upcoming' | 'ongoing' | 'finished' | 'cancelled';
 
 export type TeamSideRow = 'A' | 'B';
 
