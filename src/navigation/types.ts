@@ -29,7 +29,9 @@ export type ProfileStackParamList = {
 };
 
 export type OnboardingStackParamList = {
-  Onboarding: undefined;
+  AuthWelcome: undefined;
+  SignIn: undefined;
+  SignUp: undefined;
   PrivacyPolicy: undefined;
   TermsOfUse: undefined;
 };

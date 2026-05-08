@@ -1,8 +1,10 @@
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
-import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { AuthWelcomeScreen } from '../screens/AuthWelcomeScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { SignInScreen } from '../screens/SignInScreen';
+import { SignUpScreen } from '../screens/SignUpScreen';
 import { TermsOfUseScreen } from '../screens/TermsOfUseScreen';
 import { colors } from '../theme';
 import { defaultStackScreenOptions } from './defaultStackScreenOptions';
@@ -25,11 +27,24 @@ const OnboardingTheme = {
 export function OnboardingNavigator() {
   return (
     <NavigationContainer theme={OnboardingTheme}>
-      <Stack.Navigator screenOptions={defaultStackScreenOptions}>
+      <Stack.Navigator
+        initialRouteName="AuthWelcome"
+        screenOptions={defaultStackScreenOptions}
+      >
         <Stack.Screen
-          name="Onboarding"
-          component={OnboardingScreen}
+          name="AuthWelcome"
+          component={AuthWelcomeScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SignIn"
+          component={SignInScreen}
+          options={{ title: 'Giriş Yap' }}
+        />
+        <Stack.Screen
+          name="SignUp"
+          component={SignUpScreen}
+          options={{ title: 'Kayıt Ol' }}
         />
         <Stack.Screen
           name="PrivacyPolicy"
