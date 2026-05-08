@@ -78,6 +78,28 @@ describe('mapSupabaseError', () => {
     expect(err.code).toBe('VALIDATION');
     expect(err.message).toContain('22');
   });
+
+  it('attaches traceId and requestPayload when provided', () => {
+    const err = mapSupabaseError({ message: 'ERR_FORBIDDEN', code: 'P0001' }, 'submitMatchResultRpc', {
+      traceId: 'trace-test-1',
+      requestPayload: { matchId: 'm1', scoreA: 1, scoreB: 2 },
+    });
+    expect(err.traceId).toBe('trace-test-1');
+    expect(err.meta?.traceId).toBe('trace-test-1');
+    expect(err.meta?.requestPayload).toEqual({ matchId: 'm1', scoreA: 1, scoreB: 2 });
+  });
+
+  it('parses JSON Postgres DETAIL into meta.pgDetail', () => {
+    const err = mapSupabaseError(
+      {
+        message: 'ERR_AUTH_REQUIRED',
+        code: 'P0001',
+        details: '{"field":"starts_at","reason":"past"}',
+      },
+      'rpc',
+    );
+    expect(err.meta?.pgDetail).toEqual({ field: 'starts_at', reason: 'past' });
+  });
 });
 
 describe('toUserMessage', () => {

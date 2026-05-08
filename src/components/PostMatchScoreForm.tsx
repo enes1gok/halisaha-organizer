@@ -6,7 +6,7 @@ import { PlayerAvatar } from './PlayerAvatar';
 import { colors, spacing, typography } from '../theme';
 import type { Match, ScoreResult } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
-import { toUserMessage } from '../services/supabase/errors';
+import { showUserFacingErrorAlert } from './UserFacingErrorAlert';
 
 export function toScoreLines(map: Record<string, number>): { playerId: string; count: number }[] {
   return Object.entries(map)
@@ -91,7 +91,11 @@ export function PostMatchScoreForm({
       setConfirmOpen(false);
       onScoreSubmitted?.();
     } catch (e) {
-      Alert.alert('Hata', toUserMessage(e, 'Skor kaydedilemedi.'));
+      showUserFacingErrorAlert(e, {
+        uiOperation: 'PostMatchScoreForm.applySubmit',
+        fallbackMessage: 'Skor kaydedilemedi.',
+        mapOperation: 'submitMatchResultRpc',
+      });
     }
   };
 
@@ -175,7 +179,11 @@ export function PostMatchScoreForm({
             value={match.selfReportEnabled}
             onValueChange={(v) =>
               void setSelfReportEnabled(match.id, v).catch((err) =>
-                Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+                showUserFacingErrorAlert(err, {
+                  uiOperation: 'PostMatchScoreForm.selfReportToggle',
+                  fallbackMessage: 'Kaydedilemedi.',
+                  mapOperation: 'updateMatchOrganizerFieldsRemote',
+                }),
               )
             }
             trackColor={{ false: colors.border, true: colors.accentMuted }}

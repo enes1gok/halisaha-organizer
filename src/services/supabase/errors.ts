@@ -18,6 +18,8 @@ type AppErrorParams = {
   retryable?: boolean;
   cause?: unknown;
   meta?: Record<string, unknown>;
+  /** Correlates client logs / support reports (optional). */
+  traceId?: string;
   /** Stable key for i18n (Postgres constraint name or RPC ERR_* mapping). */
   translationKey?: ErrorTranslationKey;
   translationParams?: Record<string, string | number>;
@@ -30,6 +32,8 @@ export class AppError extends Error {
   retryable: boolean;
   cause?: unknown;
   meta?: Record<string, unknown>;
+  /** Same as meta.traceId when set (convenience). */
+  traceId?: string;
   translationKey?: ErrorTranslationKey;
   translationParams?: Record<string, string | number>;
 
@@ -45,7 +49,10 @@ export class AppError extends Error {
     this.operation = params.operation;
     this.retryable = params.retryable ?? isRetryableCode(params.code);
     this.cause = params.cause;
-    this.meta = params.meta;
+    this.traceId = params.traceId;
+    const meta = params.meta ? { ...params.meta } : {};
+    if (params.traceId) meta.traceId = params.traceId;
+    this.meta = Object.keys(meta).length > 0 ? meta : undefined;
     this.translationKey = params.translationKey;
     this.translationParams = params.translationParams;
   }
@@ -129,14 +136,43 @@ export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }
 
+/** Options for {@link mapSupabaseError} (third argument when not a plain fallback string). */
+export type MapSupabaseErrorOptions = {
+  fallbackMessage?: string;
+  traceId?: string;
+  /** Safe subset of request input for debugging (no tokens / PII). */
+  requestPayload?: Record<string, unknown>;
+};
+
+export function generateTraceId(): string {
+  const c = globalThis.crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  return `tr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export function mapSupabaseError(
   error: unknown,
   operation: string,
   fallbackMessage?: string,
+): AppError;
+export function mapSupabaseError(
+  error: unknown,
+  operation: string,
+  options: MapSupabaseErrorOptions,
+): AppError;
+export function mapSupabaseError(
+  error: unknown,
+  operation: string,
+  third?: string | MapSupabaseErrorOptions,
 ): AppError {
   if (isAppError(error)) return error;
 
+  const opts: MapSupabaseErrorOptions =
+    typeof third === 'string' ? { fallbackMessage: third } : third ?? {};
+  const fallbackMessage = opts.fallbackMessage;
+
   const parsed = parseSupabaseLikeError(error);
+  const pgDetail = parsePgDetail(parsed.details);
   const errToken = extractErrToken(combinedSupabaseText(parsed));
   if (errToken && ERR_REGISTRY[errToken]) {
     const { key, code } = ERR_REGISTRY[errToken];
@@ -146,7 +182,8 @@ export function mapSupabaseError(
       translationKey: key,
       cause: error,
       retryable: isRetryableCode(code),
-      meta: { supabase: parsed, errToken },
+      traceId: opts.traceId,
+      meta: mergeErrorMeta({ supabase: parsed, errToken }, opts, pgDetail),
     });
   }
 
@@ -159,7 +196,8 @@ export function mapSupabaseError(
       translationKey: key,
       cause: error,
       retryable: false,
-      meta: { supabase: parsed, constraintName },
+      traceId: opts.traceId,
+      meta: mergeErrorMeta({ supabase: parsed, constraintName }, opts, pgDetail),
     });
   }
 
@@ -173,10 +211,65 @@ export function mapSupabaseError(
     message,
     cause: error,
     retryable: isRetryableCode(code),
-    meta: {
-      supabase: parsed,
-    },
+    traceId: opts.traceId,
+    meta: mergeErrorMeta({ supabase: parsed }, opts, pgDetail),
   });
+}
+
+/** One-line technical bundle for support / dev (Turkish UI may still use {@link toUserMessage}). */
+export function formatTechnicalErrorSummary(err: AppError): string {
+  const lines: string[] = [];
+  lines.push(`operation: ${err.operation}`);
+  if (err.traceId) lines.push(`traceId: ${err.traceId}`);
+  lines.push(`code: ${err.code}`);
+  if (err.translationKey) lines.push(`translationKey: ${err.translationKey}`);
+  const m = err.meta;
+  if (m?.errToken) lines.push(`errToken: ${String(m.errToken)}`);
+  if (m?.constraintName) lines.push(`constraint: ${String(m.constraintName)}`);
+  if (m?.pgDetail && typeof m.pgDetail === 'object') {
+    try {
+      lines.push(`pgDetail: ${JSON.stringify(m.pgDetail)}`);
+    } catch {
+      lines.push('pgDetail: [unserializable]');
+    }
+  }
+  if (m?.requestPayload && typeof m.requestPayload === 'object') {
+    try {
+      lines.push(`request: ${JSON.stringify(m.requestPayload)}`);
+    } catch {
+      lines.push('request: [unserializable]');
+    }
+  }
+  const sup = m?.supabase as SupabaseLikeError | undefined;
+  if (sup?.code != null) lines.push(`pgCode: ${String(sup.code)}`);
+  return lines.join('\n');
+}
+
+function mergeErrorMeta(
+  base: Record<string, unknown>,
+  opts: MapSupabaseErrorOptions,
+  pgDetail?: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  if (opts.traceId) out.traceId = opts.traceId;
+  if (opts.requestPayload) out.requestPayload = opts.requestPayload;
+  if (pgDetail) out.pgDetail = pgDetail;
+  return out;
+}
+
+function parsePgDetail(details: string | null | undefined): Record<string, unknown> | undefined {
+  if (details == null || typeof details !== 'string') return undefined;
+  const t = details.trim();
+  if (!t.startsWith('{')) return undefined;
+  try {
+    const o = JSON.parse(t) as unknown;
+    if (o !== null && typeof o === 'object' && !Array.isArray(o)) {
+      return o as Record<string, unknown>;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
 }
 
 export function createAuthRequiredError(operation: string, message?: string): AppError {

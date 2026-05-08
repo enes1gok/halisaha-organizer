@@ -21,6 +21,7 @@ alwaysApply: true
 | Schema/migrations: new tables, enums, FK delete/update behavior | `supabase-schema-evolution.mdc` |
 | `src/services/supabase` or DB ↔ domain type boundaries | `backend-type-safety.mdc` |
 | Multi-table writes, RPC transactions, optimistic update ordering | `atomic-mutation-policy.mdc` |
+| Supabase error mapping, `ERR_*` tokens, `mapSupabaseError`, RPC `raise_app_error`, error logging | `error-handling-governance.mdc` |
 
 Rules apply when matching files are open (`globs`) or when the task clearly fits the column.
 
@@ -37,6 +38,7 @@ Skills live in `.cursor/skills/{name}/SKILL.md`. Read the matching skill when th
 | `supabase-governance` | Supabase auth/RLS/migration/storage/query-performance tasks that need security + operational playbooks |
 | `add-atomic-rpc` | New/upgraded Postgres RPC; atomic multi-table writes; migration + RLS/grants + pgTAP |
 | `refactor-to-idempotent-logic` | Cron/retry-safe DB logic; idempotent refactor using ON CONFLICT, EXISTS, status guards |
+| `debug-supabase-error` | Diagnosing SQLSTATE, RLS, and RPC `ERR_*` / `raise_app_error` failures |
 
 ## Maintenance contract
 

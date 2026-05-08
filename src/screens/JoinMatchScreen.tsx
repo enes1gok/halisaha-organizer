@@ -5,7 +5,8 @@ import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, Vie
 import { PillButton } from '../components/PillButton';
 import { colors, spacing, typography } from '../theme';
 import { useMatchesStore } from '../store';
-import { isAppError, toUserMessage } from '../services/supabase/errors';
+import { isAppError } from '../services/supabase/errors';
+import { showUserFacingErrorAlert } from '../components/UserFacingErrorAlert';
 import type { HomeStackParamList } from '../navigation/types';
 
 type Nav = StackNavigationProp<HomeStackParamList, 'JoinMatch'>;
@@ -35,7 +36,11 @@ export function JoinMatchScreen() {
         Alert.alert('Bulunamadı', 'Bu koda ait yaklaşan bir maç bulunamadı.');
         return;
       }
-      Alert.alert('Hata', toUserMessage(e, 'Katılım başarısız.'));
+      showUserFacingErrorAlert(e, {
+        uiOperation: 'JoinMatchScreen.submit',
+        fallbackMessage: 'Katılım başarısız.',
+        mapOperation: 'joinMatchByJoinCode',
+      });
     } finally {
       setBusy(false);
     }

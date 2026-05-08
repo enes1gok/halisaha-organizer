@@ -12,10 +12,13 @@ export {
   AppError,
   createAuthRequiredError,
   createNotFoundError,
+  formatTechnicalErrorSummary,
+  generateTraceId,
   isAppError,
   mapSupabaseError,
   shouldRetry,
   toUserMessage,
+  type MapSupabaseErrorOptions,
 } from './errors';
 export { fetchMatchGraph, fetchMyMatchesGraph, type MatchGraphPayload } from './matchGraph';
 export { fetchGroupWeeklySeries, upsertGroupWeeklySeriesRemote, type UpsertGroupWeeklySeriesInput } from './groupWeeklySeries';

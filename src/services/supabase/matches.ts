@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../../lib/supabase';
-import { createAuthRequiredError, mapSupabaseError } from './errors';
+import { createAuthRequiredError, generateTraceId, mapSupabaseError } from './errors';
 import type { MatchRow, StatLinePayload } from './types';
 
 export type CreateMatchRowInput = {
@@ -74,8 +74,9 @@ export async function getMatchByJoinCodePreview(joinCode: string) {
 
 export async function joinMatchByJoinCode(joinCode: string): Promise<string | null> {
   const supabase = getSupabaseClient();
+  const traceId = generateTraceId();
   const { data, error } = await supabase.rpc('join_match_by_join_code', { p_code: joinCode });
-  if (error) throw mapSupabaseError(error, 'joinMatchByJoinCode');
+  if (error) throw mapSupabaseError(error, 'joinMatchByJoinCode', { traceId });
   return data as string | null;
 }
 
@@ -87,6 +88,7 @@ export async function submitMatchResultRpc(params: {
   assists: StatLinePayload[];
 }): Promise<void> {
   const supabase = getSupabaseClient();
+  const traceId = generateTraceId();
   const { error } = await supabase.rpc('submit_match_result', {
     p_match_id: params.matchId,
     p_score_a: params.scoreA,
@@ -94,5 +96,16 @@ export async function submitMatchResultRpc(params: {
     p_scorers: params.scorers,
     p_assists: params.assists,
   });
-  if (error) throw mapSupabaseError(error, 'submitMatchResultRpc');
+  if (error) {
+    throw mapSupabaseError(error, 'submitMatchResultRpc', {
+      traceId,
+      requestPayload: {
+        matchId: params.matchId,
+        scoreA: params.scoreA,
+        scoreB: params.scoreB,
+        scorerLines: params.scorers.length,
+        assistLines: params.assists.length,
+      },
+    });
+  }
 }

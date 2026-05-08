@@ -1,0 +1,31 @@
+---
+description: Structured errors — RPC tokens, mapSupabaseError, trace/context
+globs:
+  - src/services/supabase/errors.ts
+  - src/services/supabase/**/*.ts
+  - src/services/logging/**/*.ts
+  - supabase/migrations/**/*.sql
+---
+
+# Error handling governance
+
+## Postgres / RPC
+
+- Prefer **`public.raise_app_error(p_token text, p_payload jsonb default '{}')`** (see migration `raise_app_error_protocol`) instead of ad-hoc `raise exception '...'` prose. Message body stays a stable **`ERR_*`** token; optional structured fields go in **`DETAIL`** as JSON (`p_payload`).
+- Authorization for match mutations should continue to use helpers such as **`public.is_match_organizer`** (and related helpers) rather than duplicating policy logic in prose errors.
+- New **`ERR_*`** tokens require **`ERR_REGISTRY`** + **`ErrorTranslationKey`** + locale strings (see `src/i18n/`).
+
+## Client services
+
+- Every Supabase error surfaced to UI should pass through **`mapSupabaseError`** with a **stable, unique `operation`** string (e.g. `fetchMatchGraph.attendees`, `submitMatchResultRpc`).
+- Critical mutations may pass **`MapSupabaseErrorOptions`**: **`traceId`** (from **`generateTraceId()`**) and a **whitelist** **`requestPayload`** (ids, counts — never JWTs or raw profile blobs).
+
+## Logging / UI
+
+- Use **`reportError`** from `src/services/logging/reportError.ts` for centralized dev logging; extend later for Sentry etc. without duplicating PII.
+- User-visible dialogs for high-impact flows may use **`showUserFacingErrorAlert`** so users can open **Teknik detay** and copy **`formatTechnicalErrorSummary`**.
+
+## Related
+
+- Atomic writes: `atomic-mutation-policy.mdc`
+- Supabase security: `supabase-governance.mdc`
