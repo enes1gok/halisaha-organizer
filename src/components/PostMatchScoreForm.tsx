@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { ConfirmationModal } from './ConfirmationModal';
 import { PillButton } from './PillButton';
 import { PlayerAvatar } from './PlayerAvatar';
+import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
 import { colors, spacing, typography } from '../theme';
 import type { Match, ScoreResult } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
@@ -104,7 +105,7 @@ export function PostMatchScoreForm({
       <Text style={styles.sectionHead}>Maç sonucu</Text>
       {canEditScore ? (
         <View style={styles.scoreRow}>
-          <Text style={styles.teamLbl}>Takım A</Text>
+          <Text style={styles.teamLbl}>{TEAM_SIDE_LABELS.A}</Text>
           <View style={styles.bigScore}>
             <Pressable onPress={() => setScoreA(Math.max(0, scoreA - 1))} style={styles.stepBtn} testID="postmatch:scoreA:dec">
               <Text style={styles.stepTxt}>−</Text>
@@ -124,7 +125,7 @@ export function PostMatchScoreForm({
               <Text style={styles.stepTxt}>+</Text>
             </Pressable>
           </View>
-          <Text style={styles.teamLbl}>Takım B</Text>
+          <Text style={styles.teamLbl}>{TEAM_SIDE_LABELS.B}</Text>
         </View>
       ) : match.result ? (
         <Text style={styles.roBody}>

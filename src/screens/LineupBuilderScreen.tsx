@@ -16,6 +16,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
@@ -265,8 +266,8 @@ export function LineupBuilderScreen() {
       </View>
 
       <View style={styles.row}>
-        {renderCol(teamAIds, zoneA, 'Takım A')}
-        {renderCol(teamBIds, zoneB, 'Takım B')}
+        {renderCol(teamAIds, zoneA, TEAM_SIDE_LABELS.A)}
+        {renderCol(teamBIds, zoneB, TEAM_SIDE_LABELS.B)}
       </View>
 
       <View style={styles.actions}>
