@@ -19,20 +19,24 @@ export async function insertMatchAsOrganizer(
   if (!user) throw new Error('insertMatchAsOrganizer: not signed in');
 
   const startsAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-  const { data: match, error } = await organizer
-    .from('matches')
-    .insert({
-      starts_at: startsAt,
-      venue: 'RLS integration sahası',
-      organizer_id: user.id,
-      max_players: 14,
-      join_code: joinCode,
-      self_report_enabled: options?.selfReportEnabled ?? false,
-    })
-    .select('id, join_code')
-    .single();
+  const { error } = await organizer.from('matches').insert({
+    starts_at: startsAt,
+    venue: 'RLS integration sahası',
+    organizer_id: user.id,
+    max_players: 14,
+    join_code: joinCode,
+    self_report_enabled: options?.selfReportEnabled ?? false,
+  });
 
   if (error) throw error;
+
+  const { data: match, error: selErr } = await organizer
+    .from('matches')
+    .select('id, join_code')
+    .eq('join_code', joinCode)
+    .single();
+
+  if (selErr) throw selErr;
   if (!match) throw new Error('insertMatchAsOrganizer: no row');
 
   const att = await organizer.from('match_attendees').insert({
@@ -58,21 +62,25 @@ export async function insertGroupMatchAsOrganizer(
   } = await organizer.auth.getUser();
   if (!user) throw new Error('insertGroupMatchAsOrganizer: not signed in');
 
-  const { data: match, error } = await organizer
-    .from('matches')
-    .insert({
-      starts_at: startsAtIso,
-      venue: 'Grup serisi sahası',
-      organizer_id: user.id,
-      max_players: 14,
-      join_code: joinCode,
-      group_id: groupId,
-      self_report_enabled: false,
-    })
-    .select('id, join_code')
-    .single();
+  const { error } = await organizer.from('matches').insert({
+    starts_at: startsAtIso,
+    venue: 'Grup serisi sahası',
+    organizer_id: user.id,
+    max_players: 14,
+    join_code: joinCode,
+    group_id: groupId,
+    self_report_enabled: false,
+  });
 
   if (error) throw error;
+
+  const { data: match, error: selErr } = await organizer
+    .from('matches')
+    .select('id, join_code')
+    .eq('join_code', joinCode)
+    .single();
+
+  if (selErr) throw selErr;
   if (!match) throw new Error('insertGroupMatchAsOrganizer: no row');
 
   const att = await organizer.from('match_attendees').insert({

@@ -1,29 +1,62 @@
 -- Halisaha Organizer: core schema (public)
 -- Maps to src/types/domain.ts — normalize nested Match / ScoreResult / Attendee.
+-- Idempotent: mevcut uzak DB'lerde db push tekrarlandığında çakışmasın.
 
 create extension if not exists pgcrypto with schema extensions;
 
 -- --- Enums (Postgres names; map to TS at app boundary) ---
 
-create type public.player_position as enum ('GK', 'DEF', 'MID', 'FWD');
+do $$ begin
+  create type public.player_position as enum ('GK', 'DEF', 'MID', 'FWD');
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.preferred_foot as enum ('left', 'right', 'both');
+do $$ begin
+  create type public.preferred_foot as enum ('left', 'right', 'both');
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.rsvp_status as enum ('going', 'maybe', 'not_going');
+do $$ begin
+  create type public.rsvp_status as enum ('going', 'maybe', 'not_going');
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.match_status as enum ('upcoming', 'ongoing', 'finished');
+do $$ begin
+  create type public.match_status as enum ('upcoming', 'ongoing', 'finished');
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.team_side as enum ('A', 'B');
+do $$ begin
+  create type public.team_side as enum ('A', 'B');
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.stat_line_kind as enum ('goal', 'assist');
+do $$ begin
+  create type public.stat_line_kind as enum ('goal', 'assist');
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.self_report_type as enum ('goal', 'assist');
+do $$ begin
+  create type public.self_report_type as enum ('goal', 'assist');
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.self_report_status as enum ('pending', 'approved', 'rejected');
+do $$ begin
+  create type public.self_report_status as enum ('pending', 'approved', 'rejected');
+exception
+  when duplicate_object then null;
+end $$;
 
 -- --- Profiles (1:1 auth.users) ---
 
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text not null default '',
   photo_uri text,
@@ -38,7 +71,7 @@ comment on table public.profiles is 'App player profile; id matches auth.users.'
 
 -- --- Matches ---
 
-create table public.matches (
+create table if not exists public.matches (
   id uuid primary key default gen_random_uuid(),
   starts_at timestamptz not null,
   venue text not null,
@@ -57,17 +90,17 @@ create table public.matches (
   constraint matches_join_code_nonempty check (length(trim(join_code)) >= 1)
 );
 
-create unique index matches_join_code_key on public.matches (join_code);
+create unique index if not exists matches_join_code_key on public.matches (join_code);
 
-create index matches_organizer_id_idx on public.matches (organizer_id);
+create index if not exists matches_organizer_id_idx on public.matches (organizer_id);
 
-create index matches_starts_at_idx on public.matches (starts_at);
+create index if not exists matches_starts_at_idx on public.matches (starts_at);
 
-create index matches_status_idx on public.matches (status);
+create index if not exists matches_status_idx on public.matches (status);
 
 -- --- RSVP / payment ---
 
-create table public.match_attendees (
+create table if not exists public.match_attendees (
   match_id uuid not null references public.matches (id) on delete cascade,
   player_id uuid not null references public.profiles (id) on delete cascade,
   status public.rsvp_status not null default 'going',
@@ -75,22 +108,22 @@ create table public.match_attendees (
   primary key (match_id, player_id)
 );
 
-create index match_attendees_player_id_idx on public.match_attendees (player_id);
+create index if not exists match_attendees_player_id_idx on public.match_attendees (player_id);
 
 -- --- Lineup (replaces teamAIds / teamBIds arrays) ---
 
-create table public.match_team_players (
+create table if not exists public.match_team_players (
   match_id uuid not null references public.matches (id) on delete cascade,
   player_id uuid not null references public.profiles (id) on delete cascade,
   team public.team_side not null,
   primary key (match_id, player_id)
 );
 
-create index match_team_players_match_team_idx on public.match_team_players (match_id, team);
+create index if not exists match_team_players_match_team_idx on public.match_team_players (match_id, team);
 
 -- --- Goals / assists (ScoreResult.scorers / assists) ---
 
-create table public.match_stat_lines (
+create table if not exists public.match_stat_lines (
   match_id uuid not null references public.matches (id) on delete cascade,
   player_id uuid not null references public.profiles (id) on delete cascade,
   kind public.stat_line_kind not null,
@@ -101,7 +134,7 @@ create table public.match_stat_lines (
 
 -- --- Self-reports ---
 
-create table public.self_report_requests (
+create table if not exists public.self_report_requests (
   id uuid primary key default gen_random_uuid(),
   match_id uuid not null references public.matches (id) on delete cascade,
   player_id uuid not null references public.profiles (id) on delete cascade,
@@ -110,11 +143,11 @@ create table public.self_report_requests (
   created_at timestamptz not null default now()
 );
 
-create unique index self_report_one_pending_per_player_type on public.self_report_requests (match_id, player_id, type)
+create unique index if not exists self_report_one_pending_per_player_type on public.self_report_requests (match_id, player_id, type)
 where
   status = 'pending';
 
-create index self_report_requests_match_id_idx on public.self_report_requests (match_id);
+create index if not exists self_report_requests_match_id_idx on public.self_report_requests (match_id);
 
 -- --- updated_at ---
 
@@ -128,10 +161,14 @@ begin
 end;
 $$;
 
+drop trigger if exists profiles_set_updated_at on public.profiles;
+
 create trigger profiles_set_updated_at
 before update on public.profiles
 for each row
 execute procedure public.set_updated_at();
+
+drop trigger if exists matches_set_updated_at on public.matches;
 
 create trigger matches_set_updated_at
 before update on public.matches
@@ -162,6 +199,8 @@ begin
 end;
 $$;
 
+drop trigger if exists on_auth_user_created on auth.users;
+
 create trigger on_auth_user_created
 after insert on auth.users
 for each row
@@ -189,6 +228,8 @@ begin
   return coalesce(new, old);
 end;
 $$;
+
+drop trigger if exists match_team_players_lineup_guard on public.match_team_players;
 
 create trigger match_team_players_lineup_guard
 before insert

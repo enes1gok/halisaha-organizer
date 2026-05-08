@@ -5,7 +5,9 @@ export function rethrowUseCaseError(action: string, error: unknown, fallbackMess
     console.warn(`[usecase] ${action} failed`, {
       code: error.code,
       operation: error.operation,
+      message: error.message,
       retryable: shouldRetry(error),
+      supabase: error.meta?.supabase,
     });
     throw error;
   }

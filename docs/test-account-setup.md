@@ -35,3 +35,7 @@ where id = '<user-uid>';
 ## 4. Mağaza inceleme hesabı
 
 Sabit e-posta / şifre ile tanımlı hesap için bkz. [app-review-test-account.md](./app-review-test-account.md).
+
+## 5. Hosted güvenlik (operasyon)
+
+Üretim projesinde Supabase Dashboard → **Authentication** altında [sızmış şifre koruması](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) (Have I Been Pwned) açılabilir; özellik erişimi plana bağlıdır. Database linter uyarısı (`auth_leaked_password_protection`) bu ayarın kapalı olduğunu işaret eder.

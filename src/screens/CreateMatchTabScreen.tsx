@@ -4,7 +4,9 @@ import {
   BottomSheetScrollView,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -66,6 +68,48 @@ export function CreateMatchTabScreen() {
   );
 
   const [showPicker, setShowPicker] = useState(false);
+  /** Android: `datetime` mode is unsupported; use date then time (see datetimepicker #907). */
+  const [androidPickerStep, setAndroidPickerStep] = useState<'date' | 'time' | null>(null);
+
+  const onAndroidDateChange = (event: DateTimePickerEvent, picked?: Date) => {
+    if (event.type === 'dismissed' || event.type === 'neutralButtonPressed') {
+      setAndroidPickerStep(null);
+      return;
+    }
+    if (event.type === 'set' && picked) {
+      setStartsAt((prev) => {
+        const merged = new Date(picked);
+        merged.setHours(
+          prev.getHours(),
+          prev.getMinutes(),
+          prev.getSeconds(),
+          prev.getMilliseconds(),
+        );
+        return merged;
+      });
+      setAndroidPickerStep('time');
+    }
+  };
+
+  const onAndroidTimeChange = (event: DateTimePickerEvent, picked?: Date) => {
+    if (event.type === 'dismissed' || event.type === 'neutralButtonPressed') {
+      setAndroidPickerStep(null);
+      return;
+    }
+    if (event.type === 'set' && picked) {
+      setStartsAt((prev) => {
+        const merged = new Date(prev);
+        merged.setHours(
+          picked.getHours(),
+          picked.getMinutes(),
+          picked.getSeconds(),
+          picked.getMilliseconds(),
+        );
+        return merged;
+      });
+      setAndroidPickerStep(null);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -179,17 +223,40 @@ export function CreateMatchTabScreen() {
           <PillButton
             title={startsAt.toLocaleString('tr-TR')}
             variant="ghost"
-            onPress={() => setShowPicker(true)}
+            onPress={() => {
+              if (Platform.OS === 'android') {
+                setAndroidPickerStep('date');
+              } else {
+                setShowPicker(true);
+              }
+            }}
           />
-          {showPicker ? (
+          {Platform.OS === 'ios' && showPicker ? (
             <DateTimePicker
               value={startsAt}
               mode="datetime"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display="spinner"
               onChange={(_, d) => {
                 setShowPicker(Platform.OS === 'ios');
                 if (d) setStartsAt(d);
               }}
+            />
+          ) : null}
+          {Platform.OS === 'android' && androidPickerStep === 'date' ? (
+            <DateTimePicker
+              value={startsAt}
+              mode="date"
+              display="default"
+              onChange={onAndroidDateChange}
+            />
+          ) : null}
+          {Platform.OS === 'android' && androidPickerStep === 'time' ? (
+            <DateTimePicker
+              value={startsAt}
+              mode="time"
+              display="default"
+              is24Hour
+              onChange={onAndroidTimeChange}
             />
           ) : null}
           <Text style={styles.label}>Maksimum oyuncu</Text>

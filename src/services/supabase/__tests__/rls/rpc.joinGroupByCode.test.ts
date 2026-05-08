@@ -31,6 +31,7 @@ describeIntegration('RPC join_group_by_code', () => {
     const u = await createAuthedUser('jg_unknown');
     const { data, error } = await u.client.rpc('join_group_by_code', { p_code: 'ZZZZZZZZ' });
     expect(error).toBeNull();
-    expect(data).toBeNull();
+    // Composite NULL may deserialize as an object of nulls via PostgREST.
+    expect(data == null || data?.id == null).toBe(true);
   });
 });

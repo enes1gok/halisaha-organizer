@@ -41,6 +41,23 @@ describe('mapSupabaseError', () => {
     expect(err.code).toBe('VALIDATION');
     expect(err.message).toBe('Grup adı en az 2 karakter olmalı.');
   });
+
+  it('accepts postgres error code as number', () => {
+    const err = mapSupabaseError({ message: 'violates check constraint', code: 23514 }, 'createGroupRemote');
+    expect(err.code).toBe('VALIDATION');
+  });
+
+  it('uses details when message is empty (PostgREST / PLpgSQL)', () => {
+    const err = mapSupabaseError(
+      {
+        code: 'P0001',
+        message: '',
+        details: 'ERROR: Katılım kodu üretilemedi.\nCONTEXT: SQL statement',
+      },
+      'createGroupRemote',
+    );
+    expect(err.message).toContain('Katılım kodu üretilemedi');
+  });
 });
 
 describe('toUserMessage', () => {

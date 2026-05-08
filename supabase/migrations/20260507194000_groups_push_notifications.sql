@@ -208,23 +208,28 @@ alter table public.group_members enable row level security;
 alter table public.push_tokens enable row level security;
 alter table public.notification_deliveries enable row level security;
 
+drop policy if exists groups_select_member on public.groups;
 create policy groups_select_member on public.groups
 for select to authenticated
 using (public.can_view_group(id, auth.uid()));
 
+drop policy if exists groups_insert_owner on public.groups;
 create policy groups_insert_owner on public.groups
 for insert to authenticated
 with check (owner_id = auth.uid());
 
+drop policy if exists groups_update_owner on public.groups;
 create policy groups_update_owner on public.groups
 for update to authenticated
 using (owner_id = auth.uid())
 with check (owner_id = auth.uid());
 
+drop policy if exists group_members_select_member on public.group_members;
 create policy group_members_select_member on public.group_members
 for select to authenticated
 using (public.can_view_group(group_id, auth.uid()));
 
+drop policy if exists group_members_insert_self_or_owner on public.group_members;
 create policy group_members_insert_self_or_owner on public.group_members
 for insert to authenticated
 with check (
@@ -237,6 +242,7 @@ with check (
   )
 );
 
+drop policy if exists group_members_delete_self_or_owner on public.group_members;
 create policy group_members_delete_self_or_owner on public.group_members
 for delete to authenticated
 using (
@@ -249,19 +255,23 @@ using (
   )
 );
 
+drop policy if exists push_tokens_select_own on public.push_tokens;
 create policy push_tokens_select_own on public.push_tokens
 for select to authenticated
 using (user_id = auth.uid());
 
+drop policy if exists push_tokens_insert_own on public.push_tokens;
 create policy push_tokens_insert_own on public.push_tokens
 for insert to authenticated
 with check (user_id = auth.uid());
 
+drop policy if exists push_tokens_update_own on public.push_tokens;
 create policy push_tokens_update_own on public.push_tokens
 for update to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+drop policy if exists notification_deliveries_select_own on public.notification_deliveries;
 create policy notification_deliveries_select_own on public.notification_deliveries
 for select to authenticated
 using (recipient_id = auth.uid());

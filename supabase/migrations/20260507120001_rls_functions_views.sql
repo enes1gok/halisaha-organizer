@@ -69,7 +69,7 @@ as $$
     upper(regexp_replace(trim(coalesce(p_code, '')), '[\s-]', '', 'g'));
 $$;
 
-create index matches_join_code_normalized_idx on public.matches (public.normalize_join_code(join_code));
+create index if not exists matches_join_code_normalized_idx on public.matches (public.normalize_join_code(join_code));
 
 -- --- RPC: preview upcoming match by code (anon + authenticated) ---
 
@@ -402,8 +402,10 @@ alter table public.self_report_requests enable row level security;
 
 -- profiles
 
+drop policy if exists profiles_select_authenticated on public.profiles;
 create policy profiles_select_authenticated on public.profiles for select to authenticated using (true);
 
+drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own on public.profiles
 for update to authenticated using (id = auth.uid())
 with
@@ -411,27 +413,34 @@ with
 
 -- matches
 
+drop policy if exists matches_select_visible on public.matches;
 create policy matches_select_visible on public.matches for
 select
   to authenticated using (public.can_view_match (id, auth.uid()));
 
+drop policy if exists matches_insert_organizer on public.matches;
 create policy matches_insert_organizer on public.matches for insert to authenticated with check (organizer_id = auth.uid());
 
+drop policy if exists matches_update_organizer on public.matches;
 create policy matches_update_organizer on public.matches for
 update to authenticated using (public.is_match_organizer (id, auth.uid()))
 with
   check (public.is_match_organizer (id, auth.uid()));
 
+drop policy if exists matches_delete_organizer on public.matches;
 create policy matches_delete_organizer on public.matches for delete to authenticated using (public.is_match_organizer (id, auth.uid()));
 
 -- match_attendees
 
+drop policy if exists match_attendees_select_visible on public.match_attendees;
 create policy match_attendees_select_visible on public.match_attendees for
 select
   to authenticated using (public.can_view_match (match_id, auth.uid()));
 
+drop policy if exists match_attendees_insert_organizer on public.match_attendees;
 create policy match_attendees_insert_organizer on public.match_attendees for insert to authenticated with check (public.is_match_organizer (match_id, auth.uid()));
 
+drop policy if exists match_attendees_update_player on public.match_attendees;
 create policy match_attendees_update_player on public.match_attendees for
 update to authenticated using (
   player_id = auth.uid ()
@@ -439,35 +448,42 @@ update to authenticated using (
 with
   check (player_id = auth.uid ());
 
+drop policy if exists match_attendees_update_organizer on public.match_attendees;
 create policy match_attendees_update_organizer on public.match_attendees for
 update to authenticated using (public.is_match_organizer (match_id, auth.uid()))
 with
   check (public.is_match_organizer (match_id, auth.uid()));
 
+drop policy if exists match_attendees_delete_organizer on public.match_attendees;
 create policy match_attendees_delete_organizer on public.match_attendees for delete to authenticated using (public.is_match_organizer (match_id, auth.uid()));
 
 -- match_team_players
 
+drop policy if exists match_team_players_select_visible on public.match_team_players;
 create policy match_team_players_select_visible on public.match_team_players for
 select
   to authenticated using (public.can_view_match (match_id, auth.uid()));
 
+drop policy if exists match_team_players_write_organizer on public.match_team_players;
 create policy match_team_players_write_organizer on public.match_team_players for all to authenticated using (public.is_match_organizer (match_id, auth.uid()))
 with
   check (public.is_match_organizer (match_id, auth.uid()));
 
 -- match_stat_lines
 
+drop policy if exists match_stat_lines_select_visible on public.match_stat_lines;
 create policy match_stat_lines_select_visible on public.match_stat_lines for
 select
   to authenticated using (public.can_view_match (match_id, auth.uid()));
 
+drop policy if exists match_stat_lines_write_organizer on public.match_stat_lines;
 create policy match_stat_lines_write_organizer on public.match_stat_lines for all to authenticated using (public.is_match_organizer (match_id, auth.uid()))
 with
   check (public.is_match_organizer (match_id, auth.uid()));
 
 -- self_report_requests
 
+drop policy if exists self_reports_select on public.self_report_requests;
 create policy self_reports_select on public.self_report_requests for
 select
   to authenticated using (
@@ -475,6 +491,7 @@ select
     or public.is_match_organizer (match_id, auth.uid ())
   );
 
+drop policy if exists self_reports_insert_player on public.self_report_requests;
 create policy self_reports_insert_player on public.self_report_requests for insert to authenticated with check (
   player_id = auth.uid ()
   and exists (
@@ -489,11 +506,13 @@ create policy self_reports_insert_player on public.self_report_requests for inse
   )
 );
 
+drop policy if exists self_reports_update_organizer on public.self_report_requests;
 create policy self_reports_update_organizer on public.self_report_requests for
 update to authenticated using (public.is_match_organizer (match_id, auth.uid()))
 with
   check (public.is_match_organizer (match_id, auth.uid()));
 
+drop policy if exists self_reports_delete_organizer on public.self_report_requests;
 create policy self_reports_delete_organizer on public.self_report_requests for delete to authenticated using (public.is_match_organizer (match_id, auth.uid()));
 
 -- --- Grants (Supabase API) ---

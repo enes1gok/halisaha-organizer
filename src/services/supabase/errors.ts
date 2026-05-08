@@ -107,8 +107,15 @@ function parseSupabaseLikeError(error: unknown): SupabaseLikeError {
     return { message: typeof error === 'string' ? error : undefined };
   }
   const e = error as Record<string, unknown>;
+  const codeRaw = e.code;
+  const code =
+    typeof codeRaw === 'string'
+      ? codeRaw
+      : typeof codeRaw === 'number' && Number.isFinite(codeRaw)
+        ? String(codeRaw)
+        : undefined;
   return {
-    code: typeof e.code === 'string' ? e.code : undefined,
+    code,
     message: typeof e.message === 'string' ? e.message : undefined,
     details: typeof e.details === 'string' ? e.details : null,
     hint: typeof e.hint === 'string' ? e.hint : null,
@@ -125,7 +132,8 @@ function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {
   const code = (error.code ?? '').toUpperCase();
   const message = (error.message ?? '').toLowerCase();
   const details = (error.details ?? '').toLowerCase();
-  const combined = `${message} ${details}`;
+  const hint = (error.hint ?? '').toLowerCase();
+  const combined = `${message} ${details} ${hint}`;
   const status = error.status ?? 0;
 
   if (
@@ -190,8 +198,14 @@ function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {
     message.includes('network request failed') ||
     message.includes('failed to fetch') ||
     message.includes('networkerror') ||
-    message.includes('socket')
+    message.includes('socket') ||
+    combined.includes('network request failed') ||
+    combined.includes('failed to fetch')
   ) {
+    return 'NETWORK';
+  }
+
+  if (status === 502 || status === 503 || status === 504) {
     return 'NETWORK';
   }
 
@@ -273,19 +287,40 @@ function buildUserFacingMessage(
     return 'Bağlı kayıt bulunamadığı için işlem tamamlanamadı. Oturumu yenileyip tekrar deneyin.';
   }
 
-  if (code === 'UNKNOWN' && parsed.message) {
-    const msg = parsed.message.trim();
-    const bad =
-      lower.includes('syntax error') ||
-      lower.includes('relation ') ||
-      lower.includes('does not exist') ||
-      msg.includes('\n');
-    if (msg.length > 0 && msg.length <= 180 && !bad) {
-      return msg;
+  const human = pickHumanReadableServerLine(parsed);
+  if (human && (code === 'UNKNOWN' || code === 'VALIDATION')) {
+    if (!isUnsafeToShowServerLine(human)) {
+      return `İşlem tamamlanamadı: ${human}`;
     }
   }
 
   return defaultMessageForCode(code);
+}
+
+/** PostgREST sık sık asıl metni `details` veya çok satırlı context içinde döner; `message` boş veya jenerik kalabilir. */
+function pickHumanReadableServerLine(parsed: SupabaseLikeError): string | undefined {
+  const ordered = [parsed.message, parsed.details, parsed.hint].filter(
+    (s): s is string => typeof s === 'string' && s.trim().length > 0,
+  );
+  for (const block of ordered) {
+    const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      const stripped = line.replace(/^ERROR:\s*/i, '').trim();
+      if (stripped.length === 0) continue;
+      if (stripped.toLowerCase() === 'internal server error') continue;
+      const maxLen = 280;
+      return stripped.length <= maxLen ? stripped : `${stripped.slice(0, maxLen)}…`;
+    }
+  }
+  return undefined;
+}
+
+function isUnsafeToShowServerLine(_line: string): boolean {
+  const lower = _line.toLowerCase();
+  if (lower.includes('\n')) return true;
+  if (lower.includes('syntax error at') || lower.includes('unexpected character')) return true;
+  if (lower.includes('relation') && lower.includes('does not exist')) return true;
+  return false;
 }
 
 function defaultMessageForCode(code: AppErrorCode): string {
