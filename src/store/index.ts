@@ -1,4 +1,4 @@
-export type { AppState, CreateMatchInput, RemoteProfileRow } from './types';
+export type { AppState, CreateGroupResult, CreateMatchInput, RemoteProfileRow } from './types';
 
 export { mergeStatLines } from './helpers';
 

@@ -1,6 +1,7 @@
 import type { Group, GroupMembership } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
 import { createAuthRequiredError, mapSupabaseError } from './errors';
+import { ensureMyProfile } from './profiles';
 import { mapGroup, mapMembership } from './mappers';
 import type { GroupMemberRow, GroupRow } from './types';
 
@@ -34,6 +35,7 @@ export async function fetchMyGroups(): Promise<{ groups: Group[]; memberships: G
 }
 
 export async function createGroupRemote(name: string): Promise<Group> {
+  await ensureMyProfile();
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('create_group', { p_name: name });
   if (error) throw mapSupabaseError(error, 'createGroupRemote');

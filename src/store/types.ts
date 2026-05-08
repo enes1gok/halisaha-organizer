@@ -86,6 +86,12 @@ export interface MatchesSlice {
   setMatchStatus: (matchId: string, status: MatchStatus) => Promise<void>;
 }
 
+export type CreateGroupResult = {
+  group: Group;
+  /** Liste yenileme başarısız oldu; grup uzakta oluşturulmuş olabilir. */
+  hydrateFailed: boolean;
+};
+
 export interface GroupsSlice {
   groups: Group[];
   groupMemberships: GroupMembership[];
@@ -94,7 +100,7 @@ export interface GroupsSlice {
 
   hydrateRemoteGroups: () => Promise<void>;
 
-  createGroup: (name: string) => Promise<Group>;
+  createGroup: (name: string) => Promise<CreateGroupResult>;
   joinGroup: (joinCode: string) => Promise<Group | null>;
   leaveGroup: (groupId: string) => Promise<void>;
 

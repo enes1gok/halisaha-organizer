@@ -56,11 +56,13 @@ export function mapSupabaseError(
 
   const parsed = parseSupabaseLikeError(error);
   const code = classifySupabaseError(parsed);
+  const message =
+    fallbackMessage ?? buildUserFacingMessage(parsed, code, operation);
 
   return new AppError({
     code,
     operation,
-    message: fallbackMessage ?? defaultMessageForCode(code),
+    message,
     cause: error,
     retryable: isRetryableCode(code),
     meta: {
@@ -69,11 +71,11 @@ export function mapSupabaseError(
   });
 }
 
-export function createAuthRequiredError(operation: string, message = 'Oturum gerekli'): AppError {
+export function createAuthRequiredError(operation: string, message?: string): AppError {
   return new AppError({
     code: 'AUTH_REQUIRED',
     operation,
-    message,
+    message: message ?? defaultMessageForCode('AUTH_REQUIRED'),
     retryable: false,
   });
 }
@@ -89,23 +91,7 @@ export function createNotFoundError(operation: string, message = 'Kayıt bulunam
 
 export function toUserMessage(error: unknown, fallback = 'Bir hata oluştu.'): string {
   if (isAppError(error)) {
-    switch (error.code) {
-      case 'AUTH_REQUIRED':
-        return 'Bu işlem için giriş yapmanız gerekiyor.';
-      case 'FORBIDDEN':
-        return 'Bu işlem için yetkiniz bulunmuyor.';
-      case 'NOT_FOUND':
-        return 'İlgili kayıt bulunamadı veya erişilemez durumda.';
-      case 'CONFLICT':
-        return 'Bu işlem mevcut verilerle çakışıyor. Sayfayı yenileyip tekrar deneyin.';
-      case 'VALIDATION':
-        return 'Gönderilen bilgiler geçersiz. Lütfen alanları kontrol edin.';
-      case 'NETWORK':
-        return 'Ağ bağlantısı sorunu oluştu. İnternetinizi kontrol edip tekrar deneyin.';
-      case 'UNKNOWN':
-      default:
-        return error.message || fallback;
-    }
+    return error.message || fallback;
   }
 
   if (error instanceof Error && error.message) return error.message;
@@ -131,10 +117,31 @@ function parseSupabaseLikeError(error: unknown): SupabaseLikeError {
   };
 }
 
+function combinedSupabaseText(parsed: SupabaseLikeError): string {
+  return [parsed.message, parsed.details, parsed.hint].filter(Boolean).join(' ');
+}
+
 function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {
   const code = (error.code ?? '').toUpperCase();
   const message = (error.message ?? '').toLowerCase();
+  const details = (error.details ?? '').toLowerCase();
+  const combined = `${message} ${details}`;
   const status = error.status ?? 0;
+
+  if (
+    combined.includes('grup adı') &&
+    (combined.includes('karakter') || combined.includes('en az') || combined.includes('en fazla'))
+  ) {
+    return 'VALIDATION';
+  }
+
+  if (
+    combined.includes('oturum gerekli') ||
+    combined.includes('giriş yapmanız') ||
+    message.includes('session required')
+  ) {
+    return 'AUTH_REQUIRED';
+  }
 
   if (
     status === 401 ||
@@ -165,6 +172,10 @@ function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {
     return 'CONFLICT';
   }
 
+  if (code === '23503' || combined.includes('violates foreign key constraint')) {
+    return 'UNKNOWN';
+  }
+
   if (
     code === '23502' ||
     code === '23514' ||
@@ -187,20 +198,110 @@ function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {
   return 'UNKNOWN';
 }
 
+function buildUserFacingMessage(
+  parsed: SupabaseLikeError,
+  code: AppErrorCode,
+  operation: string,
+): string {
+  const raw = combinedSupabaseText(parsed);
+  const lower = raw.toLowerCase();
+
+  if (code === 'AUTH_REQUIRED') {
+    return defaultMessageForCode('AUTH_REQUIRED');
+  }
+
+  if (code === 'NETWORK') {
+    return defaultMessageForCode('NETWORK');
+  }
+
+  if (code === 'FORBIDDEN') {
+    return defaultMessageForCode('FORBIDDEN');
+  }
+
+  if (code === 'NOT_FOUND') {
+    return defaultMessageForCode('NOT_FOUND');
+  }
+
+  if (
+    code === 'CONFLICT' &&
+    (lower.includes('join_code') || lower.includes('groups_join_code') || lower.includes('unique constraint'))
+  ) {
+    return 'Katılım kodu çakışması oluştu. Lütfen bir süre sonra tekrar deneyin.';
+  }
+
+  if (code === 'CONFLICT') {
+    return defaultMessageForCode('CONFLICT');
+  }
+
+  if (
+    code === 'VALIDATION' &&
+    (lower.includes('char_length') ||
+      lower.includes('groups_name') ||
+      (lower.includes('check constraint') && lower.includes('groups')) ||
+      (operation.includes('createGroup') && lower.includes('constraint')))
+  ) {
+    return 'Grup adı en az 2 karakter olmalı.';
+  }
+
+  if (
+    code === 'VALIDATION' &&
+    lower.includes('grup adı') &&
+    (lower.includes('en fazla') || lower.includes('80'))
+  ) {
+    const msg = parsed.message?.trim();
+    if (msg && msg.length <= 200) return msg;
+    return 'Grup adı en fazla 80 karakter olabilir.';
+  }
+
+  if (code === 'VALIDATION' && lower.includes('grup adı')) {
+    const msg = parsed.message?.trim();
+    if (msg && msg.length <= 200) return msg;
+  }
+
+  if (code === 'VALIDATION') {
+    const trimmed = raw.trim();
+    if (trimmed.length > 0 && trimmed.length <= 220 && !trimmed.includes('\n')) {
+      return `Gönderilen bilgiler geçersiz: ${trimmed}`;
+    }
+    return defaultMessageForCode('VALIDATION');
+  }
+
+  if (parsed.code === '23503' || lower.includes('foreign key')) {
+    if (lower.includes('profiles') || lower.includes('owner_id') || lower.includes('player_id')) {
+      return 'Profil kaydınız eksik veya senkronize değil. Çıkış yapıp tekrar giriş yapın veya bir süre sonra tekrar deneyin.';
+    }
+    return 'Bağlı kayıt bulunamadığı için işlem tamamlanamadı. Oturumu yenileyip tekrar deneyin.';
+  }
+
+  if (code === 'UNKNOWN' && parsed.message) {
+    const msg = parsed.message.trim();
+    const bad =
+      lower.includes('syntax error') ||
+      lower.includes('relation ') ||
+      lower.includes('does not exist') ||
+      msg.includes('\n');
+    if (msg.length > 0 && msg.length <= 180 && !bad) {
+      return msg;
+    }
+  }
+
+  return defaultMessageForCode(code);
+}
+
 function defaultMessageForCode(code: AppErrorCode): string {
   switch (code) {
     case 'AUTH_REQUIRED':
-      return 'Oturum gerekli.';
+      return 'Bu işlem için giriş yapmanız gerekiyor.';
     case 'FORBIDDEN':
-      return 'Bu işlem için yetkiniz yok.';
+      return 'Bu işlem için yetkiniz bulunmuyor.';
     case 'NOT_FOUND':
-      return 'İlgili kayıt bulunamadı.';
+      return 'İlgili kayıt bulunamadı veya erişilemez durumda.';
     case 'CONFLICT':
-      return 'Veri çakışması oluştu.';
+      return 'Bu işlem mevcut verilerle çakışıyor. Sayfayı yenileyip tekrar deneyin.';
     case 'VALIDATION':
-      return 'Geçersiz veri gönderildi.';
+      return 'Gönderilen bilgiler geçersiz. Lütfen alanları kontrol edin.';
     case 'NETWORK':
-      return 'Ağ bağlantısı hatası oluştu.';
+      return 'Ağ bağlantısı sorunu oluştu. İnternetinizi kontrol edip tekrar deneyin.';
     case 'UNKNOWN':
     default:
       return 'Beklenmeyen bir hata oluştu.';

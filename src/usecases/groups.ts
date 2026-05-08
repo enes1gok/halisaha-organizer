@@ -6,6 +6,7 @@ import {
 } from '../services/supabase/groupWeeklySeries';
 import { createGroupRemote, fetchMyGroups, joinGroupRemote, leaveGroupRemote } from '../services/supabase/groups';
 import type { Group, GroupMembership, GroupWeeklySeries } from '../types/domain';
+import type { CreateGroupResult } from '../store/types';
 import { createId } from '../utils/id';
 import { rethrowUseCaseError } from './errors';
 
@@ -28,19 +29,25 @@ export async function hydrateRemoteGroupsUseCase(deps: GroupsDeps): Promise<void
   }
 }
 
-export async function createGroupUseCase(deps: GroupsDeps, name: string): Promise<Group> {
+export async function createGroupUseCase(deps: GroupsDeps, name: string): Promise<CreateGroupResult> {
   const uid = deps.getRemoteUserId();
   if (uid) {
+    let group: Group;
     try {
-      const group = await createGroupRemote(name);
-      const payload = await fetchMyGroups();
-      deps.hydrateLocalGroups(payload);
-      return group;
+      group = await createGroupRemote(name);
     } catch (error) {
       rethrowUseCaseError('createGroup', error, 'Grup olusturulamadi.');
     }
+    try {
+      const payload = await fetchMyGroups();
+      deps.hydrateLocalGroups(payload);
+      return { group, hydrateFailed: false };
+    } catch (error) {
+      console.warn('[usecase] createGroup hydrate failed', error);
+      return { group, hydrateFailed: true };
+    }
   }
-  return deps.createLocalGroup(name);
+  return { group: deps.createLocalGroup(name), hydrateFailed: false };
 }
 
 export async function joinGroupUseCase(deps: GroupsDeps, joinCode: string): Promise<Group | null> {
