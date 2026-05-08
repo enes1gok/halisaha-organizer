@@ -26,6 +26,7 @@ Apply this rule whenever a task touches Supabase auth, database, RLS policies, m
 ## Operational checklist
 
 - **Pre-merge checks:** Run advisor/performance/security checks before shipping database-affecting changes.
+- **Client/RPC sync gate:** Before merging any change that adds or renames a `supabase.rpc()` name or its parameters in `src/services/supabase/`, verify the matching migration is applied on the target Supabase project (`list_migrations` + `pg_proc` lookup). Mismatch causes `PGRST202` "function not found in schema cache" at runtime even though local migrations look complete.
 - **Post-change verification:** Validate critical queries and authorization paths with smoke tests after schema/policy changes.
 - **Incident response:** For auth/RLS regressions, inspect logs first, isolate policy scope, and apply minimal corrective changes.
 
@@ -37,6 +38,7 @@ Apply this rule whenever a task touches Supabase auth, database, RLS policies, m
 - [ ] No client exposure of privileged Supabase keys
 - [ ] Migrations are descriptive and reviewable
 - [ ] Critical auth + query paths verified after change
+- [ ] Every supabase.rpc() called by the client exists with the same signature on the deployed Supabase project (PGRST202 guard)
 ```
 
 ## RLS automated tests (repo)

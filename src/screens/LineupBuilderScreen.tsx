@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Extrapolation,
+  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -34,6 +36,14 @@ type Nav = StackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
 
 type Rect = { x: number; y: number; w: number; h: number };
 
+const LONG_PRESS_MS = 300;
+const DRAG_SCALE = 1.03;
+
+function arraysShallowEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+}
+
 function autoBalance(players: Player[]): { A: string[]; B: string[] } {
   const buckets: Record<Position, Player[]> = {
     GK: [],
@@ -55,18 +65,39 @@ function autoBalance(players: Player[]): { A: string[]; B: string[] } {
   return { A: teamA, B: teamB };
 }
 
+/** Katılacak her oyuncuyu iki takımdan birine yerleştirir; RSVP düşenleri çıkarır, eksikleri autoBalance ile ekler. */
+function syncTeamsWithGoing(
+  teamAIds: string[],
+  teamBIds: string[],
+  goingPlayers: Player[],
+): { A: string[]; B: string[] } {
+  const goingIds = new Set(goingPlayers.map((p) => p.id));
+  let nextA = teamAIds.filter((id) => goingIds.has(id));
+  let nextB = teamBIds.filter((id) => goingIds.has(id));
+  const assigned = new Set([...nextA, ...nextB]);
+  const missing = goingPlayers.filter((p) => !assigned.has(p.id));
+  if (missing.length === 0) {
+    return { A: nextA, B: nextB };
+  }
+  const { A: addA, B: addB } = autoBalance(missing);
+  return { A: [...nextA, ...addA], B: [...nextB, ...addB] };
+}
+
 function DraggableCard({
   player,
   onDragEnd,
+  testID,
 }: {
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
+  testID: string;
 }) {
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const dragging = useSharedValue(0);
 
   const pan = Gesture.Pan()
+    .activateAfterLongPress(LONG_PRESS_MS)
     .onUpdate((e) => {
       dragging.value = 1;
       tx.value = e.translationX;
@@ -77,17 +108,37 @@ function DraggableCard({
       tx.value = withSpring(0);
       ty.value = withSpring(0);
       dragging.value = withSpring(0);
+    })
+    .onFinalize(() => {
+      tx.value = withSpring(0);
+      ty.value = withSpring(0);
+      dragging.value = withSpring(0);
     });
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: tx.value }, { translateY: ty.value }],
+    transform: [
+      { translateX: tx.value },
+      { translateY: ty.value },
+      {
+        scale: interpolate(dragging.value, [0, 1], [1, DRAG_SCALE], Extrapolation.CLAMP),
+      },
+    ],
     zIndex: dragging.value ? 10 : 1,
-    elevation: dragging.value ? 6 : 1,
+    elevation: dragging.value ? 8 : 2,
+    shadowOpacity: dragging.value ? 0.35 : 0,
+    shadowRadius: dragging.value ? 10 : 0,
+    shadowOffset: { width: 0, height: dragging.value ? 4 : 0 },
   }));
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.card, style]}>
+      <Animated.View
+        style={[styles.card, style]}
+        testID={testID}
+        accessibilityRole="button"
+        accessibilityLabel={player.name}
+        accessibilityHint="Takımlar arası taşımak için basılı tutup sürükleyin."
+      >
         <PlayerAvatar name={player.name} uri={player.photoUri} size={36} />
         <View style={styles.cardMeta}>
           <Text style={styles.cardName} numberOfLines={1}>
@@ -120,8 +171,7 @@ export function LineupBuilderScreen() {
 
   const zoneA = useRef<View>(null);
   const zoneB = useRef<View>(null);
-  const zoneBench = useRef<View>(null);
-  const rects = useRef<{ A?: Rect; B?: Rect; Bench?: Rect }>({});
+  const rects = useRef<{ A?: Rect; B?: Rect }>({});
 
   const measure = useCallback(() => {
     const cb =
@@ -131,7 +181,6 @@ export function LineupBuilderScreen() {
       };
     zoneA.current?.measureInWindow(cb('A'));
     zoneB.current?.measureInWindow(cb('B'));
-    zoneBench.current?.measureInWindow(cb('Bench'));
   }, []);
 
   useEffect(() => {
@@ -167,10 +216,18 @@ export function LineupBuilderScreen() {
     }
   }, [match, navigation, userId]);
 
-  const benchIds = useMemo(() => {
-    const set = new Set([...teamAIds, ...teamBIds]);
-    return goingPlayers.map((p) => p.id).filter((id) => !set.has(id));
-  }, [goingPlayers, teamAIds, teamBIds]);
+  useEffect(() => {
+    if (!match || match.lineupLocked) return;
+    const synced = syncTeamsWithGoing(teamAIds, teamBIds, goingPlayers);
+    if (arraysShallowEqual(synced.A, teamAIds) && arraysShallowEqual(synced.B, teamBIds)) {
+      return;
+    }
+    setTeamAIds(synced.A);
+    setTeamBIds(synced.B);
+    void setMatchTeams(match.id, synced.A, synced.B).catch((err) =>
+      Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+    );
+  }, [match, goingPlayers, teamAIds, teamBIds, setMatchTeams]);
 
   const handleDrop = (playerId: string, absX: number, absY: number) => {
     const inside = (r: Rect | undefined) =>
@@ -185,11 +242,7 @@ export function LineupBuilderScreen() {
 
     if (inside(rects.current.A)) nextA = [...nextA, playerId];
     else if (inside(rects.current.B)) nextB = [...nextB, playerId];
-    else if (inside(rects.current.Bench)) {
-      /* yedek */
-    } else {
-      return;
-    }
+    else return;
 
     setTeamAIds(nextA);
     setTeamBIds(nextB);
@@ -238,14 +291,30 @@ export function LineupBuilderScreen() {
     );
   }
 
-  const renderCol = (ids: string[], zoneRef: React.RefObject<View | null>, title: string) => (
+  const renderCol = (
+    ids: string[],
+    zoneRef: React.RefObject<View | null>,
+    title: string,
+    side: 'a' | 'b',
+  ) => (
     <View ref={zoneRef} style={styles.zone} onLayout={onLayoutZone}>
       <Text style={styles.zoneTitle}>{title}</Text>
-      <ScrollView nestedScrollEnabled>
+      <ScrollView
+        nestedScrollEnabled
+        testID={`lineup:team-${side}:scroll`}
+        keyboardShouldPersistTaps="handled"
+      >
         {ids.map((id) => {
           const p = getPlayer(id);
           if (!p) return null;
-          return <DraggableCard key={id} player={p} onDragEnd={handleDrop} />;
+          return (
+            <DraggableCard
+              key={id}
+              player={p}
+              onDragEnd={handleDrop}
+              testID={`lineup:player-card:${id}`}
+            />
+          );
         })}
       </ScrollView>
     </View>
@@ -253,21 +322,14 @@ export function LineupBuilderScreen() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.hint}>Oyuncuları sürükleyip takım alanına bırakın.</Text>
-      <View ref={zoneBench} style={styles.bench} onLayout={onLayoutZone}>
-        <Text style={styles.zoneTitle}>Yedek</Text>
-        <ScrollView horizontal nestedScrollEnabled contentContainerStyle={styles.benchRow}>
-          {benchIds.map((id) => {
-            const p = getPlayer(id);
-            if (!p) return null;
-            return <DraggableCard key={id} player={p} onDragEnd={handleDrop} />;
-          })}
-        </ScrollView>
-      </View>
+      <Text style={styles.hint} accessibilityRole="text">
+        Listeleri kaydırmak için kaydırın. Takımlar arası taşımak için oyuncuya basılı tutup
+        sürükleyin.
+      </Text>
 
       <View style={styles.row}>
-        {renderCol(teamAIds, zoneA, TEAM_SIDE_LABELS.A)}
-        {renderCol(teamBIds, zoneB, TEAM_SIDE_LABELS.B)}
+        {renderCol(teamAIds, zoneA, TEAM_SIDE_LABELS.A, 'a')}
+        {renderCol(teamBIds, zoneB, TEAM_SIDE_LABELS.B, 'b')}
       </View>
 
       <View style={styles.actions}>
@@ -303,19 +365,7 @@ const styles = StyleSheet.create({
   hint: {
     ...typography.caption,
     color: colors.textMuted,
-  },
-  bench: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    padding: spacing.sm,
-    backgroundColor: colors.surface,
-    minHeight: 120,
-  },
-  benchRow: {
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
+    lineHeight: 18,
   },
   row: {
     flexDirection: 'row',
@@ -346,6 +396,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.background,
+    shadowColor: '#000',
   },
   cardName: {
     ...typography.body,

@@ -41,6 +41,7 @@ For new or heavily modified interactives:
 - [ ] Persist/migrate behavior verified when schema changes
 - [ ] testID + accessibility checks completed for interactives
 - [ ] Lint/type checks pass for touched files
+- [ ] Supabase RPC sync: every supabase.rpc() name/arg changed in src/services/supabase has an applied migration on the target Supabase project (no PGRST202 risk)
 ```
 
 ## Anti-patterns
