@@ -7,13 +7,14 @@ import {
   Platform,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import type { OnboardingStackParamList } from '../navigation/types';
-import { spacing } from '../theme';
+import { colors, spacing } from '../theme';
 import { EmailPasswordFields } from './EmailPasswordFields';
 import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
 
@@ -24,24 +25,35 @@ export function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const { signUpWithEmail } = useSupabaseAuth();
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
   const handleSignUp = async () => {
+    const fn = firstName.trim();
+    const ln = lastName.trim();
+    if (!fn || !ln) {
+      Alert.alert('Kayıt', 'Lütfen isim ve soyisim girin.');
+      return;
+    }
     if (!email.trim() || !password) {
       Alert.alert('Kayıt', 'Lütfen e-posta ve şifre girin.');
       return;
     }
+    const displayName = `${fn} ${ln}`;
     setBusy(true);
-    const { error } = await signUpWithEmail(email, password);
+    const { error, sessionCreated } = await signUpWithEmail(email, password, displayName);
     setBusy(false);
     if (error) {
       Alert.alert('Kayıt', error.message);
+    } else if (sessionCreated) {
+      Alert.alert('Kayıt', 'Hesabınız hazır. Hoş geldiniz!');
     } else {
       Alert.alert(
         'Kayıt',
-        'Hesabınız oluşturuldu. E-posta doğrulaması açıksa gelen kutunuzu kontrol edin.',
+        'Hesabınız oluşturuldu. E-postanızdaki doğrulama bağlantısına tıklayarak giriş yapabilirsiniz.',
       );
     }
   };
@@ -60,6 +72,30 @@ export function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
+          <Text style={[styles.label, { marginTop: 0 }]}>İsim</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Adınız"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="words"
+            value={firstName}
+            onChangeText={setFirstName}
+            editable={!busy}
+            testID="onboarding:signup:firstname:input"
+            accessibilityLabel="İsim"
+          />
+          <Text style={styles.label}>Soyisim</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Soyadınız"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="words"
+            value={lastName}
+            onChangeText={setLastName}
+            editable={!busy}
+            testID="onboarding:signup:lastname:input"
+            accessibilityLabel="Soyisim"
+          />
           <EmailPasswordFields
             email={email}
             password={password}

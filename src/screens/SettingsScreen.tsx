@@ -1,6 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
@@ -8,13 +8,30 @@ import { readDeleteAccountUrl } from '../lib/publicConfig';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
 import { colors, spacing, typography } from '../theme';
+import { isEmailVerified } from '../utils/emailVerification';
 
 type Nav = StackNavigationProp<ProfileStackParamList, 'Settings'>;
 
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
-  const { configured, loading: authLoading, session, signOut } = useSupabaseAuth();
+  const {
+    configured,
+    loading: authLoading,
+    session,
+    signOut,
+    refreshAuthSession,
+    resendSignupConfirmationEmail,
+  } = useSupabaseAuth();
   const deleteAccountUrl = readDeleteAccountUrl();
+  const [resendBusy, setResendBusy] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (configured && session) {
+        void refreshAuthSession();
+      }
+    }, [configured, session, refreshAuthSession]),
+  );
 
   const openDeleteAccountUrl = useCallback(async () => {
     if (!deleteAccountUrl) {
@@ -55,6 +72,34 @@ export function SettingsScreen() {
           <>
             <Text style={styles.label}>Oturum açık</Text>
             <Text style={styles.email}>{session.user.email ?? session.user.id}</Text>
+            <Text
+              style={isEmailVerified(session.user) ? styles.emailVerified : styles.emailUnverified}
+              testID="profile:settings:email-verification:status"
+            >
+              {isEmailVerified(session.user)
+                ? 'E-posta doğrulandı'
+                : 'E-posta henüz doğrulanmadı'}
+            </Text>
+            {!isEmailVerified(session.user) ? (
+              <PillButton
+                title="Doğrulama e-postasını yeniden gönder"
+                variant="ghost"
+                loading={resendBusy}
+                disabled={resendBusy}
+                onPress={async () => {
+                  setResendBusy(true);
+                  const { error } = await resendSignupConfirmationEmail();
+                  setResendBusy(false);
+                  if (error) {
+                    Alert.alert('E-posta', error.message);
+                  } else {
+                    Alert.alert('E-posta', 'Doğrulama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.');
+                  }
+                }}
+                testID="profile:settings:email-resend:press"
+                accessibilityLabel="Doğrulama e-postasını yeniden gönder"
+              />
+            ) : null}
             <PillButton
               title="Çıkış Yap"
               variant="ghost"
@@ -134,6 +179,16 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
     fontFamily: 'Inter_600SemiBold',
+  },
+  emailVerified: {
+    ...typography.caption,
+    color: colors.accent,
+    marginTop: spacing.xs,
+  },
+  emailUnverified: {
+    ...typography.caption,
+    color: colors.danger,
+    marginTop: spacing.xs,
   },
   hint: {
     ...typography.caption,

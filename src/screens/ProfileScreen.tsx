@@ -30,6 +30,7 @@ import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { updateCurrentUserProfile } from '../services/supabase/profiles';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { formatShortDate } from '../utils/dates';
+import { isEmailVerified } from '../utils/emailVerification';
 import { levelLabelFromScore, playerScore, winRate } from '../utils/stats';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
@@ -57,7 +58,7 @@ export function ProfileScreen() {
   const matches = useMatchesStore((s) => s.matches);
   const updateProfile = usePlayersStore((s) => s.updatePlayerProfile);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
-  const { configured, session, refreshRemoteProfile } = useSupabaseAuth();
+  const { configured, session, refreshRemoteProfile, refreshAuthSession } = useSupabaseAuth();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -197,6 +198,7 @@ export function ProfileScreen() {
             setRefreshing(true);
             try {
               if (session) {
+                await refreshAuthSession();
                 await refreshRemoteProfile();
                 await hydrateRemoteMatches();
               }
@@ -217,6 +219,14 @@ export function ProfileScreen() {
             <Text style={styles.levelTxt}>{level}</Text>
           </View>
         </View>
+        {configured && session?.user ? (
+          <Text
+            style={isEmailVerified(session.user) ? styles.emailVerifyOk : styles.emailVerifyWarn}
+            testID="profile:main:email-verification:status"
+          >
+            {isEmailVerified(session.user) ? 'E-posta doğrulandı' : 'E-posta henüz doğrulanmadı'}
+          </Text>
+        ) : null}
         {player.iban ? (
           <View style={styles.ibanHero}>
             <Text style={styles.ibanHeroLbl}>IBAN'ım</Text>
@@ -372,6 +382,18 @@ const styles = StyleSheet.create({
     ...typography.micro,
     color: colors.accent,
     fontFamily: 'Inter_600SemiBold',
+  },
+  emailVerifyOk: {
+    ...typography.caption,
+    color: colors.accent,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  emailVerifyWarn: {
+    ...typography.caption,
+    color: colors.danger,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   ibanHero: {
     marginTop: spacing.sm,

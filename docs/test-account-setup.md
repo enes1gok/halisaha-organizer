@@ -11,6 +11,8 @@ Kök dizinde `.env` (veya Expo’nun okuduğu yapı) içinde şunlar tanımlı o
 
 Metro’yu ortam değişikliğinden sonra yeniden başlatın.
 
+**Kayıt sonrası hemen ana uygulama:** Hosted projede **Authentication → Providers → Email** altında **Confirm email** (zorunlu e-posta doğrulaması) **kapalı** olmalıdır; açıksa `signUp` çoğu zaman oturum döndürmez ve kullanıcı onboarding ekranında kalır. Yerel `supabase/config.toml` içindeki `enable_confirmations = false` ile aynı davranışı hedefleyin.
+
 ## 2. Test kullanıcısı oluşturma (Supabase Dashboard)
 
 1. **Authentication** → **Users** → **Add user** → e-posta + şifre ile oluşturun (veya **Sign up** ile uygulamadan kayıt).
