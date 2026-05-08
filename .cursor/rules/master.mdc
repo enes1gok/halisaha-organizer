@@ -22,6 +22,7 @@ alwaysApply: true
 | `src/services/supabase` or DB ↔ domain type boundaries | `backend-type-safety.mdc` |
 | Multi-table writes, RPC transactions, optimistic update ordering | `atomic-mutation-policy.mdc` |
 | Supabase error mapping, `ERR_*` tokens, `mapSupabaseError`, RPC `raise_app_error`, error logging | `error-handling-governance.mdc` |
+| Push queue / `notification_deliveries`, notification Edge Functions, enqueue/drain RPCs, notification pgTAP | `notification-governance.mdc` |
 
 Rules apply when matching files are open (`globs`) or when the task clearly fits the column.
 
