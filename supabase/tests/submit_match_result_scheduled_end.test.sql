@@ -47,9 +47,13 @@ select throws_ok(
   'submit blocked before scheduled match end'
 );
 
+select tests.reset_session();
+
 update public.matches
 set starts_at = now() - interval '2 hours'
 where id = 'c0000000-0000-4000-8000-000000000041'::uuid;
+
+select tests.authenticate_as(tests.uuid_participant());
 
 select lives_ok(
   $$ select public.submit_match_result(
