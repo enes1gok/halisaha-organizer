@@ -29,6 +29,7 @@ export function buildSeedState(now: Date = new Date()): {
   };
 }
 
+/** Opsiyonel `Match.lineupFormationId` geriye dönük uyumludur; sürüm sıçraması gerekmez. */
 export const STORE_VERSION = 3;
 
 /** Generate join code for new matches (seed uses fixed codes) */

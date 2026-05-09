@@ -82,8 +82,14 @@ export interface MatchesSlice {
   addSelfReport: (matchId: string, playerId: string, type: SelfReportType) => Promise<void>;
   respondSelfReport: (matchId: string, requestId: string, approve: boolean) => Promise<void>;
 
-  setMatchTeams: (matchId: string, teamAIds: string[], teamBIds: string[]) => Promise<void>;
+  setMatchTeams: (
+    matchId: string,
+    teamAIds: string[],
+    teamBIds: string[],
+    lineupFormationId?: string | null,
+  ) => Promise<void>;
   lockLineup: (matchId: string) => Promise<void>;
+  unlockLineup: (matchId: string) => Promise<void>;
 
   submitScore: (matchId: string, result: ScoreResult) => Promise<void>;
   setMatchStatus: (matchId: string, status: MatchStatus) => Promise<void>;

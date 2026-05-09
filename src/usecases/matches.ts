@@ -35,8 +35,14 @@ type MatchesDeps = {
   setLocalSelfReportEnabled: (matchId: string, enabled: boolean) => void;
   addLocalSelfReport: (matchId: string, playerId: string, type: SelfReportType) => void;
   respondLocalSelfReport: (matchId: string, requestId: string, approve: boolean) => void;
-  setLocalMatchTeams: (matchId: string, teamAIds: string[], teamBIds: string[]) => void;
+  setLocalMatchTeams: (
+    matchId: string,
+    teamAIds: string[],
+    teamBIds: string[],
+    lineupFormationId?: string | null,
+  ) => void;
   lockLocalLineup: (matchId: string) => void;
+  unlockLocalLineup: (matchId: string) => void;
   setLocalMatchStatus: (matchId: string, status: MatchStatus) => void;
   submitLocalScore: (matchId: string, result: ScoreResult) => void;
 };
@@ -190,14 +196,18 @@ export async function setMatchTeamsUseCase(
   matchId: string,
   teamAIds: string[],
   teamBIds: string[],
+  lineupFormationId?: string | null,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
     await replaceMatchTeamPlayersRemote(matchId, teamAIds, teamBIds);
     const graph = await fetchMatchGraph(matchId);
     deps.mergeRemoteGraph(graph);
+    if (lineupFormationId !== undefined) {
+      deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId);
+    }
     return;
   }
-  deps.setLocalMatchTeams(matchId, teamAIds, teamBIds);
+  deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId);
 }
 
 export async function lockLineupUseCase(deps: MatchesDeps, matchId: string): Promise<void> {
@@ -208,6 +218,16 @@ export async function lockLineupUseCase(deps: MatchesDeps, matchId: string): Pro
     return;
   }
   deps.lockLocalLineup(matchId);
+}
+
+export async function unlockLineupUseCase(deps: MatchesDeps, matchId: string): Promise<void> {
+  if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
+    await updateMatchOrganizerFieldsRemote(matchId, { lineup_locked: false });
+    const graph = await fetchMatchGraph(matchId);
+    deps.mergeRemoteGraph(graph);
+    return;
+  }
+  deps.unlockLocalLineup(matchId);
 }
 
 export async function setMatchStatusUseCase(

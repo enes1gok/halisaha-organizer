@@ -27,6 +27,7 @@ import { colors, letterSpacing, spacing, typography, radius } from '../theme';
 import type { RSVPStatus } from '../types/domain';
 import { maskIban } from '../utils/iban';
 import { formatMatchDateTime } from '../utils/dates';
+import { hasAssignedLineup } from '../utils/matchRoster';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
@@ -64,6 +65,7 @@ export function MatchDetailScreen() {
     respondSelfReport,
     refreshRemoteMatch,
     loadMatchRatingSummary,
+    unlockLineup,
     match,
     ratingSummary,
   } = useMatchesStore(
@@ -75,6 +77,7 @@ export function MatchDetailScreen() {
       respondSelfReport: s.respondSelfReport,
       refreshRemoteMatch: s.refreshRemoteMatch,
       loadMatchRatingSummary: s.loadMatchRatingSummary,
+      unlockLineup: s.unlockLineup,
       match: s.getMatch(matchId),
       ratingSummary: s.matchRatingSummariesById[matchId],
     })),
@@ -180,6 +183,25 @@ export function MatchDetailScreen() {
       await Clipboard.setStringAsync(iban.replace(/\s/g, ''));
     });
   }, [match?.iban, runIbanCopy]);
+
+  const onUnlockLineup = useCallback(() => {
+    if (!match) return;
+    Alert.alert(
+      'Kilidi kaldır?',
+      'Oyunculara bildirim gitmiş olabilir. Kadroyu yeniden düzenleyebilirsiniz; yeniden yayınladığınızda bildirim yeniden tetiklenebilir.',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Kaldır',
+          style: 'destructive',
+          onPress: () =>
+            void unlockLineup(match.id).catch((err) =>
+              Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+            ),
+        },
+      ],
+    );
+  }, [match, unlockLineup]);
 
   const openRsvp = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -313,11 +335,21 @@ export function MatchDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yönetim</Text>
           <View style={styles.rowWrap}>
+            {match.status === 'upcoming' && match.lineupLocked ? (
+              <PillButton
+                title="Kilidi kaldır"
+                variant="secondary"
+                onPress={onUnlockLineup}
+                style={styles.flex}
+                testID="match:lineup:unlock:press"
+              />
+            ) : null}
             {!match.lineupLocked && match.status === 'upcoming' ? (
               <PillButton
-                title="Kadro Kur"
+                title={hasAssignedLineup(match) ? 'Kadroyu düzenle' : 'Kadro Kur'}
                 onPress={() => navigation.navigate('LineupBuilder', { matchId })}
                 style={styles.flex}
+                testID="match:lineup:builder:press"
               />
             ) : null}
             {match.status !== 'finished' ? (

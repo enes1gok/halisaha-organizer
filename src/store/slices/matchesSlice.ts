@@ -17,6 +17,7 @@ import {
   joinMatchByJoinCodeUseCase,
   loadMatchRatingSummaryUseCase,
   lockLineupUseCase,
+  unlockLineupUseCase,
   refreshRemoteMatchUseCase,
   respondSelfReportUseCase,
   setMatchStatusUseCase,
@@ -218,15 +219,29 @@ function setLocalMatchTeams(
   matchId: string,
   teamAIds: string[],
   teamBIds: string[],
+  lineupFormationId?: string | null,
 ) {
   set((state) => ({
-    matches: state.matches.map((m) => (m.id === matchId ? { ...m, teamAIds, teamBIds } : m)),
+    matches: state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      const patch: Partial<Match> = { teamAIds, teamBIds };
+      if (lineupFormationId !== undefined) {
+        patch.lineupFormationId = lineupFormationId;
+      }
+      return { ...m, ...patch };
+    }),
   }));
 }
 
 function lockLocalLineup(set: Parameters<StateCreator<AppState>>[0], matchId: string) {
   set((state) => ({
     matches: state.matches.map((m) => (m.id === matchId ? { ...m, lineupLocked: true } : m)),
+  }));
+}
+
+function unlockLocalLineup(set: Parameters<StateCreator<AppState>>[0], matchId: string) {
+  set((state) => ({
+    matches: state.matches.map((m) => (m.id === matchId ? { ...m, lineupLocked: false } : m)),
   }));
 }
 
@@ -281,9 +296,14 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
       addLocalSelfReport(set, matchId, playerId, type),
     respondLocalSelfReport: (matchId: string, requestId: string, approve: boolean) =>
       respondLocalSelfReport(set, matchId, requestId, approve),
-    setLocalMatchTeams: (matchId: string, teamAIds: string[], teamBIds: string[]) =>
-      setLocalMatchTeams(set, matchId, teamAIds, teamBIds),
+    setLocalMatchTeams: (
+      matchId: string,
+      teamAIds: string[],
+      teamBIds: string[],
+      lineupFormationId?: string | null,
+    ) => setLocalMatchTeams(set, matchId, teamAIds, teamBIds, lineupFormationId),
     lockLocalLineup: (matchId: string) => lockLocalLineup(set, matchId),
+    unlockLocalLineup: (matchId: string) => unlockLocalLineup(set, matchId),
     setLocalMatchStatus: (matchId: string, status: MatchStatus) => setLocalMatchStatus(set, matchId, status),
     submitLocalScore: (matchId: string, result: ScoreResult) => submitLocalScore(set, matchId, result),
   };
@@ -351,10 +371,12 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
   respondSelfReport: (matchId, requestId, approve) =>
     respondSelfReportUseCase(buildMatchesUseCaseDeps(set, get), matchId, requestId, approve),
 
-  setMatchTeams: (matchId, teamAIds, teamBIds) =>
-    setMatchTeamsUseCase(buildMatchesUseCaseDeps(set, get), matchId, teamAIds, teamBIds),
+  setMatchTeams: (matchId, teamAIds, teamBIds, lineupFormationId) =>
+    setMatchTeamsUseCase(buildMatchesUseCaseDeps(set, get), matchId, teamAIds, teamBIds, lineupFormationId),
 
   lockLineup: (matchId) => lockLineupUseCase(buildMatchesUseCaseDeps(set, get), matchId),
+
+  unlockLineup: (matchId) => unlockLineupUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 
   setMatchStatus: (matchId, status) => setMatchStatusUseCase(buildMatchesUseCaseDeps(set, get), matchId, status),
 

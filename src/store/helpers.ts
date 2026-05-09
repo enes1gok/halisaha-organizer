@@ -64,13 +64,21 @@ export function upsertProfilesIntoPlayers(players: Player[], profiles: PublicPro
   return next;
 }
 
+/** Uzak graftan gelen maça yerel kadro şablonu tercihini taşır (sunucuda alan yok). */
+export function preserveLocalLineupMeta(prev: Match | undefined, incoming: Match): Match {
+  if (!prev?.lineupFormationId) return incoming;
+  return { ...incoming, lineupFormationId: prev.lineupFormationId };
+}
+
 export function mergeRemoteGraph(
   state: { players: Player[]; matches: Match[] },
   graph: MatchGraphPayload,
 ): { players: Player[]; matches: Match[] } {
   const players = upsertProfilesIntoPlayers(state.players, graph.profiles);
   const others = state.matches.filter((m) => m.id !== graph.match.id);
-  const mergedMatches = [graph.match, ...others];
+  const prev = state.matches.find((m) => m.id === graph.match.id);
+  const mergedMatch = preserveLocalLineupMeta(prev, graph.match);
+  const mergedMatches = [mergedMatch, ...others];
   return {
     matches: mergedMatches,
     players: withSyncedStats(players, mergedMatches),
@@ -81,7 +89,11 @@ export function mergeHydratedRemoteMatches(
   state: { players: Player[]; matches: Match[] },
   graphs: MatchGraphPayload[],
 ): { players: Player[]; matches: Match[] } {
-  const remoteMatches = graphs.map((g) => g.match);
+  const prevById = new Map(state.matches.map((m) => [m.id, m]));
+  const remoteMatches = graphs.map((g) => {
+    const prev = prevById.get(g.match.id);
+    return preserveLocalLineupMeta(prev, g.match);
+  });
   const profileMap = new Map<string, PublicProfileRow>();
   for (const g of graphs) {
     for (const p of g.profiles) profileMap.set(p.id, p);

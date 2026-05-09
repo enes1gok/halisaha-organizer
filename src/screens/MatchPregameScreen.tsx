@@ -8,7 +8,7 @@ import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList 
 import { toUserMessage } from '../services/supabase/errors';
 import { colors, letterSpacing, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
-import { countGoing } from '../utils/matchRoster';
+import { countGoing, hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore } from '../store';
 
@@ -25,10 +25,11 @@ export function MatchPregameScreen() {
   const { matchId } = route.params;
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
-  const { match, setRSVP } = useMatchesStore(
+  const { match, setRSVP, unlockLineup } = useMatchesStore(
     useShallow((s) => ({
       match: s.getMatch(matchId),
       setRSVP: s.setRSVP,
+      unlockLineup: s.unlockLineup,
     })),
   );
 
@@ -78,15 +79,40 @@ export function MatchPregameScreen() {
       {isOrg ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Organizasyon</Text>
-          {!match.lineupLocked ? (
+          {match.lineupLocked && match.status === 'upcoming' ? (
             <PillButton
-              title="Kadro Kur"
+              title="Kilidi kaldır"
+              variant="secondary"
+              onPress={() =>
+                Alert.alert(
+                  'Kilidi kaldır?',
+                  'Oyunculara bildirim gitmiş olabilir. Kadroyu yeniden düzenleyebilirsiniz; yeniden yayınladığınızda bildirim yeniden tetiklenebilir.',
+                  [
+                    { text: 'İptal', style: 'cancel' },
+                    {
+                      text: 'Kaldır',
+                      style: 'destructive',
+                      onPress: () =>
+                        void unlockLineup(match.id).catch((e) =>
+                          Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.')),
+                        ),
+                    },
+                  ],
+                )
+              }
+              testID="pregame:lineup:unlock:press"
+            />
+          ) : null}
+          {!match.lineupLocked && match.status === 'upcoming' ? (
+            <PillButton
+              title={hasAssignedLineup(match) ? 'Kadroyu düzenle' : 'Kadro Kur'}
               onPress={() => navigation.navigate('LineupBuilder', { matchId })}
               testID="pregame:lineup:press"
             />
-          ) : (
+          ) : null}
+          {match.lineupLocked && match.status !== 'upcoming' ? (
             <Text style={styles.muted}>Kadro kilitli.</Text>
-          )}
+          ) : null}
         </View>
       ) : null}
 

@@ -4,6 +4,11 @@ export function countGoing(m: Match): number {
   return m.attendees.filter((a) => a.status === 'going').length;
 }
 
+/** Takım listelerinde en az bir oyuncu atanmış mı (kadro taslağı var mı). */
+export function hasAssignedLineup(m: { teamAIds: string[]; teamBIds: string[] }): boolean {
+  return m.teamAIds.length > 0 || m.teamBIds.length > 0;
+}
+
 /** Kaleci pozisyonundaki ve "going" olan katılımcı sayısı */
 export function countGoalkeepersAmongGoing(
   m: Match,

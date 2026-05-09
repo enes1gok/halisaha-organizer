@@ -100,6 +100,8 @@ export interface Match {
   attendees: Attendee[];
   teamAIds: string[];
   teamBIds: string[];
+  /** Kadro şablonu kimliği (`src/data/lineupFormations.ts`). Uzak DB ile senkronize edilmez; yenilemede yerelden korunur. */
+  lineupFormationId?: string | null;
   lineupLocked: boolean;
   selfReportEnabled: boolean;
   status: MatchStatus;
