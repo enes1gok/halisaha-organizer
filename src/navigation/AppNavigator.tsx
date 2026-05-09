@@ -119,7 +119,7 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
       case 'HomeTab':
         return 'Ana Sayfa';
       case 'MyMatchesTab':
-        return 'Maçlarım';
+        return 'Maçlar';
       case 'GroupsTab':
         return 'Gruplar';
       case 'ProfileTab':

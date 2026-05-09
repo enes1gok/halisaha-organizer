@@ -19,7 +19,7 @@ export function MyMatchesStackNav() {
       <Stack.Screen
         name="MyMatchesMain"
         component={MyMatchesScreen}
-        options={{ title: 'Maçlarım' }}
+        options={{ title: 'Maçlar' }}
       />
       <Stack.Screen
         name="MatchDetail"
