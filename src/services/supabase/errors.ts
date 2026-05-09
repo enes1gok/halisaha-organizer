@@ -113,6 +113,10 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.matchPaymentNoteTooLong',
     code: 'VALIDATION',
   },
+  ERR_MATCH_STARTS_AT_PAST: {
+    key: 'errors.rpc.matchStartsAtPast',
+    code: 'VALIDATION',
+  },
   ERR_GROUP_NAME_MIN: { key: 'errors.rpc.groupNameMin', code: 'VALIDATION' },
   ERR_GROUP_NAME_MAX: { key: 'errors.rpc.groupNameMax', code: 'VALIDATION' },
   ERR_MATCH_NOT_FOUND: { key: 'errors.rpc.matchNotFound', code: 'NOT_FOUND' },

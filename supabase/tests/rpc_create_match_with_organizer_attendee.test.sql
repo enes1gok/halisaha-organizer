@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(9);
 
 select tests.reset_session();
 select tests.create_user(tests.uuid_organizer());
@@ -56,6 +56,24 @@ select throws_ok(
   'P0001',
   'ERR_MATCH_CREATE_GROUP_FORBIDDEN',
   'non_member_cannot_create_group_scoped_match'
+);
+
+-- 2b) Past starts_at rejected when authenticated
+select tests.authenticate_as(tests.uuid_organizer());
+select throws_ok(
+  $$ select public.create_match_with_organizer_attendee(
+    now() - interval '1 hour',
+    'Venue past'::text,
+    14::int,
+    'ZZRPC09'::text,
+    null::uuid,
+    null::numeric,
+    null::text,
+    'cash'::text
+  ) $$,
+  'P0001',
+  'ERR_MATCH_STARTS_AT_PAST',
+  'past_starts_at_rejected'
 );
 
 -- 3) Organizer creates standalone match via RPC

@@ -97,6 +97,13 @@ describe('mapSupabaseError', () => {
     expect(err.code).toBe('VALIDATION');
   });
 
+  it('maps ERR_MATCH_STARTS_AT_PAST token to translation', () => {
+    const err = mapSupabaseError({ message: 'ERR_MATCH_STARTS_AT_PAST', code: 'P0001' }, 'createMatchRpc');
+    expect(err.translationKey).toBe('errors.rpc.matchStartsAtPast');
+    expect(err.code).toBe('VALIDATION');
+    expect(err.message).toContain('geçmişte');
+  });
+
   it('maps ERR_MATCH_SCORE_BEFORE_END token to translation', () => {
     const err = mapSupabaseError({ message: 'ERR_MATCH_SCORE_BEFORE_END', code: 'P0001' }, 'submitMatchResultRpc');
     expect(err.translationKey).toBe('errors.rpc.matchScoreBeforeEnd');

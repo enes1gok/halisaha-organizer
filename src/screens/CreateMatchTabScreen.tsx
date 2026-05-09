@@ -33,6 +33,11 @@ import {
   normalizeIban,
 } from '../utils/iban';
 
+function clampStartsAtToNow(d: Date): Date {
+  const t = Date.now();
+  return d.getTime() < t ? new Date(t) : d;
+}
+
 export function CreateMatchTabScreen() {
   const navigation = useNavigation();
   const { showToast } = useToast();
@@ -79,6 +84,7 @@ export function CreateMatchTabScreen() {
   const [showPicker, setShowPicker] = useState(false);
   /** Android: `datetime` mode is unsupported; use date then time (see datetimepicker #907). */
   const [androidPickerStep, setAndroidPickerStep] = useState<'date' | 'time' | null>(null);
+  const [pickerMinDate, setPickerMinDate] = useState(() => new Date());
 
   const onAndroidDateChange = (event: DateTimePickerEvent, picked?: Date) => {
     if (event.type === 'dismissed' || event.type === 'neutralButtonPressed') {
@@ -94,7 +100,7 @@ export function CreateMatchTabScreen() {
           prev.getSeconds(),
           prev.getMilliseconds(),
         );
-        return merged;
+        return clampStartsAtToNow(merged);
       });
       setAndroidPickerStep('time');
     }
@@ -114,7 +120,7 @@ export function CreateMatchTabScreen() {
           picked.getSeconds(),
           picked.getMilliseconds(),
         );
-        return merged;
+        return clampStartsAtToNow(merged);
       });
       setAndroidPickerStep(null);
     }
@@ -174,6 +180,10 @@ export function CreateMatchTabScreen() {
     }
     if (paymentMethod === 'note_only' && paymentNoteNorm.length > 120) {
       Alert.alert('Geçersiz not', 'Ödeme notu en fazla 120 karakter olabilir.');
+      return;
+    }
+    if (startsAt.getTime() < Date.now()) {
+      Alert.alert('Geçersiz tarih', 'Maç başlangıcı geçmişte olamaz.');
       return;
     }
     const mp = Math.min(22, Math.max(4, parseInt(maxPlayers || '14', 10) || 14));
@@ -271,6 +281,7 @@ export function CreateMatchTabScreen() {
             title={startsAt.toLocaleString('tr-TR')}
             variant="ghost"
             onPress={() => {
+              setPickerMinDate(new Date());
               if (Platform.OS === 'android') {
                 setAndroidPickerStep('date');
               } else {
@@ -283,9 +294,10 @@ export function CreateMatchTabScreen() {
               value={startsAt}
               mode="datetime"
               display="spinner"
+              minimumDate={pickerMinDate}
               onChange={(_, d) => {
                 setShowPicker(Platform.OS === 'ios');
-                if (d) setStartsAt(d);
+                if (d) setStartsAt(clampStartsAtToNow(d));
               }}
             />
           ) : null}
@@ -294,6 +306,7 @@ export function CreateMatchTabScreen() {
               value={startsAt}
               mode="date"
               display="default"
+              minimumDate={pickerMinDate}
               onChange={onAndroidDateChange}
             />
           ) : null}

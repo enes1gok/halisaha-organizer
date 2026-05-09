@@ -16,6 +16,7 @@ export type ErrorTranslationKey =
   | 'errors.rpc.matchPaymentIbanRequired'
   | 'errors.rpc.matchPaymentNoteRequired'
   | 'errors.rpc.matchPaymentNoteTooLong'
+  | 'errors.rpc.matchStartsAtPast'
   | 'errors.rpc.backendSchemaOutdated'
   | 'errors.rpc.groupNameMin'
   | 'errors.rpc.groupNameMax'

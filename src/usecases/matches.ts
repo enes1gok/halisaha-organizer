@@ -22,6 +22,7 @@ import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import type { Match, MatchStatus, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
 import type { CreateMatchInput } from '../store/types';
+import { AppError } from '../services/supabase/errors';
 import { rethrowUseCaseError } from './errors';
 
 type MatchesDeps = {
@@ -69,6 +70,16 @@ export async function refreshRemoteMatchUseCase(deps: MatchesDeps, matchId: stri
 }
 
 export async function createMatchUseCase(deps: MatchesDeps, input: CreateMatchInput): Promise<Match> {
+  const startsMs = new Date(input.startsAt).getTime();
+  if (!Number.isFinite(startsMs) || startsMs < Date.now()) {
+    throw new AppError({
+      code: 'VALIDATION',
+      operation: 'createMatch',
+      translationKey: 'errors.rpc.matchStartsAtPast',
+      retryable: false,
+    });
+  }
+
   const uid = deps.getRemoteUserId();
   if (uid) {
     try {
