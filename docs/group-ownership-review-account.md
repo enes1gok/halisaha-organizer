@@ -10,6 +10,7 @@ Genel RLS checklist: [group-delete-db-verify.md](./group-delete-db-verify.md).
 
 - [scripts/verify-review-account-groups.sql](../scripts/verify-review-account-groups.sql) — inceleme kullanıcısının sahibi olduğu grupları listeler.
 - [scripts/sync-review-account-group-membership.sql](../scripts/sync-review-account-group-membership.sql) — `groups.owner_id` ile uyumlu `group_members` satırını idempotent günceller.
+- [scripts/diagnose-group-delete.sql](../scripts/diagnose-group-delete.sql) — belirli bir `group_id` için `owner_id`, DELETE politikası ve maç FK teşhisi.
 
 ---
 

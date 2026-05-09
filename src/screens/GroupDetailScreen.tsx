@@ -14,6 +14,7 @@ import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
+import { showUserFacingErrorAlert } from '../components/UserFacingErrorAlert';
 import { colors, letterSpacing, radius, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 import { isRemoteUuid } from '../utils/matchId';
@@ -134,7 +135,11 @@ export function GroupDetailScreen() {
                 } catch {
                   /* listeyi yenileyemediysek yine de kullanıcıya ilk hatayı göster */
                 }
-                Alert.alert('Hata', toUserMessage(e, 'Grup kaldırılamadı.'));
+                showUserFacingErrorAlert(e, {
+                  uiOperation: 'groups:detail:delete',
+                  fallbackMessage: 'Grup kaldırılamadı.',
+                  mapOperation: 'deleteGroupRemote',
+                });
               } finally {
                 setDeleting(false);
               }

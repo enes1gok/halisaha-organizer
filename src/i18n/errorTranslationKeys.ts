@@ -20,6 +20,8 @@ export type ErrorTranslationKey =
   | 'errors.rpc.backendSchemaOutdated'
   | 'errors.rpc.groupNameMin'
   | 'errors.rpc.groupNameMax'
+  | 'errors.rpc.groupNotFound'
+  | 'errors.rpc.groupDeleteForbidden'
   | 'errors.rpc.matchNotFound'
   | 'errors.rpc.matchScoreBeforeEnd'
   | 'errors.rpc.ratingCannotParticipate'

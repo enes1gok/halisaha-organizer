@@ -1,4 +1,5 @@
 import * as groupsService from '../../services/supabase/groups';
+import { AppError } from '../../services/supabase/errors';
 import type { Group, GroupMembership } from '../../types/domain';
 import { deleteGroupUseCase } from '../groups';
 
@@ -20,7 +21,7 @@ const GROUP_UUID = 'c0000000-0000-4000-8000-000000000010';
 const LOCAL_GROUP_ID = 'group-m3k9xj-a1b2c3';
 
 function samplePayload(groups: Group[], memberships: GroupMembership[] = []) {
-  return { groups, memberships, profiles: [] };
+  return { groups, memberships };
 }
 
 function buildDeps(overrides: Partial<Parameters<typeof deleteGroupUseCase>[0]> = {}) {
@@ -55,7 +56,7 @@ describe('deleteGroupUseCase', () => {
     expect(deps.hydrateLocalGroups).not.toHaveBeenCalled();
   });
 
-  it('with remote session and local-only group id clears local state without DELETE', async () => {
+  it('with remote session and local-only group id clears local state without RPC', async () => {
     const deps = buildDeps();
     await deleteGroupUseCase(deps, LOCAL_GROUP_ID);
     expect(deps.deleteLocalGroupState).toHaveBeenCalledWith(LOCAL_GROUP_ID);
@@ -64,8 +65,8 @@ describe('deleteGroupUseCase', () => {
     expect(deps.hydrateLocalGroups).not.toHaveBeenCalled();
   });
 
-  it('hydrates after successful remote delete', async () => {
-    mockDeleteGroupRemote.mockResolvedValue({ deletedRow: true });
+  it('hydrates after successful delete_group RPC', async () => {
+    mockDeleteGroupRemote.mockResolvedValue(undefined);
     const payload = samplePayload([]);
     mockFetchMyGroups.mockResolvedValue(payload);
     const deps = buildDeps();
@@ -75,31 +76,16 @@ describe('deleteGroupUseCase', () => {
     expect(deps.hydrateRemoteMatches).toHaveBeenCalled();
   });
 
-  it('treats empty DELETE as success when group no longer appears in fetch (idempotent)', async () => {
-    mockDeleteGroupRemote.mockResolvedValue({ deletedRow: false });
-    const payload = samplePayload([]);
-    mockFetchMyGroups.mockResolvedValue(payload);
-    const deps = buildDeps();
-    await deleteGroupUseCase(deps, GROUP_UUID);
-    expect(deps.hydrateLocalGroups).toHaveBeenCalledWith(payload);
-    expect(deps.hydrateRemoteMatches).toHaveBeenCalled();
-  });
-
-  it('throws NOT_FOUND when DELETE affects no row but group is still in list', async () => {
-    mockDeleteGroupRemote.mockResolvedValue({ deletedRow: false });
-    const stillThere: Group = {
-      id: GROUP_UUID,
-      name: 'G',
-      ownerId: REMOTE_USER,
-      joinCode: 'ABCD',
-      createdAt: new Date().toISOString(),
-    };
-    mockFetchMyGroups.mockResolvedValue(samplePayload([stillThere]));
-    const deps = buildDeps();
-    await expect(deleteGroupUseCase(deps, GROUP_UUID)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+  it('rethrows when delete_group RPC fails', async () => {
+    const err = new AppError({
+      code: 'FORBIDDEN',
       operation: 'deleteGroupRemote',
+      message: 'Bu grubu yalnızca grup yöneticisi kaldırabilir.',
     });
+    mockDeleteGroupRemote.mockRejectedValue(err);
+    const deps = buildDeps();
+    await expect(deleteGroupUseCase(deps, GROUP_UUID)).rejects.toBe(err);
+    expect(mockFetchMyGroups).not.toHaveBeenCalled();
     expect(deps.hydrateLocalGroups).not.toHaveBeenCalled();
   });
 });

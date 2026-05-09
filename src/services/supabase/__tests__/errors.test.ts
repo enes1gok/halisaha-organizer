@@ -122,7 +122,47 @@ describe('mapSupabaseError', () => {
     );
     expect(err.translationKey).toBe('errors.rpc.backendSchemaOutdated');
     expect(err.retryable).toBe(false);
-    expect(err.message).toContain('migration');
+    expect(err.message).toContain('güncel değil');
+    expect((err.meta as Record<string, unknown> | undefined)?.rpcName).toBe(
+      'create_match_with_organizer_attendee',
+    );
+    expect((err.meta as Record<string, unknown> | undefined)?.errToken).toBe(
+      'ERR_BACKEND_SCHEMA_OUTDATED',
+    );
+  });
+
+  it('maps PGRST202 for missing delete_group rpc to migration guidance', () => {
+    const err = mapSupabaseError(
+      {
+        code: 'PGRST202',
+        message:
+          'Could not find the function public.delete_group(p_group_id) in the schema cache',
+      },
+      'deleteGroupRemote',
+    );
+    expect(err.translationKey).toBe('errors.rpc.backendSchemaOutdated');
+    expect(err.code).toBe('UNKNOWN');
+    expect(err.retryable).toBe(false);
+    expect(err.message).toContain('güncel değil');
+    expect((err.meta as Record<string, unknown> | undefined)?.rpcName).toBe(
+      'delete_group',
+    );
+    expect((err.meta as Record<string, unknown> | undefined)?.errToken).toBe(
+      'ERR_BACKEND_SCHEMA_OUTDATED',
+    );
+  });
+
+  it('does not classify PGRST202 for unknown rpc names as backend schema outdated', () => {
+    const err = mapSupabaseError(
+      {
+        code: 'PGRST202',
+        message:
+          'Could not find the function public.some_other_unknown_rpc(p_arg) in the schema cache',
+      },
+      'unknownRpc',
+    );
+    expect(err.translationKey).toBeUndefined();
+    expect((err.meta as Record<string, unknown> | undefined)?.rpcName).toBeUndefined();
   });
 
   it('maps named check constraint matches_max_players_chk', () => {

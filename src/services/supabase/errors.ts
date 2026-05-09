@@ -119,6 +119,8 @@ const ERR_REGISTRY: Record<
   },
   ERR_GROUP_NAME_MIN: { key: 'errors.rpc.groupNameMin', code: 'VALIDATION' },
   ERR_GROUP_NAME_MAX: { key: 'errors.rpc.groupNameMax', code: 'VALIDATION' },
+  ERR_GROUP_NOT_FOUND: { key: 'errors.rpc.groupNotFound', code: 'NOT_FOUND' },
+  ERR_GROUP_DELETE_FORBIDDEN: { key: 'errors.rpc.groupDeleteForbidden', code: 'FORBIDDEN' },
   ERR_MATCH_NOT_FOUND: { key: 'errors.rpc.matchNotFound', code: 'NOT_FOUND' },
   ERR_MATCH_SCORE_BEFORE_END: {
     key: 'errors.rpc.matchScoreBeforeEnd',
@@ -231,7 +233,8 @@ export function mapSupabaseError(
     });
   }
 
-  if (isMissingCreateMatchRpcSignature(parsed)) {
+  const missingRpc = detectMissingDeployedRpc(parsed);
+  if (missingRpc) {
     return new AppError({
       code: 'UNKNOWN',
       operation,
@@ -239,7 +242,15 @@ export function mapSupabaseError(
       cause: error,
       retryable: false,
       traceId: opts.traceId,
-      meta: mergeErrorMeta({ supabase: parsed, errToken: 'ERR_BACKEND_SCHEMA_OUTDATED' }, opts, pgDetail),
+      meta: mergeErrorMeta(
+        {
+          supabase: parsed,
+          errToken: 'ERR_BACKEND_SCHEMA_OUTDATED',
+          rpcName: missingRpc,
+        },
+        opts,
+        pgDetail,
+      ),
     });
   }
 
@@ -267,6 +278,7 @@ export function formatTechnicalErrorSummary(err: AppError): string {
   if (err.translationKey) lines.push(`translationKey: ${err.translationKey}`);
   const m = err.meta;
   if (m?.errToken) lines.push(`errToken: ${String(m.errToken)}`);
+  if (m?.rpcName) lines.push(`rpcName: ${String(m.rpcName)}`);
   if (m?.constraintName) lines.push(`constraint: ${String(m.constraintName)}`);
   if (m?.pgDetail && typeof m.pgDetail === 'object') {
     try {
@@ -390,15 +402,36 @@ function combinedSupabaseText(parsed: SupabaseLikeError): string {
   return [parsed.message, parsed.details, parsed.hint].filter(Boolean).join(' ');
 }
 
-function isMissingCreateMatchRpcSignature(parsed: SupabaseLikeError): boolean {
-  if ((parsed.code ?? '').toUpperCase() !== 'PGRST202') return false;
+/**
+ * Bilinen RPC adlarına göre PostgREST `PGRST202` ("function not found in schema cache")
+ * dedektörü. Eşleşen RPC adı dönerse `mapSupabaseError` kullanıcıya `backendSchemaOutdated`
+ * çevirisini gösterir ve teknik detayda `rpcName` paylaşılır.
+ *
+ * `paramHints` opsiyoneldir; bir RPC için belirli parametre adlarına bakılması gerekiyorsa
+ * (ör. `create_match_with_organizer_attendee` payment alanları) kullanılır. Bunlar yoksa
+ * yalnızca RPC adının PGRST202 metninde geçmesi yeterlidir.
+ */
+const KNOWN_PGRST202_RPCS: Array<{ name: string; paramHints?: string[] }> = [
+  {
+    name: 'create_match_with_organizer_attendee',
+    paramHints: ['p_payment_method', 'p_iban_account_name', 'p_payment_note'],
+  },
+  { name: 'delete_group' },
+];
+
+function detectMissingDeployedRpc(parsed: SupabaseLikeError): string | undefined {
+  if ((parsed.code ?? '').toUpperCase() !== 'PGRST202') return undefined;
   const lower = combinedSupabaseText(parsed).toLowerCase();
-  if (!lower.includes('create_match_with_organizer_attendee')) return false;
-  return (
-    lower.includes('p_payment_method') ||
-    lower.includes('p_iban_account_name') ||
-    lower.includes('p_payment_note')
-  );
+  for (const entry of KNOWN_PGRST202_RPCS) {
+    if (!lower.includes(entry.name)) continue;
+    if (!entry.paramHints || entry.paramHints.length === 0) {
+      return entry.name;
+    }
+    if (entry.paramHints.some((hint) => lower.includes(hint))) {
+      return entry.name;
+    }
+  }
+  return undefined;
 }
 
 function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {

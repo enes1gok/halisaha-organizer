@@ -35,9 +35,12 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
   'errors.rpc.matchStartsAtPast':
     'Maç başlangıcı geçmişte olamaz. Lütfen ileri bir tarih ve saat seçin.',
   'errors.rpc.backendSchemaOutdated':
-    'Sunucu sürümü güncel değil. Eksik veritabanı migrationları uygulanmalı (özellikle maç oluşturma ödeme alanları). Lütfen daha sonra tekrar deneyin.',
+    'Sunucu sürümü güncel değil; bu işlem için gerekli güncelleme henüz uygulanmamış olabilir. Lütfen kısa süre sonra tekrar deneyin veya yöneticiye bildirin.',
   'errors.rpc.groupNameMin': 'Grup adı en az 2 karakter olmalı.',
   'errors.rpc.groupNameMax': 'Grup adı en fazla 80 karakter olabilir.',
+  'errors.rpc.groupNotFound': 'Bu grup bulunamadı veya zaten kaldırılmış.',
+  'errors.rpc.groupDeleteForbidden':
+    'Bu grubu yalnızca grup yöneticisi kaldırabilir.',
   'errors.rpc.matchNotFound': 'Maç bulunamadı.',
   'errors.rpc.matchScoreBeforeEnd':
     'Skor, maçın tahmini bitiş saatinden sonra girilebilir.',

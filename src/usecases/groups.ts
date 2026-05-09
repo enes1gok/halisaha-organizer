@@ -4,7 +4,7 @@ import {
   upsertGroupWeeklySeriesRemote,
   type UpsertGroupWeeklySeriesInput,
 } from '../services/supabase/groupWeeklySeries';
-import { createNotFoundError } from '../services/supabase/errors';
+import { reportError } from '../services/logging/reportError';
 import {
   createGroupRemote,
   deleteGroupRemote,
@@ -101,15 +101,13 @@ export async function deleteGroupUseCase(deps: GroupsDeps, groupId: string): Pro
       return;
     }
     try {
-      const { deletedRow } = await deleteGroupRemote(groupId);
+      await deleteGroupRemote(groupId);
       const payload = await fetchMyGroups();
-      if (!deletedRow && payload.groups.some((g) => g.id === groupId)) {
-        throw createNotFoundError('deleteGroupRemote', 'Grup silinemedi veya yetkin yok.');
-      }
       deps.hydrateLocalGroups(payload);
       await deps.hydrateRemoteMatches();
       return;
     } catch (error) {
+      reportError({ error, operation: 'deleteGroup', extra: { groupId } });
       rethrowUseCaseError('deleteGroup', error, 'Grup kaldırılamadı.');
     }
   }
