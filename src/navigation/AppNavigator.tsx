@@ -1,10 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DarkTheme, type LinkingOptions, type NavigationState } from '@react-navigation/native';
-import React, { useCallback, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, letterSpacing, shadows, typography } from '../theme';
+import { Durations } from '../utils/animations';
 import { TabSceneTransitionProvider } from './TabSceneTransitionContext';
 import {
   CreateTabWithTransition,
@@ -52,6 +59,73 @@ const NavTheme = {
   },
 };
 
+const ACTIVE_SCALE = 1.2;
+const INACTIVE_SCALE = 1;
+const easeOutCubic = Easing.out(Easing.cubic);
+
+type TabIconRouteName = 'HomeTab' | 'MyMatchesTab' | 'GroupsTab' | 'ProfileTab';
+
+type AnimatedTabIconProps = {
+  routeName: string;
+  focused: boolean;
+};
+
+function renderIonicon(routeName: string, color: string) {
+  const size = 22;
+  switch (routeName as TabIconRouteName) {
+    case 'HomeTab':
+      return <Ionicons name="home-outline" size={size} color={color} />;
+    case 'MyMatchesTab':
+      return <Ionicons name="football-outline" size={size} color={color} />;
+    case 'GroupsTab':
+      return <Ionicons name="people-outline" size={size} color={color} />;
+    case 'ProfileTab':
+      return <Ionicons name="person-outline" size={size} color={color} />;
+    default:
+      return null;
+  }
+}
+
+function AnimatedTabIcon({ routeName, focused }: AnimatedTabIconProps) {
+  const scale = useSharedValue(focused ? ACTIVE_SCALE : INACTIVE_SCALE);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (!cancelled) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduceMotion,
+    );
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const target = focused ? ACTIVE_SCALE : INACTIVE_SCALE;
+    if (reduceMotion) {
+      scale.value = target;
+      return;
+    }
+    scale.value = withTiming(target, {
+      duration: Durations.fast,
+      easing: easeOutCubic,
+    });
+  }, [focused, reduceMotion, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const color = focused ? colors.accent : colors.textMuted;
+
+  return <Animated.View style={animatedStyle}>{renderIonicon(routeName, color)}</Animated.View>;
+}
+
 function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomInset = TAB_BAR_FLOAT_MARGIN_BOTTOM + Math.max(insets.bottom, 8);
@@ -72,23 +146,6 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
         return 'Profil';
       default:
         return '';
-    }
-  };
-
-  const icon = (routeName: string, focused: boolean) => {
-    const c = focused ? colors.accent : colors.textMuted;
-    const size = 22;
-    switch (routeName) {
-      case 'HomeTab':
-        return <Ionicons name="home-outline" size={size} color={c} />;
-      case 'MyMatchesTab':
-        return <Ionicons name="football-outline" size={size} color={c} />;
-      case 'GroupsTab':
-        return <Ionicons name="people-outline" size={size} color={c} />;
-      case 'ProfileTab':
-        return <Ionicons name="person-outline" size={size} color={c} />;
-      default:
-        return null;
     }
   };
 
@@ -117,7 +174,7 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
                 onPress={onPress}
                 style={styles.tab}
               >
-                {icon(route.name, focused)}
+                <AnimatedTabIcon routeName={route.name} focused={focused} />
                 <Text style={[styles.tabLabel, { color: focused ? colors.accent : colors.textMuted }]}>
                   {label(route.name)}
                 </Text>
