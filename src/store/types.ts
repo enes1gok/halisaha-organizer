@@ -93,6 +93,8 @@ export interface MatchesSlice {
 
   submitScore: (matchId: string, result: ScoreResult) => Promise<void>;
   setMatchStatus: (matchId: string, status: MatchStatus) => Promise<void>;
+  /** Organizer cancels an upcoming match; backend trigger pushes 'match_cancelled' to going attendees. */
+  cancelMatch: (matchId: string) => Promise<void>;
 }
 
 export type CreateGroupResult = {

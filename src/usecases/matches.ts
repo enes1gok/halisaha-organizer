@@ -27,6 +27,7 @@ import { rethrowUseCaseError } from './errors';
 
 type MatchesDeps = {
   getRemoteUserId: () => string | null;
+  getLocalMatch: (matchId: string) => Match | undefined;
   mergeHydratedRemoteMatches: (graphs: MatchGraphPayload[]) => void;
   mergeRemoteGraph: (graph: MatchGraphPayload) => void;
   createLocalMatch: (input: CreateMatchInput) => Match;
@@ -253,6 +254,22 @@ export async function setMatchStatusUseCase(
     return;
   }
   deps.setLocalMatchStatus(matchId, status);
+}
+
+export async function cancelMatchUseCase(deps: MatchesDeps, matchId: string): Promise<void> {
+  const local = deps.getLocalMatch(matchId);
+  if (local && (local.status === 'finished' || local.status === 'cancelled')) {
+    throw new AppError({
+      code: 'VALIDATION',
+      operation: 'cancelMatch',
+      message:
+        local.status === 'cancelled'
+          ? 'Bu maç zaten iptal edilmiş.'
+          : 'Bitmiş bir maç iptal edilemez.',
+      retryable: false,
+    });
+  }
+  await setMatchStatusUseCase(deps, matchId, 'cancelled');
 }
 
 export async function submitScoreUseCase(

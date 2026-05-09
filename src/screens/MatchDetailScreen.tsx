@@ -20,6 +20,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import { MatchHeroVenueTitle } from '../components/MatchHeroVenueTitle';
 import { PillButton } from '../components/PillButton';
 import { RsvpGoingButton } from '../components/RsvpGoingButton';
@@ -69,6 +70,7 @@ export function MatchDetailScreen() {
     refreshRemoteMatch,
     loadMatchRatingSummary,
     unlockLineup,
+    cancelMatch,
     match,
     ratingSummary,
   } = useMatchesStore(
@@ -81,6 +83,7 @@ export function MatchDetailScreen() {
       refreshRemoteMatch: s.refreshRemoteMatch,
       loadMatchRatingSummary: s.loadMatchRatingSummary,
       unlockLineup: s.unlockLineup,
+      cancelMatch: s.cancelMatch,
       match: s.getMatch(matchId),
       ratingSummary: s.matchRatingSummariesById[matchId],
     })),
@@ -92,6 +95,8 @@ export function MatchDetailScreen() {
   const snapPoints = useMemo(() => ['32%'], []);
   const [refreshing, setRefreshing] = useState(false);
   const [rsvpGoingKey, setRsvpGoingKey] = useState(0);
+  const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const countdown = useCountdown(match?.startsAt ?? new Date().toISOString());
   const { pastScheduledEnd, endsAtIso } = useMatchPostMatchWindow(match?.startsAt);
@@ -208,6 +213,28 @@ export function MatchDetailScreen() {
     );
   }, [match, unlockLineup]);
 
+  const openCancelConfirm = useCallback(() => {
+    setCancelConfirmVisible(true);
+  }, []);
+
+  const closeCancelConfirm = useCallback(() => {
+    if (cancelling) return;
+    setCancelConfirmVisible(false);
+  }, [cancelling]);
+
+  const onConfirmCancel = useCallback(async () => {
+    if (!match || cancelling) return;
+    setCancelling(true);
+    try {
+      await cancelMatch(match.id);
+      setCancelConfirmVisible(false);
+    } catch (err) {
+      Alert.alert('Hata', toUserMessage(err, 'Maç iptal edilemedi.'));
+    } finally {
+      setCancelling(false);
+    }
+  }, [match, cancelMatch, cancelling]);
+
   const openRsvp = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRsvpGoingKey((k) => k + 1);
@@ -269,7 +296,18 @@ export function MatchDetailScreen() {
       <View style={styles.hero}>
         <MatchHeroVenueTitle venue={match.venue} variant="detail" />
         <Text style={styles.heroDate}>{formatMatchDateTime(match.startsAt)}</Text>
-        <Text style={styles.heroCd}>{match.status === 'upcoming' ? countdown : 'Maç Bitti'}</Text>
+        <Text style={[styles.heroCd, match.status === 'cancelled' && styles.heroCdCancelled]}>
+          {match.status === 'upcoming'
+            ? countdown
+            : match.status === 'cancelled'
+              ? 'Maç İptal Edildi'
+              : 'Maç Bitti'}
+        </Text>
+        {match.status === 'cancelled' ? (
+          <View style={styles.cancelBadge} accessibilityRole="text" accessibilityLabel="Maç iptal edildi">
+            <Text style={styles.cancelBadgeTxt}>İPTAL EDİLDİ</Text>
+          </View>
+        ) : null}
         {match.status === 'finished' && match.result ? (
           <Text style={styles.heroScore}>
             Skor: {match.result.scoreA} – {match.result.scoreB}
@@ -345,7 +383,7 @@ export function MatchDetailScreen() {
         </View>
       ) : null}
 
-      {isOrganizer ? (
+      {isOrganizer && match.status !== 'cancelled' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yönetim</Text>
           <View style={styles.rowWrap}>
@@ -383,6 +421,16 @@ export function MatchDetailScreen() {
                   </Text>
                 ) : null}
               </>
+            ) : null}
+            {match.status === 'upcoming' ? (
+              <PillButton
+                title="Maçı İptal Et"
+                variant="danger"
+                onPress={openCancelConfirm}
+                style={styles.fullRow}
+                accessibilityLabel="Maçı iptal et"
+                testID="match:cancel:press"
+              />
             ) : null}
           </View>
           <View style={[styles.rowBetween, styles.mt]}>
@@ -554,6 +602,19 @@ export function MatchDetailScreen() {
         </BottomSheetView>
       </BottomSheetModal>
 
+      <ConfirmationModal
+        visible={cancelConfirmVisible}
+        title="Maçı iptal et?"
+        message="Bu maç iptal edilecek ve 'katılıyorum' diyen oyunculara bildirim gönderilecek. Bu işlem geri alınamaz."
+        confirmLabel={cancelling ? 'İptal ediliyor…' : 'İptal Et'}
+        cancelLabel="Vazgeç"
+        onCancel={closeCancelConfirm}
+        onConfirm={() => {
+          void onConfirmCancel();
+        }}
+        danger
+      />
+
     </ScrollView>
   );
 }
@@ -588,6 +649,23 @@ const styles = StyleSheet.create({
     ...typography.subtitle,
     color: colors.accent,
     marginTop: spacing.sm,
+  },
+  heroCdCancelled: {
+    color: colors.danger,
+  },
+  cancelBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.danger,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    marginTop: spacing.xs,
+  },
+  cancelBadgeTxt: {
+    ...typography.micro,
+    color: colors.text,
+    fontWeight: '700',
+    letterSpacing: letterSpacing.wide,
   },
   heroScore: {
     ...typography.body,

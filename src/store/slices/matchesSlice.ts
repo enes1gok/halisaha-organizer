@@ -12,6 +12,7 @@ import type { MatchGraphPayload } from '../../services/supabase/matchGraph';
 import { createId } from '../../utils/id';
 import {
   addSelfReportUseCase,
+  cancelMatchUseCase,
   createMatchUseCase,
   hydrateRemoteMatchesUseCase,
   joinMatchByJoinCodeUseCase,
@@ -283,6 +284,7 @@ function submitLocalScore(set: Parameters<StateCreator<AppState>>[0], matchId: s
 function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get: Parameters<StateCreator<AppState>>[1]) {
   return {
     getRemoteUserId: () => get().remoteUserId,
+    getLocalMatch: (matchId: string) => get().getMatch(matchId),
     mergeHydratedRemoteMatches: (graphs: MatchGraphPayload[]) => applyHydratedRemoteMatches(set, graphs),
     mergeRemoteGraph: (graph: MatchGraphPayload) => applyRemoteGraph(set, graph),
     createLocalMatch: (input: CreateMatchInput) => createLocalMatch(set, get, input),
@@ -379,6 +381,8 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
   unlockLineup: (matchId) => unlockLineupUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 
   setMatchStatus: (matchId, status) => setMatchStatusUseCase(buildMatchesUseCaseDeps(set, get), matchId, status),
+
+  cancelMatch: (matchId) => cancelMatchUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 
   submitScore: (matchId, result) => submitScoreUseCase(buildMatchesUseCaseDeps(set, get), matchId, result),
 });

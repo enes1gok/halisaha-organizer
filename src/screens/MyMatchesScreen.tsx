@@ -27,6 +27,7 @@ export function MyMatchesScreen() {
 
   const mine = useMemo(() => {
     const list = matches.filter((m) => {
+      if (m.status === 'cancelled') return false;
       if (m.organizerId === userId) return true;
       const att = m.attendees.find((a) => a.playerId === userId);
       return att && (att.status === 'going' || att.status === 'maybe');
