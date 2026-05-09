@@ -15,7 +15,10 @@
     },
     "ios": {
       "bundleIdentifier": "com.enesgok.halisahamacorganizeet",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.enesgok.halisahamacorganizeet",
