@@ -1,12 +1,14 @@
+import * as Clipboard from 'expo-clipboard';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
+import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { toUserMessage } from '../services/supabase/errors';
-import { colors, letterSpacing, spacing, typography } from '../theme';
+import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
 import { countGoing, hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
@@ -18,6 +20,32 @@ type R =
   | RouteProp<MyMatchesStackParamList, 'MatchPregame'>
   | RouteProp<GroupsStackParamList, 'MatchPregame'>;
 type Nav = StackNavigationProp<Stacks>;
+
+function MatchPregameJoinCode({ joinCode }: { joinCode: string }) {
+  const { label, runCopy, isCopied } = useClipboardCopyFeedback({
+    idleLabel: `Kod ${joinCode}`,
+    copiedLabel: 'Kod kopyalandı',
+    copiedDurationMs: 3000,
+  });
+
+  const onPress = useCallback(() => {
+    void runCopy(async () => {
+      await Clipboard.setStringAsync(joinCode);
+    });
+  }, [joinCode, runCopy]);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={isCopied ? 'Kod kopyalandı' : 'Katılım kodunu kopyala'}
+      style={({ pressed }) => [styles.codeButton, pressed && styles.codeButtonPressed]}
+      testID="pregame:join-code:copy"
+    >
+      <Text style={[styles.codeButtonLabel, isCopied && styles.codeButtonLabelCopied]}>{label}</Text>
+    </Pressable>
+  );
+}
 
 export function MatchPregameScreen() {
   const route = useRoute<R>();
@@ -55,7 +83,7 @@ export function MatchPregameScreen() {
         <Text style={styles.slot}>
           Oyuncular {goingCount}/{match.maxPlayers}
         </Text>
-        <Text style={styles.code}>Kod {match.joinCode}</Text>
+        <MatchPregameJoinCode joinCode={match.joinCode} />
       </View>
 
       <View style={styles.section}>
@@ -145,7 +173,32 @@ const styles = StyleSheet.create({
   heroVenue: { ...typography.title, color: colors.text },
   heroDate: { ...typography.body, color: colors.textMuted },
   slot: { ...typography.subtitle, color: colors.accent, marginTop: spacing.xs },
-  code: { ...typography.caption, color: colors.textMuted },
+  codeButton: {
+    alignSelf: 'flex-start',
+    minHeight: 48,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+    ...shadows.sm,
+  },
+  codeButtonPressed: {
+    opacity: 0.88,
+  },
+  codeButtonLabel: {
+    ...typography.subtitle,
+    fontSize: 15,
+    color: colors.accent,
+    letterSpacing: letterSpacing.code,
+  },
+  codeButtonLabelCopied: {
+    color: colors.copyFeedbackLight,
+    letterSpacing: letterSpacing.normal,
+  },
   section: { padding: spacing.md, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   pad: { padding: spacing.md },
   sectionTitle: {
