@@ -20,7 +20,7 @@ const GROUP_UUID = 'c0000000-0000-4000-8000-000000000010';
 const LOCAL_GROUP_ID = 'group-m3k9xj-a1b2c3';
 
 function samplePayload(groups: Group[], memberships: GroupMembership[] = []) {
-  return { groups, memberships };
+  return { groups, memberships, profiles: [] };
 }
 
 function buildDeps(overrides: Partial<Parameters<typeof deleteGroupUseCase>[0]> = {}) {

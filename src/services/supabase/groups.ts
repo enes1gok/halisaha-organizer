@@ -1,36 +1,54 @@
 import type { Group, GroupMembership } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
 import { createAuthRequiredError, mapSupabaseError } from './errors';
-import { ensureMyProfile } from './profiles';
+import { ensureMyProfile, fetchProfilesByIds } from './profiles';
 import { mapGroup, mapMembership } from './mappers';
-import type { GroupMemberRow, GroupRow } from './types';
+import type { GroupMemberRow, GroupRow, PublicProfileRow } from './types';
 
-export async function fetchMyGroups(): Promise<{ groups: Group[]; memberships: GroupMembership[] }> {
+export async function fetchMyGroups(): Promise<{
+  groups: Group[];
+  memberships: GroupMembership[];
+  profiles: PublicProfileRow[];
+}> {
   const supabase = getSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { groups: [], memberships: [] };
+  if (!user) return { groups: [], memberships: [], profiles: [] };
 
-  const { data: membershipsRaw, error: membershipsError } = await supabase
+  const { data: myMembershipsRaw, error: myMembershipsError } = await supabase
     .from('group_members')
-    .select('*')
+    .select('group_id')
     .eq('player_id', user.id);
+  if (myMembershipsError) throw mapSupabaseError(myMembershipsError, 'fetchMyGroups.myMemberships');
+
+  const groupIds = [...new Set((myMembershipsRaw ?? []).map((item) => item.group_id).filter(Boolean))];
+  if (groupIds.length === 0) return { groups: [], memberships: [], profiles: [] };
+
+  const [groupsResult, membershipsResult] = await Promise.all([
+    supabase
+      .from('groups')
+      .select('id,name,owner_id,join_code,created_at')
+      .in('id', groupIds),
+    supabase
+      .from('group_members')
+      .select('group_id,player_id,role,created_at')
+      .in('group_id', groupIds),
+  ]);
+
+  const { data: groupsRaw, error: groupsError } = groupsResult;
+  if (groupsError) throw mapSupabaseError(groupsError, 'fetchMyGroups.groups');
+
+  const { data: membershipsRaw, error: membershipsError } = membershipsResult;
   if (membershipsError) throw mapSupabaseError(membershipsError, 'fetchMyGroups.memberships');
 
   const memberships = (membershipsRaw ?? []).map((row) => mapMembership(row as GroupMemberRow));
-  const groupIds = memberships.map((item) => item.groupId);
-  if (groupIds.length === 0) return { groups: [], memberships };
-
-  const { data: groupsRaw, error: groupsError } = await supabase
-    .from('groups')
-    .select('*')
-    .in('id', groupIds);
-  if (groupsError) throw mapSupabaseError(groupsError, 'fetchMyGroups.groups');
+  const profileIds = memberships.map((item) => item.playerId);
 
   return {
     groups: (groupsRaw ?? []).map((row) => mapGroup(row as GroupRow)),
     memberships,
+    profiles: await fetchProfilesByIds(profileIds),
   };
 }
 

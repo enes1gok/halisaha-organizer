@@ -5,6 +5,7 @@ import {
   createGroupUseCase,
   deleteGroupUseCase,
   fetchGroupWeeklySeriesUseCase,
+  type GroupsHydrationPayload,
   hydrateRemoteGroupsUseCase,
   joinGroupUseCase,
   leaveGroupUseCase,
@@ -12,12 +13,23 @@ import {
 } from '../../usecases/groups';
 import type { UpsertGroupWeeklySeriesInput } from '../../services/supabase/groupWeeklySeries';
 import type { AppState, GroupsSlice } from '../types';
+import { upsertProfilesIntoPlayers, withSyncedStats } from '../helpers';
 
 function hydrateGroupsState(
   set: Parameters<StateCreator<AppState>>[0],
-  payload: { groups: Group[]; memberships: GroupMembership[] },
+  payload: GroupsHydrationPayload,
 ) {
-  set({ groups: payload.groups, groupMemberships: payload.memberships });
+  set((state) => {
+    const players = payload.profiles.length
+      ? withSyncedStats(upsertProfilesIntoPlayers(state.players, payload.profiles), state.matches)
+      : state.players;
+
+    return {
+      groups: payload.groups,
+      groupMemberships: payload.memberships,
+      players,
+    };
+  });
 }
 
 function createLocalGroup(
@@ -100,8 +112,7 @@ function deleteLocalGroupState(set: Parameters<StateCreator<AppState>>[0], group
 function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get: Parameters<StateCreator<AppState>>[1]) {
   return {
     getRemoteUserId: () => get().remoteUserId,
-    hydrateLocalGroups: (payload: { groups: Group[]; memberships: GroupMembership[] }) =>
-      hydrateGroupsState(set, payload),
+    hydrateLocalGroups: (payload: GroupsHydrationPayload) => hydrateGroupsState(set, payload),
     createLocalGroup: (name: string) => createLocalGroup(set, get, name),
     joinLocalGroup: (joinCode: string) => joinLocalGroup(set, get, joinCode),
     leaveLocalGroup: (groupId: string) => leaveLocalGroup(set, get, groupId),

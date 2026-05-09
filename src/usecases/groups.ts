@@ -12,15 +12,17 @@ import {
   joinGroupRemote,
   leaveGroupRemote,
 } from '../services/supabase/groups';
-import type { Group, GroupMembership, GroupWeeklySeries } from '../types/domain';
+import type { Group, GroupWeeklySeries } from '../types/domain';
 import type { CreateGroupResult } from '../store/types';
 import { createId } from '../utils/id';
 import { isRemoteUuid } from '../utils/matchId';
 import { rethrowUseCaseError } from './errors';
 
+export type GroupsHydrationPayload = Awaited<ReturnType<typeof fetchMyGroups>>;
+
 type GroupsDeps = {
   getRemoteUserId: () => string | null;
-  hydrateLocalGroups: (payload: { groups: Group[]; memberships: GroupMembership[] }) => void;
+  hydrateLocalGroups: (payload: GroupsHydrationPayload) => void;
   createLocalGroup: (name: string) => Group;
   joinLocalGroup: (joinCode: string) => Group | null;
   leaveLocalGroup: (groupId: string) => void;

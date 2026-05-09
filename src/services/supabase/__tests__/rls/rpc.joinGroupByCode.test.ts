@@ -25,6 +25,18 @@ describeIntegration('RPC join_group_by_code', () => {
       .maybeSingle();
     expect(sErr).toBeNull();
     expect(row?.role).toBe('member');
+
+    const { data: roster, error: rosterErr } = await joiner.client
+      .from('group_members')
+      .select('player_id,role')
+      .eq('group_id', group!.id);
+    expect(rosterErr).toBeNull();
+    expect(roster).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ player_id: owner.userId, role: 'owner' }),
+        expect.objectContaining({ player_id: joiner.userId, role: 'member' }),
+      ]),
+    );
   });
 
   it('returns null for unknown code', async () => {
