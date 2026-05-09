@@ -7,6 +7,7 @@ import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { colors, letterSpacing, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
+import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
 import { formatMatchDateTime } from '../utils/dates';
 import { isRemoteMatchId } from '../utils/matchId';
 import { useShallow } from 'zustand/react/shallow';
@@ -61,6 +62,8 @@ export function MatchSummaryScreen() {
       : null;
 
   const showRatingReminder = lineup && match.result && !hasSubmittedRatings && isRemoteMatchId(match.id);
+  const { pastScheduledEnd, endsAtIso } = useMatchPostMatchWindow(match.startsAt);
+  const postgameNavBlocked = !showRatingReminder && !pastScheduledEnd;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}>
@@ -100,8 +103,15 @@ export function MatchSummaryScreen() {
           }
           variant={showRatingReminder ? undefined : 'ghost'}
           style={styles.mt}
+          disabled={postgameNavBlocked}
+          accessibilityState={{ disabled: postgameNavBlocked }}
           testID="summary:goto-postgame"
         />
+        {postgameNavBlocked ? (
+          <Text style={styles.hintMuted}>
+            Maç sonrası, tahmini bitişten sonra açılır ({formatMatchDateTime(endsAtIso)}).
+          </Text>
+        ) : null}
 
         <PillButton title="Tüm maç bilgisi" variant="ghost" onPress={() => navigation.navigate('MatchDetail', { matchId })} />
       </View>
@@ -155,5 +165,6 @@ const styles = StyleSheet.create({
   resultLine: { color: colors.text, marginTop: spacing.sm },
   miniAvg: { ...typography.caption, color: colors.accent, marginTop: spacing.xs },
   banner: { ...typography.caption, color: colors.accent },
+  hintMuted: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
   mt: { marginTop: spacing.sm },
 });

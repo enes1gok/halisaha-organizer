@@ -37,6 +37,8 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
   'errors.rpc.groupNameMin': 'Grup adı en az 2 karakter olmalı.',
   'errors.rpc.groupNameMax': 'Grup adı en fazla 80 karakter olabilir.',
   'errors.rpc.matchNotFound': 'Maç bulunamadı.',
+  'errors.rpc.matchScoreBeforeEnd':
+    'Skor, maçın tahmini bitiş saatinden sonra girilebilir.',
   'errors.rpc.ratingCannotParticipate':
     'Bu maç için derecelendirme yapılamaz.',
   'errors.rpc.ratingFinishedOnly':

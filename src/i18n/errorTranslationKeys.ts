@@ -20,6 +20,7 @@ export type ErrorTranslationKey =
   | 'errors.rpc.groupNameMin'
   | 'errors.rpc.groupNameMax'
   | 'errors.rpc.matchNotFound'
+  | 'errors.rpc.matchScoreBeforeEnd'
   | 'errors.rpc.ratingCannotParticipate'
   | 'errors.rpc.ratingFinishedOnly'
   | 'errors.rpc.ratingInvalidRatee'

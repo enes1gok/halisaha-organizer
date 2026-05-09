@@ -116,6 +116,10 @@ const ERR_REGISTRY: Record<
   ERR_GROUP_NAME_MIN: { key: 'errors.rpc.groupNameMin', code: 'VALIDATION' },
   ERR_GROUP_NAME_MAX: { key: 'errors.rpc.groupNameMax', code: 'VALIDATION' },
   ERR_MATCH_NOT_FOUND: { key: 'errors.rpc.matchNotFound', code: 'NOT_FOUND' },
+  ERR_MATCH_SCORE_BEFORE_END: {
+    key: 'errors.rpc.matchScoreBeforeEnd',
+    code: 'VALIDATION',
+  },
   ERR_RATING_CANNOT_PARTICIPATE: {
     key: 'errors.rpc.ratingCannotParticipate',
     code: 'FORBIDDEN',

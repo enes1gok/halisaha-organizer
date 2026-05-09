@@ -30,6 +30,7 @@ import { formatMatchDateTime } from '../utils/dates';
 import { hasAssignedLineup } from '../utils/matchRoster';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
+import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
 import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
 import { toUserMessage } from '../services/supabase/errors';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
@@ -90,6 +91,7 @@ export function MatchDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const countdown = useCountdown(match?.startsAt ?? new Date().toISOString());
+  const { pastScheduledEnd, endsAtIso } = useMatchPostMatchWindow(match?.startsAt);
 
   const organizer = match ? getPlayer(match.organizerId) : undefined;
   const isOrganizer = match?.organizerId === userId;
@@ -298,7 +300,15 @@ export function MatchDetailScreen() {
             title="Maç sonrası"
             onPress={() => navigation.navigate('MatchPostgame', { matchId })}
             style={styles.mt}
+            disabled={!pastScheduledEnd}
+            accessibilityState={{ disabled: !pastScheduledEnd }}
+            testID="match:detail:postgame:player"
           />
+          {!pastScheduledEnd ? (
+            <Text style={[styles.muted, styles.mtXs]}>
+              Tahmini bitiş ({formatMatchDateTime(endsAtIso)}) sonrası açılır.
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -353,12 +363,22 @@ export function MatchDetailScreen() {
               />
             ) : null}
             {match.status !== 'finished' ? (
-              <PillButton
-                title="Maç sonrası"
-                onPress={() => navigation.navigate('MatchPostgame', { matchId })}
-                variant="ghost"
-                style={styles.flex}
-              />
+              <>
+                <PillButton
+                  title="Maç sonrası"
+                  onPress={() => navigation.navigate('MatchPostgame', { matchId })}
+                  variant="ghost"
+                  style={styles.flex}
+                  disabled={!pastScheduledEnd}
+                  accessibilityState={{ disabled: !pastScheduledEnd }}
+                  testID="match:detail:postgame:organizer"
+                />
+                {!pastScheduledEnd ? (
+                  <Text style={[styles.muted, styles.fullRow, styles.mtXs]}>
+                    Tahmini bitiş ({formatMatchDateTime(endsAtIso)}) sonrası açılır.
+                  </Text>
+                ) : null}
+              </>
             ) : null}
           </View>
           <View style={[styles.rowBetween, styles.mt]}>
@@ -610,6 +630,12 @@ const styles = StyleSheet.create({
   },
   mt: {
     marginTop: spacing.sm,
+  },
+  mtXs: {
+    marginTop: spacing.xs,
+  },
+  fullRow: {
+    width: '100%',
   },
   code: {
     ...typography.subtitle,

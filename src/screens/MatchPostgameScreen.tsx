@@ -7,6 +7,7 @@ import { PostMatchScoreForm } from '../components/PostMatchScoreForm';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { colors, spacing, typography } from '../theme';
+import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
 import { formatMatchDateTime } from '../utils/dates';
 import { isRemoteMatchId } from '../utils/matchId';
 import { useAuthStore, useMatchesStore } from '../store';
@@ -34,7 +35,11 @@ export function MatchPostgameScreen() {
   );
 
   const isRemote = match ? isRemoteMatchId(match.id) : false;
-  const canEditScore = Boolean(match && ((isRemote && (lineup || isOrg)) || (!isRemote && isOrg)));
+  const mayEditScoreByRole = Boolean(match && ((isRemote && (lineup || isOrg)) || (!isRemote && isOrg)));
+  const { pastScheduledEnd, endsAtIso } = useMatchPostMatchWindow(match?.startsAt);
+  const canEditScore = mayEditScoreByRole && pastScheduledEnd;
+  const scoreUnavailableReason =
+    !mayEditScoreByRole ? 'permission' : !pastScheduledEnd ? 'time' : undefined;
   const showSelfReportToggle = Boolean(isOrg);
 
   const showRatingsCta =
@@ -55,11 +60,14 @@ export function MatchPostgameScreen() {
     >
       <Text style={styles.heroVenue}>{match.venue}</Text>
       <Text style={styles.heroDate}>{formatMatchDateTime(match.startsAt)}</Text>
+      <Text style={styles.heroEndHint}>Tahmini bitiş: {formatMatchDateTime(endsAtIso)}</Text>
       <Text style={styles.lead}>Skoru kadrodaki oyuncular veya organizatör girebilir. Son gönderilen skor geçerlidir.</Text>
 
       <PostMatchScoreForm
         match={match}
         canEditScore={canEditScore}
+        scoreUnavailableReason={!canEditScore ? scoreUnavailableReason : undefined}
+        matchEndsAtIso={endsAtIso}
         showSelfReportToggle={showSelfReportToggle}
       />
 
@@ -94,6 +102,7 @@ const styles = StyleSheet.create({
   },
   heroVenue: { ...typography.title, color: colors.text },
   heroDate: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
+  heroEndHint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
   lead: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm, lineHeight: 18 },
   section: { ...typography.subtitle, color: colors.text },
   muted: { ...typography.caption, color: colors.textMuted },

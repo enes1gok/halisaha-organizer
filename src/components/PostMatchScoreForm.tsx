@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { ConfirmationModal } from './ConfirmationModal';
 import { PillButton } from './PillButton';
 import { PlayerAvatar } from './PlayerAvatar';
@@ -8,6 +8,7 @@ import { colors, spacing, typography } from '../theme';
 import type { Match, ScoreResult } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
 import { showUserFacingErrorAlert } from './UserFacingErrorAlert';
+import { formatMatchDateTime } from '../utils/dates';
 
 export function toScoreLines(map: Record<string, number>): { playerId: string; count: number }[] {
   return Object.entries(map)
@@ -18,6 +19,10 @@ export function toScoreLines(map: Record<string, number>): { playerId: string; c
 export type PostMatchScoreFormProps = {
   match: Match;
   canEditScore: boolean;
+  /** Skor girişi kapalıysa neden (bilgilendirme metni). */
+  scoreUnavailableReason?: 'time' | 'permission';
+  /** `scoreUnavailableReason === 'time'` iken tahmini bitiş (ISO). */
+  matchEndsAtIso?: string;
   showSelfReportToggle: boolean;
   onScoreSubmitted?: () => void;
 };
@@ -25,6 +30,8 @@ export type PostMatchScoreFormProps = {
 export function PostMatchScoreForm({
   match,
   canEditScore,
+  scoreUnavailableReason,
+  matchEndsAtIso,
   showSelfReportToggle,
   onScoreSubmitted,
 }: PostMatchScoreFormProps) {
@@ -100,39 +107,57 @@ export function PostMatchScoreForm({
     }
   };
 
+  const readonlyNoScoreMessage = () => {
+    if (scoreUnavailableReason === 'time' && matchEndsAtIso) {
+      return `Skor, maçın tahmini bitişinden sonra girilebilir (tahmini bitiş: ${formatMatchDateTime(matchEndsAtIso)}).`;
+    }
+    if (scoreUnavailableReason === 'permission') {
+      return 'Bu maç için skor düzenlenemez.';
+    }
+    return 'Bu maç için skor düzenlenemez.';
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.sectionHead}>Maç sonucu</Text>
       {canEditScore ? (
-        <View style={styles.scoreRow}>
-          <Text style={styles.teamLbl}>{TEAM_SIDE_LABELS.A}</Text>
-          <View style={styles.bigScore}>
-            <Pressable onPress={() => setScoreA(Math.max(0, scoreA - 1))} style={styles.stepBtn} testID="postmatch:scoreA:dec">
-              <Text style={styles.stepTxt}>−</Text>
-            </Pressable>
-            <Text style={styles.scoreTxt}>{scoreA}</Text>
-            <Pressable onPress={() => setScoreA(scoreA + 1)} style={styles.stepBtn} testID="postmatch:scoreA:inc">
-              <Text style={styles.stepTxt}>+</Text>
-            </Pressable>
+        <View style={styles.scoreBlock}>
+          <View style={styles.teamScoreLine}>
+            <Text style={styles.teamLbl} numberOfLines={2}>
+              {TEAM_SIDE_LABELS.A}
+            </Text>
+            <View style={styles.bigScore}>
+              <Pressable onPress={() => setScoreA(Math.max(0, scoreA - 1))} style={styles.stepBtn} testID="postmatch:scoreA:dec">
+                <Text style={styles.stepTxt}>−</Text>
+              </Pressable>
+              <Text style={styles.scoreTxt}>{scoreA}</Text>
+              <Pressable onPress={() => setScoreA(scoreA + 1)} style={styles.stepBtn} testID="postmatch:scoreA:inc">
+                <Text style={styles.stepTxt}>+</Text>
+              </Pressable>
+            </View>
           </View>
-          <Text style={styles.sep}>—</Text>
-          <View style={styles.bigScore}>
-            <Pressable onPress={() => setScoreB(Math.max(0, scoreB - 1))} style={styles.stepBtn} testID="postmatch:scoreB:dec">
-              <Text style={styles.stepTxt}>−</Text>
-            </Pressable>
-            <Text style={styles.scoreTxt}>{scoreB}</Text>
-            <Pressable onPress={() => setScoreB(scoreB + 1)} style={styles.stepBtn} testID="postmatch:scoreB:inc">
-              <Text style={styles.stepTxt}>+</Text>
-            </Pressable>
+          <View style={styles.teamDivider} />
+          <View style={styles.teamScoreLine}>
+            <Text style={styles.teamLbl} numberOfLines={2}>
+              {TEAM_SIDE_LABELS.B}
+            </Text>
+            <View style={styles.bigScore}>
+              <Pressable onPress={() => setScoreB(Math.max(0, scoreB - 1))} style={styles.stepBtn} testID="postmatch:scoreB:dec">
+                <Text style={styles.stepTxt}>−</Text>
+              </Pressable>
+              <Text style={styles.scoreTxt}>{scoreB}</Text>
+              <Pressable onPress={() => setScoreB(scoreB + 1)} style={styles.stepBtn} testID="postmatch:scoreB:inc">
+                <Text style={styles.stepTxt}>+</Text>
+              </Pressable>
+            </View>
           </View>
-          <Text style={styles.teamLbl}>{TEAM_SIDE_LABELS.B}</Text>
         </View>
       ) : match.result ? (
         <Text style={styles.roBody}>
           Skor: {match.result.scoreA} – {match.result.scoreB}
         </Text>
       ) : (
-        <Text style={styles.roBody}>Bu maç için skor düzenlenemez.</Text>
+        <Text style={styles.roBody}>{readonlyNoScoreMessage()}</Text>
       )}
 
       {canEditScore ? (
@@ -213,16 +238,21 @@ const styles = StyleSheet.create({
   container: { gap: spacing.sm },
   sectionHead: { ...typography.subtitle, color: colors.text },
   roBody: { ...typography.body, color: colors.textMuted },
-  scoreRow: {
+  scoreBlock: { gap: 0, marginBottom: spacing.sm },
+  teamScoreLine: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-    flexWrap: 'wrap',
     gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
-  teamLbl: { ...typography.caption, color: colors.textMuted, width: 56 },
-  bigScore: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  teamDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginVertical: spacing.xs,
+  },
+  teamLbl: { ...typography.caption, color: colors.textMuted, flex: 1, minWidth: 0, marginRight: spacing.sm },
+  bigScore: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
   scoreTxt: {
     fontSize: 44,
     fontFamily: 'Inter_700Bold',
@@ -241,7 +271,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   stepTxt: { fontSize: 22, color: colors.text, fontFamily: 'Inter_600SemiBold' },
-  sep: { ...typography.title, color: colors.textMuted },
   section: { ...typography.subtitle, color: colors.text, marginTop: spacing.md, marginBottom: spacing.sm },
   row: {
     flexDirection: 'row',
