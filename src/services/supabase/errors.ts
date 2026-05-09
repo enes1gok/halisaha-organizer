@@ -223,6 +223,18 @@ export function mapSupabaseError(
     });
   }
 
+  if (isMissingCreateMatchRpcSignature(parsed)) {
+    return new AppError({
+      code: 'UNKNOWN',
+      operation,
+      translationKey: 'errors.rpc.backendSchemaOutdated',
+      cause: error,
+      retryable: false,
+      traceId: opts.traceId,
+      meta: mergeErrorMeta({ supabase: parsed, errToken: 'ERR_BACKEND_SCHEMA_OUTDATED' }, opts, pgDetail),
+    });
+  }
+
   const code = classifySupabaseError(parsed);
   const message =
     fallbackMessage ?? buildUserFacingMessage(parsed, code, operation);
@@ -368,6 +380,17 @@ function parseSupabaseLikeError(error: unknown): SupabaseLikeError {
 
 function combinedSupabaseText(parsed: SupabaseLikeError): string {
   return [parsed.message, parsed.details, parsed.hint].filter(Boolean).join(' ');
+}
+
+function isMissingCreateMatchRpcSignature(parsed: SupabaseLikeError): boolean {
+  if ((parsed.code ?? '').toUpperCase() !== 'PGRST202') return false;
+  const lower = combinedSupabaseText(parsed).toLowerCase();
+  if (!lower.includes('create_match_with_organizer_attendee')) return false;
+  return (
+    lower.includes('p_payment_method') ||
+    lower.includes('p_iban_account_name') ||
+    lower.includes('p_payment_note')
+  );
 }
 
 function classifySupabaseError(error: SupabaseLikeError): AppErrorCode {

@@ -97,6 +97,20 @@ describe('mapSupabaseError', () => {
     expect(err.code).toBe('VALIDATION');
   });
 
+  it('maps outdated create_match_with_organizer_attendee signature to migration guidance', () => {
+    const err = mapSupabaseError(
+      {
+        code: 'PGRST202',
+        message:
+          'Could not find the function public.create_match_with_organizer_attendee(p_group_id, p_iban, p_iban_account_name, p_join_code, p_max_players, p_payment_method, p_payment_note, p_price_per_person, p_starts_at, p_venue) in the schema cache',
+      },
+      'insertMatchWithOrganizerAttendee.create_match_rpc',
+    );
+    expect(err.translationKey).toBe('errors.rpc.backendSchemaOutdated');
+    expect(err.retryable).toBe(false);
+    expect(err.message).toContain('migration');
+  });
+
   it('maps named check constraint matches_max_players_chk', () => {
     const err = mapSupabaseError(
       {

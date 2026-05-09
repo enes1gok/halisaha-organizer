@@ -32,6 +32,8 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Sadece not ekle seçeneğinde ödeme notu zorunludur.',
   'errors.rpc.matchPaymentNoteTooLong':
     'Ödeme notu en fazla 120 karakter olabilir.',
+  'errors.rpc.backendSchemaOutdated':
+    'Sunucu sürümü güncel değil. Eksik veritabanı migrationları uygulanmalı (özellikle maç oluşturma ödeme alanları). Lütfen daha sonra tekrar deneyin.',
   'errors.rpc.groupNameMin': 'Grup adı en az 2 karakter olmalı.',
   'errors.rpc.groupNameMax': 'Grup adı en fazla 80 karakter olabilir.',
   'errors.rpc.matchNotFound': 'Maç bulunamadı.',
