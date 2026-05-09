@@ -9,7 +9,6 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Platform,
@@ -24,6 +23,12 @@ import {
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
+import {
+  MatchCardSkeleton,
+  ProfileHeaderSkeleton,
+  ProfileStatsGridSkeleton,
+  SkeletonText,
+} from '../components/skeleton';
 import { colors, letterSpacing, shadows, spacing, typography } from '../theme';
 import type { Position, PreferredFoot } from '../types/domain';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
@@ -175,9 +180,19 @@ export function ProfileScreen() {
 
   if (awaitingRemoteProfile) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} accessibilityLabel="Profil yükleniyor" />
-      </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}
+        accessibilityLabel="Profil yükleniyor"
+      >
+        <ProfileHeaderSkeleton />
+        <ProfileStatsGridSkeleton />
+        <View style={styles.skeletonRecentSection}>
+          <SkeletonText variant="subtitle" width={140} style={styles.skeletonRecentTitle} />
+          <MatchCardSkeleton />
+          <MatchCardSkeleton />
+        </View>
+      </ScrollView>
     );
   }
 
@@ -448,6 +463,13 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
+  },
+  skeletonRecentSection: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  skeletonRecentTitle: {
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     ...typography.subtitle,

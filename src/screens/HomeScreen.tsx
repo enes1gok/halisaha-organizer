@@ -13,6 +13,8 @@ import {
 import { HomeActionCard } from '../components/HomeActionCard';
 import { HomeUpcomingHeroCard } from '../components/HomeUpcomingHeroCard';
 import { MatchCard } from '../components/MatchCard';
+import { HomeActionStripSkeleton, HomeHeroSkeleton, MatchCardSkeleton, SkeletonList } from '../components/skeleton';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { colors, spacing } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
@@ -36,6 +38,7 @@ export function HomeScreen() {
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
+  const { configured, loading } = useSupabaseAuth();
   const [refreshing, setRefreshing] = useState(false);
 
   const upcoming = useMemo(() => {
@@ -75,6 +78,22 @@ export function HomeScreen() {
     ),
     [getPlayer, navigation, nextMatch, organizerName, userHasPaid],
   );
+
+  const showInitialSkeleton = configured && loading && matches.length === 0;
+
+  if (showInitialSkeleton) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.list}>
+          <HomeHeroSkeleton />
+          <SkeletonList count={3} renderItem={() => <MatchCardSkeleton />} />
+        </View>
+        <View style={styles.actionStrip} pointerEvents="none">
+          <HomeActionStripSkeleton />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>

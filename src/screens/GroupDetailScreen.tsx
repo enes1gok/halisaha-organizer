@@ -7,6 +7,8 @@ import { Card } from '../components/Card';
 import { MatchCard } from '../components/MatchCard';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { MatchCardSkeleton, SettingsSectionSkeleton, SkeletonList, SkeletonText } from '../components/skeleton';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
@@ -28,6 +30,7 @@ export function GroupDetailScreen() {
   const leaveGroup = useGroupsStore((s) => s.leaveGroup);
   const matches = useMatchesStore((s) => s.matches);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
+  const { configured, loading } = useSupabaseAuth();
 
   const group = groups.find((item) => item.id === groupId);
   const isOwner = group?.ownerId === userId;
@@ -55,6 +58,7 @@ export function GroupDetailScreen() {
   });
 
   const [leaving, setLeaving] = useState(false);
+  const showInitialSkeleton = configured && loading && !group;
 
   const groupMembersSorted = useMemo(() => {
     if (!groupId) return [];
@@ -113,6 +117,21 @@ export function GroupDetailScreen() {
       ],
     );
   }, [groupId, leaveGroup, navigation]);
+
+  if (showInitialSkeleton) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.listContent}>
+          <SkeletonText variant="title" width="55%" />
+          <SkeletonText variant="caption" width="24%" />
+          <SettingsSectionSkeleton rows={2} />
+          <SettingsSectionSkeleton rows={3} />
+          <SkeletonText variant="subtitle" width={96} />
+          <SkeletonList count={2} renderItem={() => <MatchCardSkeleton />} />
+        </View>
+      </View>
+    );
+  }
 
   if (!group || !isMember) {
     return (

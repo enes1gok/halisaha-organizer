@@ -4,6 +4,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { EmptyState } from '../components/EmptyState';
 import { MatchCard } from '../components/MatchCard';
+import { MatchCardSkeleton, SkeletonList } from '../components/skeleton';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { resolveMyMatchesEntryScreen } from '../navigation/myMatchesEntry';
 import { colors, spacing } from '../theme';
@@ -19,6 +21,7 @@ export function MyMatchesScreen() {
   const matches = useMatchesStore((s) => s.matches);
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
+  const { configured, loading } = useSupabaseAuth();
   const ratingsSubmission = useMatchesStore((s) => s.matchRatingsSubmissionByMatchId);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,8 +43,15 @@ export function MyMatchesScreen() {
     }
   }, [hydrateRemoteMatches, remoteUserId]);
 
+  const showInitialSkeleton = configured && loading && matches.length === 0;
+
   return (
     <View style={styles.screen}>
+      {showInitialSkeleton ? (
+        <View style={styles.list}>
+          <SkeletonList count={4} renderItem={() => <MatchCardSkeleton />} />
+        </View>
+      ) : (
       <FlatList
         data={mine}
         keyExtractor={(item) => item.id}
@@ -78,6 +88,7 @@ export function MyMatchesScreen() {
           );
         }}
       />
+      )}
     </View>
   );
 }

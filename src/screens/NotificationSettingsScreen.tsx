@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
+import { SettingsSectionSkeleton } from '../components/skeleton';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/supabase/profiles';
 import { colors, spacing, typography } from '../theme';
@@ -240,9 +241,12 @@ export function NotificationSettingsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingFull}>
-        <ActivityIndicator color={colors.accent} size="large" />
-      </View>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <SettingsSectionSkeleton rows={2} />
+        <SettingsSectionSkeleton rows={1} />
+        <SettingsSectionSkeleton rows={6} />
+        <SettingsSectionSkeleton rows={2} />
+      </ScrollView>
     );
   }
 

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { LeaderboardRowSkeleton, SkeletonList } from '../components/skeleton';
 import {
   TAB_BAR_LIST_PADDING_BOTTOM,
   TAB_BAR_LIST_PADDING_PINNED_EXTRA,
@@ -61,13 +62,16 @@ export function LeaderboardScreen() {
   const [tf, setTf] = useState<Timeframe>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [remoteRows, setRemoteRows] = useState<{ playerId: string; value: number; rank: number }[] | null>(null);
+  const [remoteLoading, setRemoteLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     if (!remoteUserId) {
       setRemoteRows(null);
+      setRemoteLoading(false);
       return;
     }
+    setRemoteLoading(true);
     void fetchPlayerLeaderboardStats(tf, new Date().toISOString(), groupId ?? null, metric)
       .then((stats) => {
         if (cancelled) return;
@@ -94,6 +98,10 @@ export function LeaderboardScreen() {
         if (cancelled) return;
         setRemoteRows(null);
         Alert.alert('Hata', toUserMessage(error, 'Liderlik verileri alınamadı.'));
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setRemoteLoading(false);
       });
     return () => {
       cancelled = true;
@@ -114,6 +122,7 @@ export function LeaderboardScreen() {
 
   const fmt = (v: number) =>
     metric === 'winRate' ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
+  const showInitialSkeleton = !!remoteUserId && remoteLoading && remoteRows == null;
 
   return (
     <View style={styles.screen}>
@@ -144,7 +153,7 @@ export function LeaderboardScreen() {
 
       <FlatList
         style={{ flex: 1 }}
-        data={top}
+        data={showInitialSkeleton ? [] : top}
         keyExtractor={(item) => item.playerId}
         refreshControl={
           <RefreshControl
@@ -168,6 +177,11 @@ export function LeaderboardScreen() {
               : TAB_BAR_LIST_PADDING_BOTTOM,
           },
         ]}
+        ListEmptyComponent={
+          showInitialSkeleton ? (
+            <SkeletonList count={8} renderItem={() => <LeaderboardRowSkeleton />} />
+          ) : null
+        }
         renderItem={({ item }) => {
           const p = players.find((x) => x.id === item.playerId);
           if (!p) return null;

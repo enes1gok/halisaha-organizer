@@ -3,6 +3,8 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
+import { GroupCardSkeleton, SkeletonList } from '../components/skeleton';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useAuthStore, useGroupsStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
@@ -14,10 +16,12 @@ export function GroupsScreen() {
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const groups = useGroupsStore((s) => s.groups);
   const memberships = useGroupsStore((s) => s.groupMemberships);
+  const { configured, loading } = useSupabaseAuth();
 
   const myGroups = groups.filter((group) =>
     memberships.some((membership) => membership.groupId === group.id && membership.playerId === userId),
   );
+  const showInitialSkeleton = configured && loading && groups.length === 0 && memberships.length === 0;
 
   return (
     <View style={styles.screen}>
@@ -39,9 +43,15 @@ export function GroupsScreen() {
 
       <FlatList
         contentContainerStyle={styles.list}
-        data={myGroups}
+        data={showInitialSkeleton ? [] : myGroups}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>Henüz bir grubun yok. Yeni grup oluşturabilirsin.</Text>}
+        ListEmptyComponent={
+          showInitialSkeleton ? (
+            <SkeletonList count={4} renderItem={() => <GroupCardSkeleton />} />
+          ) : (
+            <Text style={styles.empty}>Henüz bir grubun yok. Yeni grup oluşturabilirsin.</Text>
+          )
+        }
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
