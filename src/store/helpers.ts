@@ -109,3 +109,27 @@ export function mergeHydratedRemoteMatches(
     players: withSyncedStats(players, mergedMatches),
   };
 }
+
+/** Oyuncu store'da yokken maç detayında satır kaybetmemek için minimal Player. */
+export function stubPlayerForUnknownAttendee(playerId: string): Player {
+  return {
+    id: playerId,
+    name: 'Oyuncu',
+    position: 'MID',
+    preferredFoot: 'right',
+    stats: emptyPlayerStats(),
+  };
+}
+
+/** Katılımcı satırları için oyuncu kaydı yoksa stub kullanır; isimlere göre TR sıralar. */
+export function sortAttendeesWithPlayers(
+  attendees: Attendee[],
+  getPlayer: (id: string) => Player | undefined,
+): { a: Attendee; p: Player }[] {
+  return [...attendees]
+    .map((a) => ({
+      a,
+      p: getPlayer(a.playerId) ?? stubPlayerForUnknownAttendee(a.playerId),
+    }))
+    .sort((x, y) => x.p.name.localeCompare(y.p.name, 'tr'));
+}

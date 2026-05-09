@@ -40,6 +40,7 @@ import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { sortAttendeesWithPlayers } from '../store/helpers';
 import { isRemoteMatchId } from '../utils/matchId';
 
 type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
@@ -53,6 +54,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const REMOTE_DETAIL_REFRESH_MS = 45_000;
 
 export function MatchDetailScreen() {
   const route = useRoute<MatchDetailRoute>();
@@ -92,6 +94,7 @@ export function MatchDetailScreen() {
   const [ratingHints, setRatingHints] = useState({ peer: false, motm: false });
 
   const rsvpRef = useRef<BottomSheetModal>(null);
+  const lastRemoteDetailRefreshMs = useRef(0);
   const snapPoints = useMemo(() => ['32%'], []);
   const [refreshing, setRefreshing] = useState(false);
   const [rsvpGoingKey, setRsvpGoingKey] = useState(0);
@@ -164,6 +167,19 @@ export function MatchDetailScreen() {
     }, [match, rosterSize, userOnMatchLineup, loadMatchRatingSummary]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!isRemoteMatchId(matchId)) return undefined;
+      const now = Date.now();
+      if (now - lastRemoteDetailRefreshMs.current < REMOTE_DETAIL_REFRESH_MS) return undefined;
+      lastRemoteDetailRefreshMs.current = now;
+      void refreshRemoteMatch(matchId).catch(() => {
+        /* odak yenilemesi — kullanıcıya toast yok; pull-to-refresh ile tekrar denenebilir */
+      });
+      return undefined;
+    }, [matchId, refreshRemoteMatch]),
+  );
+
   const { label: joinCopyLabel, runCopy: runJoinCopy, isCopied: joinCopied } = useClipboardCopyFeedback({
     idleLabel: 'Kodu Kopyala',
   });
@@ -173,10 +189,7 @@ export function MatchDetailScreen() {
 
   const attendeesSorted = useMemo(() => {
     if (!match) return [];
-    return [...match.attendees]
-      .map((a) => ({ a, p: getPlayer(a.playerId) }))
-      .filter((x) => x.p)
-      .sort((x, y) => (x.p!.name > y.p!.name ? 1 : -1));
+    return sortAttendeesWithPlayers(match.attendees, getPlayer);
   }, [match, getPlayer]);
 
   const onPressCopyJoin = useCallback(() => {

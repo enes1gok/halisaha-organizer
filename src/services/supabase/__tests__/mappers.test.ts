@@ -326,6 +326,12 @@ describe('jsonArrayOrEmpty', () => {
     const arr = [1, 2];
     expect(jsonArrayOrEmpty(arr)).toBe(arr);
   });
+
+  it('parses JSON string arrays', () => {
+    expect(jsonArrayOrEmpty('[1,2]')).toEqual([1, 2]);
+    expect(jsonArrayOrEmpty('{"not":"array"}')).toEqual([]);
+    expect(jsonArrayOrEmpty('not json')).toEqual([]);
+  });
 });
 
 describe('numOrUndef', () => {

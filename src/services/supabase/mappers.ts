@@ -179,6 +179,16 @@ export function mapLeaderboardRow(row: PlayerLeaderboardStatsRow): PlayerLeaderb
   };
 }
 
-export function jsonArrayOrEmpty<T>(value: T[] | null | undefined): T[] {
-  return Array.isArray(value) ? value : [];
+export function jsonArrayOrEmpty<T>(value: T[] | string | null | undefined): T[] {
+  if (Array.isArray(value)) return value;
+  if (value === null || value === undefined) return [];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
