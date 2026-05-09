@@ -24,6 +24,12 @@ export async function fetchProfilesByIds(ids: string[]): Promise<PublicProfileRo
 
 export async function fetchProfileById(playerId: string): Promise<ProfileRow | null> {
   const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.id || user.id !== playerId) {
+    return null;
+  }
   const { data, error } = await supabase.from('profiles').select('*').eq('id', playerId).maybeSingle();
   if (error) throw mapSupabaseError(error, 'fetchProfileById');
   return data as ProfileRow | null;
