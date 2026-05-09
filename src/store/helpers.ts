@@ -39,6 +39,9 @@ export function emptyPlayerStats(): Player['stats'] {
     wins: 0,
     losses: 0,
     draws: 0,
+    ratingAverage100: undefined,
+    ratingVoteCount: 0,
+    motmCount: 0,
   };
 }
 

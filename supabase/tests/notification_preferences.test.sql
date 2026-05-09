@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(14);
 
 select tests.reset_session();
 
@@ -72,6 +72,21 @@ select is(
   'group_match_payment_reminder false blocks payment_reminder'
 );
 
+select is(
+  public.notification_delivery_allowed('{}'::jsonb, 'post_match_rating_reminder'),
+  true,
+  'empty prefs allow post_match_rating_reminder'
+);
+
+select is(
+  public.notification_delivery_allowed(
+    '{"types": {"group_match_post_match_rating_reminder": false}}'::jsonb,
+    'post_match_rating_reminder'
+  ),
+  false,
+  'group_match_post_match_rating_reminder false blocks post_match_rating_reminder'
+);
+
 -- ---------------------------------------------------------------------------
 -- Integration: initial enqueue skips opted-out member
 -- ---------------------------------------------------------------------------
@@ -87,6 +102,10 @@ where id = 'a0000000-0000-4000-8000-000000000021'::uuid;
 update public.profiles
 set notification_preferences = '{"types": {"group_match_payment_reminder": false}}'::jsonb
 where id = 'a0000000-0000-4000-8000-000000000022'::uuid;
+
+update public.profiles
+set notification_preferences = '{"types": {"group_match_initial": false, "group_match_post_match_rating_reminder": false}}'::jsonb
+where id = 'a0000000-0000-4000-8000-000000000021'::uuid;
 
 insert into public.groups (id, name, owner_id, join_code)
 values (
@@ -153,6 +172,18 @@ select is(
      and type = 'payment_reminder'),
   1,
   'payment_reminder enqueue skips opted-out member'
+);
+
+update public.matches
+set status = 'finished'::public.match_status
+where id = 'b0000000-0000-4000-8000-000000000090'::uuid;
+
+select is(
+  (select count(*)::int from public.notification_deliveries
+   where match_id = 'b0000000-0000-4000-8000-000000000090'::uuid
+     and type = 'post_match_rating_reminder'),
+  1,
+  'post_match_rating_reminder enqueue skips opted-out member'
 );
 
 select * from finish();

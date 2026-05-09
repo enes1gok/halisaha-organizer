@@ -93,6 +93,8 @@ export function ProfileScreen() {
   const score = player ? playerScore(player) : 0;
   const level = levelLabelFromScore(score);
   const wr = player ? Math.round(winRate(player.stats) * 100) : 0;
+  const ratingAvg = player.stats.ratingAverage100;
+  const motmCount = player.stats.motmCount ?? 0;
   const effectiveUserId = player?.id ?? userId;
 
   const recent = useMemo(() => {
@@ -251,6 +253,14 @@ export function ProfileScreen() {
         <View style={styles.cell}>
           <Text style={styles.cellVal}>{wr}%</Text>
           <Text style={styles.cellLbl}>Galibiyet</Text>
+        </View>
+        <View style={styles.cell}>
+          <Text style={styles.cellVal}>{ratingAvg != null ? ratingAvg.toFixed(1) : '—'}</Text>
+          <Text style={styles.cellLbl}>Ortalama Puan</Text>
+        </View>
+        <View style={styles.cell}>
+          <Text style={styles.cellVal}>{motmCount}</Text>
+          <Text style={styles.cellLbl}>Maçın Adamı</Text>
         </View>
       </View>
 

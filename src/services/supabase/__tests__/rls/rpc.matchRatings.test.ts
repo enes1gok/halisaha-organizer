@@ -31,7 +31,7 @@ describeIntegration('RPC match_peer_ratings', () => {
 
     const { error: rateErr } = await p1.client.rpc('upsert_match_peer_ratings', {
       p_match_id: match.id,
-      p_scores: [{ ratee_id: org.userId, score: 8 }],
+      p_scores: [{ ratee_id: org.userId, score: 80 }],
     });
     expect(rateErr).toBeNull();
 
@@ -48,7 +48,7 @@ describeIntegration('RPC match_peer_ratings', () => {
     const sOrg = summaryOrg as { players: { player_id: string; avg: number | null; votes_count: number }[] };
     expect(sOrg.players?.length).toBe(2);
     const orgRow = sOrg.players!.find((p) => p.player_id === org.userId);
-    expect(orgRow?.avg).toBe(8);
+    expect(orgRow?.avg).toBe(80);
     expect(orgRow?.votes_count).toBe(1);
 
     const { data: summaryP1, error: sumP1Err } = await p1.client.rpc('get_match_rating_public_summary', {
@@ -84,7 +84,7 @@ describeIntegration('RPC match_peer_ratings', () => {
     });
     await p1.client.rpc('upsert_match_peer_ratings', {
       p_match_id: match.id,
-      p_scores: [{ ratee_id: org.userId, score: 7 }],
+      p_scores: [{ ratee_id: org.userId, score: 70 }],
     });
 
     const { data: peerRows } = await org.client.from('match_peer_ratings').select('*').eq('match_id', match.id);

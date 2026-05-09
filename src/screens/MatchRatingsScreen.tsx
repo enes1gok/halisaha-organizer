@@ -19,7 +19,8 @@ type RatingsRoute =
   | RouteProp<GroupsStackParamList, 'MatchRatings'>;
 type Nav = StackNavigationProp<Stacks>;
 
-const DEFAULT_SCORE = 8;
+const DEFAULT_SCORE = 70;
+const SCORE_STEP = 5;
 
 export function MatchRatingsScreen() {
   const route = useRoute<RatingsRoute>();
@@ -101,7 +102,7 @@ export function MatchRatingsScreen() {
   const bump = useCallback((playerId: string, delta: number) => {
     setScores((prev) => {
       const cur = prev[playerId] ?? DEFAULT_SCORE;
-      const v = Math.min(10, Math.max(1, cur + delta));
+      const v = Math.min(100, Math.max(0, cur + delta));
       return { ...prev, [playerId]: v };
     });
   }, []);
@@ -123,7 +124,7 @@ export function MatchRatingsScreen() {
     setSaving(true);
     try {
       await submitMatchRatings(match.id, payload, motmId);
-      navigation.goBack();
+      navigation.navigate('MatchSummary', { matchId: match.id });
     } catch (e) {
       Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.'));
     } finally {
@@ -163,7 +164,7 @@ export function MatchRatingsScreen() {
       contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }]}
     >
       <Text style={styles.lead}>
-        Kadrodaki diğer oyunculara 1–10 arası puan verin. Oy verenleri kimse bilemez; herkes özeti görür.
+        Kadrodaki diğer oyunculara 0–100 arası puan verin. Oy verenleri kimse bilemez; herkes özeti görür.
       </Text>
 
       <Text style={styles.sectionTitle}>Maçın adamı</Text>
@@ -191,11 +192,11 @@ export function MatchRatingsScreen() {
             <PlayerAvatar name={p!.name} uri={p!.photoUri} size={36} />
             <View style={styles.scoreMeta}>
               <Text style={styles.body}>{p!.name}</Text>
-              <Text style={styles.micro}>1 – 10</Text>
+              <Text style={styles.micro}>0 – 100</Text>
             </View>
             <View style={styles.stepper}>
               <Pressable
-                onPress={() => bump(id, -1)}
+                onPress={() => bump(id, -SCORE_STEP)}
                 style={styles.stepBtn}
                 accessibilityRole="button"
                 accessibilityLabel={`${p!.name} puanını azalt`}
@@ -207,7 +208,7 @@ export function MatchRatingsScreen() {
                 {loaded ? (scores[id] ?? DEFAULT_SCORE) : '—'}
               </Text>
               <Pressable
-                onPress={() => bump(id, 1)}
+                onPress={() => bump(id, SCORE_STEP)}
                 style={styles.stepBtn}
                 accessibilityRole="button"
                 accessibilityLabel={`${p!.name} puanını artır`}

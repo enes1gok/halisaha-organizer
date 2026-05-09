@@ -38,6 +38,26 @@ import {
 import { storeSeed } from '../storeSeed';
 import type { AppState, CreateMatchInput, MatchesSlice, PeerRatingInput } from '../types';
 
+function applyPlayerRatingAggregatesFromSummary(
+  players: AppState['players'],
+  summary: NonNullable<AppState['matchRatingSummariesById'][string]>,
+) {
+  const byId = new Map(summary.players.map((p) => [p.player_id, p]));
+  return players.map((player) => {
+    const s = byId.get(player.id);
+    if (!s) return player;
+    return {
+      ...player,
+      stats: {
+        ...player.stats,
+        ratingAverage100: s.overall_avg ?? player.stats.ratingAverage100,
+        ratingVoteCount: s.overall_votes_count ?? player.stats.ratingVoteCount ?? 0,
+        motmCount: s.overall_motm_count ?? player.stats.motmCount ?? 0,
+      },
+    };
+  });
+}
+
 function applyHydratedRemoteMatches(set: Parameters<StateCreator<AppState>>[0], graphs: MatchGraphPayload[]) {
   set((state) => mergeHydratedRemoteMatches(state, graphs));
 }
@@ -284,6 +304,7 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
       const summary = await loadMatchRatingSummaryUseCase(matchId);
       set((s) => ({
         matchRatingSummariesById: { ...s.matchRatingSummariesById, [matchId]: summary ?? undefined },
+        players: summary ? applyPlayerRatingAggregatesFromSummary(s.players, summary) : s.players,
       }));
     } catch {
       set((s) => ({

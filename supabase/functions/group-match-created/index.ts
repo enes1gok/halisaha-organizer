@@ -17,7 +17,8 @@ type DeliveryType =
   | 'payment_reminder'
   | 'match_cancelled'
   | 'venue_change'
-  | 'lineup_published';
+  | 'lineup_published'
+  | 'post_match_rating_reminder';
 
 type ClaimedDeliveryRow = {
   delivery_id: string;
@@ -56,6 +57,7 @@ type NotificationPreferences = {
     group_match_cancelled?: boolean;
     group_match_venue_change?: boolean;
     group_match_lineup_published?: boolean;
+    group_match_post_match_rating_reminder?: boolean;
   };
   quiet_hours?: {
     enabled?: boolean;
@@ -96,6 +98,7 @@ const PREF_KEY_BY_DELIVERY_TYPE: Record<
   match_cancelled: 'group_match_cancelled',
   venue_change: 'group_match_venue_change',
   lineup_published: 'group_match_lineup_published',
+  post_match_rating_reminder: 'group_match_post_match_rating_reminder',
 };
 
 /** Mirrors SQL `notification_delivery_allowed` + optional quiet-hours block at send time. */
@@ -261,6 +264,12 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
     return {
       title: 'Kadro yayınlandı',
       body: `${organizerLabel} kadroyu yayınladı • ${groupName}`,
+    };
+  }
+  if (delivery.type === 'post_match_rating_reminder') {
+    return {
+      title: 'Maç sonu oylaması hazır',
+      body: `${groupName} maçında Maçın Adamı ve oyuncu puanlarını ver`,
     };
   }
   return {

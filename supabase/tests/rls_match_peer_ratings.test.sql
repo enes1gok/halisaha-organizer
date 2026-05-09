@@ -63,20 +63,17 @@ select lives_ok(
        jsonb_build_array(
          jsonb_build_object(
            'ratee_id', tests.uuid_organizer()::text,
-           'score', 8
+           'score', 88
          )
        )
      ) $$,
   'participant upserts peer ratings'
 );
 
-select isnt_empty(
-  $$ select 1 from public.match_peer_ratings r
-     where r.match_id = 'b0000000-0000-4000-8000-000000000020'::uuid
-       and r.rater_id = tests.uuid_participant()
-       and r.ratee_id = tests.uuid_organizer()
-       and r.score = 8 $$,
-  'participant selects own rating row'
+select is(
+  (select round(((public.get_match_rating_public_summary('b0000000-0000-4000-8000-000000000020'::uuid) -> 'players' -> 0 ->> 'avg')::numeric))::int),
+  88,
+  'public summary returns organizer rating average'
 );
 
 select lives_ok(
@@ -91,7 +88,7 @@ select throws_ok(
   $$ select public.upsert_match_peer_ratings(
        'b0000000-0000-4000-8000-000000000020'::uuid,
        jsonb_build_array(
-         jsonb_build_object('ratee_id', tests.uuid_participant()::text, 'score', 10)
+         jsonb_build_object('ratee_id', tests.uuid_participant()::text, 'score', 90)
        )
      ) $$,
   'P0001'
@@ -120,7 +117,7 @@ select throws_ok(
   $$ select public.upsert_match_peer_ratings(
        'b0000000-0000-4000-8000-000000000021'::uuid,
        jsonb_build_array(
-         jsonb_build_object('ratee_id', tests.uuid_organizer()::text, 'score', 5)
+         jsonb_build_object('ratee_id', tests.uuid_organizer()::text, 'score', 55)
        )
      ) $$,
   'P0001'

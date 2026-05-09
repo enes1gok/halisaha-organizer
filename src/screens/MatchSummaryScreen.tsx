@@ -74,7 +74,7 @@ export function MatchSummaryScreen() {
             {match.result ? `Skor: ${match.result.scoreA} – ${match.result.scoreB}` : 'Sonuç yok'}
           </Text>
           {lineup && myAvg != null ? (
-            <Text style={styles.miniAvg}>Oy ortalamanız: {myAvg.toFixed(1)} / 10</Text>
+            <Text style={styles.miniAvg}>Oy ortalamanız: {myAvg.toFixed(1)} / 100</Text>
           ) : null}
         </MatchCardStatic>
 

@@ -423,7 +423,7 @@ export function MatchDetailScreen() {
                 {match.status === 'finished' && inMatchLineup ? (
                   <Text style={styles.micro}>
                     Oy ort.:{' '}
-                    {rr && rr.votes_count > 0 && rr.avg != null ? rr.avg.toFixed(1) : '—'}
+                    {rr && rr.votes_count > 0 && rr.avg != null ? `${rr.avg.toFixed(1)} / 100` : '—'}
                   </Text>
                 ) : null}
               </View>

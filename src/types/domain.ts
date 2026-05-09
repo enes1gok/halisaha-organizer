@@ -15,6 +15,9 @@ export interface PlayerStats {
   wins: number;
   losses: number;
   draws: number;
+  ratingAverage100?: number;
+  ratingVoteCount?: number;
+  motmCount?: number;
 }
 
 export interface Player {

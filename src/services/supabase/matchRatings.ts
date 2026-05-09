@@ -5,6 +5,9 @@ export interface MatchRatingPlayerSummaryDb {
   player_id: string;
   avg: number | null;
   votes_count: number;
+  overall_avg?: number | null;
+  overall_votes_count?: number;
+  overall_motm_count?: number;
 }
 
 export interface MatchMotmRankDb {
@@ -46,6 +49,20 @@ export async function upsertMatchPeerRatingsRemote(matchId: string, scores: Peer
     p_scores: scores,
   });
   if (error) throw mapSupabaseError(error, 'upsertMatchPeerRatingsRemote');
+}
+
+export async function submitMatchRatingsBundleRemote(
+  matchId: string,
+  scores: PeerRatingInput[],
+  motmPickPlayerId: string,
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc('submit_match_ratings_bundle', {
+    p_match_id: matchId,
+    p_scores: scores,
+    p_motm_pick_player_id: motmPickPlayerId,
+  });
+  if (error) throw mapSupabaseError(error, 'submitMatchRatingsBundleRemote');
 }
 
 export async function upsertMatchMotmVoteRemote(matchId: string, pickPlayerId: string): Promise<void> {

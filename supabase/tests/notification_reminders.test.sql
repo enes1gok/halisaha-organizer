@@ -5,7 +5,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(25);
 
 select tests.reset_session();
 
@@ -304,6 +304,37 @@ select is(
   (select public.enqueue_group_match_reminders()),
   0,
   'payment reminder enqueue is idempotent within a single day'
+);
+
+update public.matches
+set status = 'finished'::public.match_status
+where id = 'b0000000-0000-4000-8000-000000000083'::uuid;
+
+select is(
+  (select count(*)::int from public.notification_deliveries
+   where match_id = 'b0000000-0000-4000-8000-000000000083'::uuid
+     and type = 'post_match_rating_reminder'),
+  2,
+  'finished match queues post_match_rating_reminder for all going participants except organizer'
+);
+
+select isnt_empty(
+  $$ select 1 from public.notification_deliveries
+     where match_id = 'b0000000-0000-4000-8000-000000000083'::uuid
+       and type = 'post_match_rating_reminder'
+       and scheduled_for > now() + interval '14 minutes'
+       and scheduled_for <= now() + interval '16 minutes' $$,
+  'post_match_rating_reminder is scheduled around +15 minutes'
+);
+
+select is(
+  (select count(*)::int
+   from public.notification_deliveries
+   where match_id = 'b0000000-0000-4000-8000-000000000083'::uuid
+     and type = 'post_match_rating_reminder'
+     and status = 'pending'),
+  2,
+  'scheduled post_match_rating_reminder rows stay pending before due time'
 );
 
 -- ---------------------------------------------------------------------------

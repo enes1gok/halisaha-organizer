@@ -10,8 +10,7 @@ import { fetchMatchGraph, fetchMyMatchesGraph } from '../services/supabase/match
 import { scoreResultToRpcPayload } from '../services/supabase/mappers';
 import {
   fetchMatchRatingPublicSummary,
-  upsertMatchMotmVoteRemote,
-  upsertMatchPeerRatingsRemote,
+  submitMatchRatingsBundleRemote,
   type PeerRatingInput,
 } from '../services/supabase/matchRatings';
 import {
@@ -265,8 +264,7 @@ export async function submitMatchRatingsUseCase(
 ): Promise<void> {
   if (!isRemoteMatchId(matchId)) return;
   try {
-    await upsertMatchPeerRatingsRemote(matchId, args.scores);
-    await upsertMatchMotmVoteRemote(matchId, args.motmPickId);
+    await submitMatchRatingsBundleRemote(matchId, args.scores, args.motmPickId);
   } catch (error) {
     rethrowUseCaseError(
       'submitMatchRatings',

@@ -14,6 +14,9 @@ export function recomputePlayerStatsFromMatches(
         wins: 0,
         losses: 0,
         draws: 0,
+        ratingAverage100: p.stats.ratingAverage100,
+        ratingVoteCount: p.stats.ratingVoteCount ?? 0,
+        motmCount: p.stats.motmCount ?? 0,
       },
     ]),
   );
@@ -61,6 +64,9 @@ const emptyStats = {
   wins: 0,
   losses: 0,
   draws: 0,
+  ratingAverage100: undefined,
+  ratingVoteCount: 0,
+  motmCount: 0,
 };
 
 const LEVELS = [
@@ -71,8 +77,9 @@ const LEVELS = [
 ] as const;
 
 export function playerScore(p: Player): number {
-  const { goals, assists, wins } = p.stats;
-  return goals * 2 + assists * 1 + wins * 1;
+  const { goals, assists, wins, ratingAverage100, motmCount } = p.stats;
+  const ratingBonus = ratingAverage100 ? Math.round(ratingAverage100 / 20) : 0;
+  return goals * 2 + assists + wins + (motmCount ?? 0) + ratingBonus;
 }
 
 export function levelLabelFromScore(score: number): string {
