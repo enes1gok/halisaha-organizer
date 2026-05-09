@@ -4,7 +4,8 @@ Tarih: 2026-05-07
 
 ## Yayinlanacak belgeler
 
-- `docs/privacy-policy-tr.md` (kanonik metin)
+- Herkese acik yayin (`PUBLIC_PRIVACY_POLICY_URL` sabiti → Notion tam metin): `https://www.notion.so/Gizlilik-Politikasi-35940f6636088054876be6bf50f06bbe`
+- `docs/privacy-policy-tr.md` (kanonik metin / repo icyi karşılaştırma)
 - `docs/privacy-policy-en.md` (opsiyonel Ingilizce eslik metin)
 - `docs/privacy-data-inventory.md` (teknik dayanak)
 - `docs/privacy-release-checklist.md` (surum kontrol listesi)

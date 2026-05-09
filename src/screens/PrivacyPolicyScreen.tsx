@@ -2,6 +2,7 @@ import React from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { PUBLIC_PRIVACY_POLICY_URL } from '../constants/legalUrls';
 import { colors, spacing, typography } from '../theme';
 
 const PRIVACY_CONTACT_EMAIL = 'privacy@halisaha.app';
@@ -36,8 +37,8 @@ export function PrivacyPolicyScreen() {
         <Text style={styles.title}>Gizlilik Politikasi</Text>
         <Text style={styles.meta}>Son guncelleme: 2026-05-07</Text>
         <Text style={styles.intro}>
-          Bu ekran, politikanin okunabilir bir ozetidir. Tam metin depo icindeki `docs/privacy-policy-tr.md`
-          belgesinde surumlu olarak tutulur.
+          Bu ekran, politikanin okunabilir bir ozetidir. Tam ve guncel metin web uzerinden yayinlanir; gelistirme
+          kopyasi `docs/privacy-policy-tr.md` ile es tutulmalidir.
         </Text>
       </View>
 
@@ -48,6 +49,13 @@ export function PrivacyPolicyScreen() {
         </View>
       ))}
 
+      <PillButton
+        title="Tam metni tarayicida ac"
+        variant="secondary"
+        onPress={() => void Linking.openURL(PUBLIC_PRIVACY_POLICY_URL)}
+        testID="privacy:full-policy-url:press"
+        accessibilityLabel="Gizlilik politikasının tam metnini webde ac"
+      />
       <PillButton
         title="E-posta ile iletisime gec"
         variant="ghost"

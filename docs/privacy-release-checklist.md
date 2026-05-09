@@ -12,6 +12,7 @@ Bu kontrol listesi, uygulama surumu cikmadan once gizlilik politikasi ve magaza 
 ## Politika metni ve linkleme
 
 - [ ] `docs/privacy-policy-tr.md` son surum ile guncel.
+- [ ] Herkese acik kanonik URL ve kod sabiti uyumlu: `src/constants/legalUrls.ts` → `PUBLIC_PRIVACY_POLICY_URL` (Notion sayfasi ile App Store / Play `Privacy Policy` alani ayri ayri kontrol).
 - [ ] Profil akisinda uygulama ici gizlilik ekrani aciliyor.
 - [ ] Veri sorumlusu iletisim e-postasi dogru.
 - [ ] Yururluk ve guncelleme tarihi guncel.
