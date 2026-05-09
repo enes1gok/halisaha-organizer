@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(11);
 
 select tests.reset_session();
 select tests.create_user(tests.uuid_organizer());
@@ -71,14 +71,26 @@ select throws_ok(
   '42501'
 );
 
--- Delete group: no policy (zero rows deleted, no error)
+-- Member cannot delete group (RLS: zero rows)
+select tests.authenticate_as(tests.uuid_participant());
 select lives_ok(
   $$ delete from public.groups where id = 'c0000000-0000-4000-8000-000000000010'::uuid $$,
-  'organizer delete attempt does not raise'
+  'member delete attempt does not raise'
 );
 select isnt_empty(
   $$ select 1 from public.groups where id = 'c0000000-0000-4000-8000-000000000010'::uuid $$,
-  'group row remains (no delete policy)'
+  'member delete affects zero rows'
+);
+
+-- Owner deletes group
+select tests.authenticate_as(tests.uuid_organizer());
+select lives_ok(
+  $$ delete from public.groups where id = 'c0000000-0000-4000-8000-000000000010'::uuid $$,
+  'owner deletes group'
+);
+select is_empty(
+  $$ select 1 from public.groups where id = 'c0000000-0000-4000-8000-000000000010'::uuid $$,
+  'group row removed'
 );
 
 select tests.authenticate_anon();

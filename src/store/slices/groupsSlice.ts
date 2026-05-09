@@ -3,6 +3,7 @@ import type { Group, GroupMembership, GroupWeeklySeries } from '../../types/doma
 import {
   buildLocalGroup,
   createGroupUseCase,
+  deleteGroupUseCase,
   fetchGroupWeeklySeriesUseCase,
   hydrateRemoteGroupsUseCase,
   joinGroupUseCase,
@@ -81,6 +82,21 @@ function leaveLocalGroup(
   }));
 }
 
+function deleteLocalGroupState(set: Parameters<StateCreator<AppState>>[0], groupId: string) {
+  set((state) => {
+    const weeklySeriesByGroupId = { ...state.weeklySeriesByGroupId };
+    delete weeklySeriesByGroupId[groupId];
+    return {
+      groups: state.groups.filter((g) => g.id !== groupId),
+      groupMemberships: state.groupMemberships.filter((m) => m.groupId !== groupId),
+      matches: state.matches.map((m) =>
+        m.groupId === groupId ? { ...m, groupId: undefined } : m,
+      ),
+      weeklySeriesByGroupId,
+    };
+  });
+}
+
 function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get: Parameters<StateCreator<AppState>>[1]) {
   return {
     getRemoteUserId: () => get().remoteUserId,
@@ -89,6 +105,8 @@ function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get:
     createLocalGroup: (name: string) => createLocalGroup(set, get, name),
     joinLocalGroup: (joinCode: string) => joinLocalGroup(set, get, joinCode),
     leaveLocalGroup: (groupId: string) => leaveLocalGroup(set, get, groupId),
+    deleteLocalGroupState: (groupId: string) => deleteLocalGroupState(set, groupId),
+    hydrateRemoteMatches: () => get().hydrateRemoteMatches(),
     setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) =>
       set((s) => ({
         weeklySeriesByGroupId: { ...s.weeklySeriesByGroupId, [groupId]: series },
@@ -108,6 +126,8 @@ export const createGroupsSlice: StateCreator<AppState, [], [], GroupsSlice> = (s
   joinGroup: (joinCode) => joinGroupUseCase(buildGroupsUseCaseDeps(set, get), joinCode),
 
   leaveGroup: (groupId) => leaveGroupUseCase(buildGroupsUseCaseDeps(set, get), groupId),
+
+  deleteGroup: (groupId) => deleteGroupUseCase(buildGroupsUseCaseDeps(set, get), groupId),
 
   fetchGroupWeeklySeries: (groupId) => fetchGroupWeeklySeriesUseCase(buildGroupsUseCaseDeps(set, get), groupId),
 

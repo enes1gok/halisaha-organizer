@@ -112,6 +112,7 @@ export interface GroupsSlice {
   createGroup: (name: string) => Promise<CreateGroupResult>;
   joinGroup: (joinCode: string) => Promise<Group | null>;
   leaveGroup: (groupId: string) => Promise<void>;
+  deleteGroup: (groupId: string) => Promise<void>;
 
   fetchGroupWeeklySeries: (groupId: string) => Promise<void>;
   upsertGroupWeeklySeries: (input: UpsertGroupWeeklySeriesInput) => Promise<void>;

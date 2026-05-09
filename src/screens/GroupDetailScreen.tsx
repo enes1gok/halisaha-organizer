@@ -28,6 +28,7 @@ export function GroupDetailScreen() {
   const groups = useGroupsStore((s) => s.groups);
   const memberships = useGroupsStore((s) => s.groupMemberships);
   const leaveGroup = useGroupsStore((s) => s.leaveGroup);
+  const deleteGroup = useGroupsStore((s) => s.deleteGroup);
   const matches = useMatchesStore((s) => s.matches);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const { configured, loading } = useSupabaseAuth();
@@ -58,6 +59,7 @@ export function GroupDetailScreen() {
   });
 
   const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const showInitialSkeleton = configured && loading && !group;
 
   const groupMembersSorted = useMemo(() => {
@@ -117,6 +119,33 @@ export function GroupDetailScreen() {
       ],
     );
   }, [groupId, leaveGroup, navigation]);
+
+  const onPressDeleteGroup = useCallback(() => {
+    Alert.alert(
+      'Grubu kaldır',
+      'Bu grup kalıcı olarak kaldırılır; üyeler bu gruba erişemez. Gruba bağlı maçlar listende kalabilir ancak grup bilgisi kalkar. Emin misin?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Grubu kaldır',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              setDeleting(true);
+              try {
+                await deleteGroup(groupId);
+                navigation.navigate('GroupsMain');
+              } catch (e) {
+                Alert.alert('Hata', toUserMessage(e, 'Grup kaldırılamadı.'));
+              } finally {
+                setDeleting(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }, [groupId, deleteGroup, navigation]);
 
   if (showInitialSkeleton) {
     return (
@@ -241,7 +270,25 @@ export function GroupDetailScreen() {
         </View>
       </Card>
 
-      {!isOwner ? (
+      {isOwner ? (
+        <Card style={styles.cardGap} variant="glass">
+          <Text style={styles.cardTitle}>Grup ayarları</Text>
+          <Text style={styles.settingsHint}>
+            Yalnızca grup yöneticisi bu grubu kaldırabilir. Bu işlem geri alınamaz.
+          </Text>
+          <PillButton
+            title="Grubu kaldır"
+            variant="ghost"
+            titleColor={colors.textMuted}
+            onPress={onPressDeleteGroup}
+            loading={deleting}
+            disabled={deleting}
+            testID="groups:detail:delete-group"
+            accessibilityLabel="Grubu kaldır"
+            accessibilityState={{ disabled: deleting }}
+          />
+        </Card>
+      ) : (
         <PillButton
           title="Gruptan ayrıl"
           variant="danger"
@@ -253,7 +300,7 @@ export function GroupDetailScreen() {
           accessibilityState={{ disabled: leaving }}
           style={styles.leaveBtn}
         />
-      ) : null}
+      )}
 
       <Text style={styles.sectionLabel}>Maçlar</Text>
     </View>
@@ -318,6 +365,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   inviteHint: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  settingsHint: {
     ...typography.caption,
     color: colors.textMuted,
     marginBottom: spacing.sm,

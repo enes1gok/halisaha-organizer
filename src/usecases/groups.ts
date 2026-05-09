@@ -4,7 +4,13 @@ import {
   upsertGroupWeeklySeriesRemote,
   type UpsertGroupWeeklySeriesInput,
 } from '../services/supabase/groupWeeklySeries';
-import { createGroupRemote, fetchMyGroups, joinGroupRemote, leaveGroupRemote } from '../services/supabase/groups';
+import {
+  createGroupRemote,
+  deleteGroupRemote,
+  fetchMyGroups,
+  joinGroupRemote,
+  leaveGroupRemote,
+} from '../services/supabase/groups';
 import type { Group, GroupMembership, GroupWeeklySeries } from '../types/domain';
 import type { CreateGroupResult } from '../store/types';
 import { createId } from '../utils/id';
@@ -16,6 +22,8 @@ type GroupsDeps = {
   createLocalGroup: (name: string) => Group;
   joinLocalGroup: (joinCode: string) => Group | null;
   leaveLocalGroup: (groupId: string) => void;
+  deleteLocalGroupState: (groupId: string) => void;
+  hydrateRemoteMatches: () => Promise<void>;
   setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) => void;
 };
 
@@ -78,6 +86,22 @@ export async function leaveGroupUseCase(deps: GroupsDeps, groupId: string): Prom
     }
   }
   deps.leaveLocalGroup(groupId);
+}
+
+export async function deleteGroupUseCase(deps: GroupsDeps, groupId: string): Promise<void> {
+  const uid = deps.getRemoteUserId();
+  if (uid) {
+    try {
+      await deleteGroupRemote(groupId);
+      const payload = await fetchMyGroups();
+      deps.hydrateLocalGroups(payload);
+      await deps.hydrateRemoteMatches();
+      return;
+    } catch (error) {
+      rethrowUseCaseError('deleteGroup', error, 'Grup kaldırılamadı.');
+    }
+  }
+  deps.deleteLocalGroupState(groupId);
 }
 
 export async function fetchGroupWeeklySeriesUseCase(deps: GroupsDeps, groupId: string): Promise<void> {
