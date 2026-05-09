@@ -1,7 +1,7 @@
 import type { Match } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
 
-export type MyMatchesEntryScreen = 'MatchPregame' | 'MatchPostgame' | 'MatchSummary' | 'MatchDetail';
+export type MyMatchesEntryScreen = 'MatchPostgame' | 'MatchSummary' | 'MatchDetail';
 
 /**
  * Remote maçlar için Maçlarım satır hedef ekranı. Yerel (seed/demo) maçlar her zaman detaydadır.
@@ -16,10 +16,6 @@ export function resolveMyMatchesEntryScreen(
   }
 
   const onLineup = match.teamAIds.includes(userId) || match.teamBIds.includes(userId);
-
-  if (match.status === 'upcoming' || match.status === 'ongoing') {
-    return 'MatchPregame';
-  }
 
   if (match.status !== 'finished') {
     return 'MatchDetail';

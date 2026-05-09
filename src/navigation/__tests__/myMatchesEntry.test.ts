@@ -30,12 +30,12 @@ describe('resolveMyMatchesEntryScreen', () => {
     expect(resolveMyMatchesEntryScreen(m, user, {})).toBe('MatchDetail');
   });
 
-  it('routes upcoming remote to MatchPregame', () => {
-    expect(resolveMyMatchesEntryScreen(bm({ status: 'upcoming' }), user, {})).toBe('MatchPregame');
+  it('routes upcoming remote to MatchDetail', () => {
+    expect(resolveMyMatchesEntryScreen(bm({ status: 'upcoming' }), user, {})).toBe('MatchDetail');
   });
 
-  it('routes ongoing remote to MatchPregame', () => {
-    expect(resolveMyMatchesEntryScreen(bm({ status: 'ongoing' }), user, {})).toBe('MatchPregame');
+  it('routes ongoing remote to MatchDetail', () => {
+    expect(resolveMyMatchesEntryScreen(bm({ status: 'ongoing' }), user, {})).toBe('MatchDetail');
   });
 
   it('routes finished without result to MatchPostgame', () => {

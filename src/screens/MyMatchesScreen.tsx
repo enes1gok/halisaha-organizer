@@ -79,8 +79,7 @@ export function MyMatchesScreen() {
               onPress={() => {
                 const dest = resolveMyMatchesEntryScreen(item, userId, ratingsSubmission);
                 const p = { matchId: item.id };
-                if (dest === 'MatchPregame') navigation.navigate('MatchPregame', p);
-                else if (dest === 'MatchPostgame') navigation.navigate('MatchPostgame', p);
+                if (dest === 'MatchPostgame') navigation.navigate('MatchPostgame', p);
                 else if (dest === 'MatchSummary') navigation.navigate('MatchSummary', p);
                 else navigation.navigate('MatchDetail', p);
               }}

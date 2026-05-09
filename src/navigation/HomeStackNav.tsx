@@ -5,7 +5,6 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
-import { MatchPregameScreen } from '../screens/MatchPregameScreen';
 import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
 import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
 import { defaultStackScreenOptions } from './defaultStackScreenOptions';
@@ -35,11 +34,6 @@ export function HomeStackNav() {
         name="LineupBuilder"
         component={LineupBuilderScreen}
         options={{ title: 'Kadro Kur' }}
-      />
-      <Stack.Screen
-        name="MatchPregame"
-        component={MatchPregameScreen}
-        options={{ title: 'Maç Öncesi' }}
       />
       <Stack.Screen
         name="MatchPostgame"
