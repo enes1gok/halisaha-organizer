@@ -116,6 +116,13 @@ function shouldSendPush(
   return { ok: true };
 }
 
+function isActiveInApp(lastSeenAt: string | null, appState: string | null, now: Date): boolean {
+  if (!lastSeenAt || appState !== 'foreground') return false;
+  const parsed = Date.parse(lastSeenAt);
+  if (Number.isNaN(parsed)) return false;
+  return now.getTime() - parsed <= 90_000;
+}
+
 function parseMinutes(hhmm: string): number | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
   if (!m) return null;
@@ -169,6 +176,26 @@ async function fetchNotificationPreferencesByUserIds(
   for (const row of data ?? []) {
     const r = row as { id: string; notification_preferences: unknown };
     map.set(r.id, asPrefs(r.notification_preferences));
+  }
+  return map;
+}
+
+async function fetchPresenceByUserIds(ids: string[]): Promise<Map<string, { active: boolean }>> {
+  const map = new Map<string, { active: boolean }>();
+  for (const id of ids) map.set(id, { active: false });
+  const uniq = [...new Set(ids)].filter(Boolean);
+  if (uniq.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from('notification_presence')
+    .select('user_id, app_state, last_seen_at')
+    .in('user_id', uniq);
+  if (error) throw error;
+
+  const now = new Date();
+  for (const row of data ?? []) {
+    const r = row as { user_id: string; app_state: string | null; last_seen_at: string | null };
+    map.set(r.user_id, { active: isActiveInApp(r.last_seen_at, r.app_state, now) });
   }
   return map;
 }
@@ -272,6 +299,19 @@ async function markSent(deliveryId: string): Promise<void> {
   if (error) throw error;
 }
 
+async function markInApp(deliveryId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notification_deliveries')
+    .update({
+      status: 'in_app',
+      sent_at: new Date().toISOString(),
+      error_message: 'routed: active_in_app',
+      claimed_at: null,
+    })
+    .eq('id', deliveryId);
+  if (error) throw error;
+}
+
 async function markFailed(deliveryId: string, message: string): Promise<void> {
   await supabase
     .from('notification_deliveries')
@@ -283,13 +323,19 @@ async function markFailed(deliveryId: string, message: string): Promise<void> {
     .eq('id', deliveryId);
 }
 
-type ProcessOutcome = 'sent' | 'skipped' | 'failed';
+type ProcessOutcome = 'sent' | 'skipped' | 'failed' | 'in_app';
 
 async function processClaimed(
   delivery: ClaimedDelivery,
   prefMap: Map<string, NotificationPreferences | null>,
+  presenceMap: Map<string, { active: boolean }>,
   now: Date,
 ): Promise<ProcessOutcome> {
+  if (presenceMap.get(delivery.recipient_id)?.active) {
+    await markInApp(delivery.id);
+    return 'in_app';
+  }
+
   const prefs = prefMap.get(delivery.recipient_id) ?? null;
   const gate = shouldSendPush(prefs, delivery.type, now);
   if (!gate.ok) {
@@ -318,10 +364,11 @@ async function processClaimed(
 
 async function drainPending(
   limit: number,
-): Promise<{ processed: number; failed: number; skipped: number; iterations: number }> {
+): Promise<{ processed: number; failed: number; skipped: number; inApp: number; iterations: number }> {
   let processed = 0;
   let failed = 0;
   let skipped = 0;
+  let inApp = 0;
   let iterations = 0;
 
   while (iterations < MAX_DRAIN_ITERATIONS) {
@@ -333,20 +380,22 @@ async function drainPending(
 
     const ids = claimed.map((c) => c.recipient_id);
     const prefMap = await fetchNotificationPreferencesByUserIds(ids);
+    const presenceMap = await fetchPresenceByUserIds(ids);
     const now = new Date();
 
     const results = await Promise.all(
-      claimed.map((row) => processClaimed(row, prefMap, now)),
+      claimed.map((row) => processClaimed(row, prefMap, presenceMap, now)),
     );
     for (const outcome of results) {
       if (outcome === 'sent') processed += 1;
       else if (outcome === 'skipped') skipped += 1;
+      else if (outcome === 'in_app') inApp += 1;
       else failed += 1;
     }
     if (claimed.length < limit) break;
   }
 
-  return { processed, failed, skipped, iterations };
+  return { processed, failed, skipped, inApp, iterations };
 }
 
 async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery | null> {
@@ -390,14 +439,16 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
 
 async function processSingle(
   deliveryId: string,
-): Promise<{ processed: number; failed: number; skipped: number }> {
+): Promise<{ processed: number; failed: number; skipped: number; inApp: number }> {
   const delivery = await fetchSingleDelivery(deliveryId);
-  if (!delivery) return { processed: 0, failed: 0, skipped: 0 };
+  if (!delivery) return { processed: 0, failed: 0, skipped: 0, inApp: 0 };
   const prefMap = await fetchNotificationPreferencesByUserIds([delivery.recipient_id]);
-  const outcome = await processClaimed(delivery, prefMap, new Date());
-  if (outcome === 'sent') return { processed: 1, failed: 0, skipped: 0 };
-  if (outcome === 'skipped') return { processed: 0, failed: 0, skipped: 1 };
-  return { processed: 0, failed: 1, skipped: 0 };
+  const presenceMap = await fetchPresenceByUserIds([delivery.recipient_id]);
+  const outcome = await processClaimed(delivery, prefMap, presenceMap, new Date());
+  if (outcome === 'sent') return { processed: 1, failed: 0, skipped: 0, inApp: 0 };
+  if (outcome === 'skipped') return { processed: 0, failed: 0, skipped: 1, inApp: 0 };
+  if (outcome === 'in_app') return { processed: 0, failed: 0, skipped: 0, inApp: 1 };
+  return { processed: 0, failed: 1, skipped: 0, inApp: 0 };
 }
 
 Deno.serve(async (req) => {

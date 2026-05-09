@@ -15,6 +15,7 @@ import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAut
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { openGroupDetail, openMatchDetail } from './src/navigation/navigationActions';
+import { startContextAwareNotificationSync } from './src/services/notifications';
 import { colors } from './src/theme';
 import { useAppStore } from './src/store';
 
@@ -37,6 +38,12 @@ function AppShell() {
     });
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    if (!configured || !session) return;
+    const stopSync = startContextAwareNotificationSync();
+    return () => stopSync();
+  }, [configured, session]);
 
   if (configured && loading) {
     return (
