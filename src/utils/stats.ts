@@ -89,6 +89,14 @@ export function levelLabelFromScore(score: number): string {
   return 'Efsane';
 }
 
+/** İlerleme çubuğu: mevcut seviye bandı içinde 0–1 (üst eşikte 1). */
+export function playerScoreTierProgress01(score: number): number {
+  if (score <= 20) return Math.min(1, score / 20);
+  if (score <= 50) return Math.min(1, (score - 20) / 30);
+  if (score <= 100) return Math.min(1, (score - 50) / 50);
+  return 1;
+}
+
 export function winRate(stats: Player['stats']): number {
   const { wins, losses, draws } = stats;
   const total = wins + losses + draws;

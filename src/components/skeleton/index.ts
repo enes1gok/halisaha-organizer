@@ -9,5 +9,6 @@ export {
   MatchCardSkeleton,
   ProfileHeaderSkeleton,
   ProfileStatsGridSkeleton,
+  ProfileStatsHeroSkeleton,
   SettingsSectionSkeleton,
 } from './presets';

@@ -14,7 +14,7 @@ export function ProfileStackNav() {
   const reduceMotion = useReduceMotion();
   return (
     <Stack.Navigator screenOptions={getDefaultStackScreenOptions(reduceMotion)}>
-      <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'Profil' }} />
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'İstatistiklerim' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
       <Stack.Screen
         name="NotificationSettings"

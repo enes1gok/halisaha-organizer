@@ -21,26 +21,32 @@ import {
   View,
 } from 'react-native';
 import { PillButton } from '../components/PillButton';
-import { PlayerAvatar } from '../components/PlayerAvatar';
-import { PositionBadge } from '../components/PositionBadge';
 import {
   MatchCardSkeleton,
   ProfileHeaderSkeleton,
-  ProfileStatsGridSkeleton,
+  ProfileStatsHeroSkeleton,
   SkeletonText,
 } from '../components/skeleton';
-import { colors, letterSpacing, shadows, spacing, typography } from '../theme';
+import { colors, spacing, typography } from '../theme';
 import type { Position, PreferredFoot } from '../types/domain';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { updateCurrentUserProfile } from '../services/supabase/profiles';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
-import { formatShortDate } from '../utils/dates';
-import { isEmailVerified } from '../utils/emailVerification';
-import { levelLabelFromScore, playerScore, winRate } from '../utils/stats';
+import {
+  computeWinStreak,
+  levelLabelFromScore,
+  playerScore,
+  playerScoreTierProgress01,
+  winRate,
+} from '../utils/stats';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
-import { isValidTurkishIban, maskIban, normalizeIban } from '../utils/iban';
+import { isValidTurkishIban, normalizeIban } from '../utils/iban';
+import { ProfileAccountSection } from './profile/ProfileAccountSection';
+import { ProfileGlobalRankCard } from './profile/ProfileGlobalRankCard';
+import { ProfileRecentMatches, type RecentMatchRow } from './profile/ProfileRecentMatches';
+import { ProfileStatsHero } from './profile/ProfileStatsHero';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -59,11 +65,14 @@ function footLabel(f: PreferredFoot): string {
 export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
   const userId = useAuthStore((s) => s.getCurrentUserId());
+  const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const player = usePlayersStore((s) => s.players.find((p) => p.id === userId));
   const matches = useMatchesStore((s) => s.matches);
   const updateProfile = usePlayersStore((s) => s.updatePlayerProfile);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const { configured, session, refreshRemoteProfile, refreshAuthSession } = useSupabaseAuth();
+
+  const [rankRefreshKey, setRankRefreshKey] = useState(0);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -95,14 +104,17 @@ export function ProfileScreen() {
     player?.iban,
   );
 
-  const score = player ? playerScore(player) : 0;
-  const level = levelLabelFromScore(score);
+  const compositeScore = player ? playerScore(player) : 0;
+  const level = levelLabelFromScore(compositeScore);
+  const tierProgress01 = playerScoreTierProgress01(compositeScore);
   const wr = player ? Math.round(winRate(player.stats) * 100) : 0;
-  const ratingAvg = player?.stats.ratingAverage100;
-  const motmCount = player?.stats.motmCount ?? 0;
   const effectiveUserId = player?.id ?? userId;
+  const winStreak = useMemo(
+    () => (player ? computeWinStreak(matches, player.id) : 0),
+    [matches, player],
+  );
 
-  const recent = useMemo(() => {
+  const recent: RecentMatchRow[] = useMemo(() => {
     const finished = matches
       .filter((m) => m.status === 'finished' && m.result)
       .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime())
@@ -172,11 +184,22 @@ export function ProfileScreen() {
     [],
   );
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if (session) {
+        await refreshAuthSession();
+        await refreshRemoteProfile();
+        await hydrateRemoteMatches();
+      }
+      setRankRefreshKey((k) => k + 1);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const awaitingRemoteProfile =
-    configured &&
-    !!session?.user?.id &&
-    session.user.id === userId &&
-    !player;
+    configured && !!session?.user?.id && session.user.id === userId && !player;
 
   if (awaitingRemoteProfile) {
     return (
@@ -186,7 +209,11 @@ export function ProfileScreen() {
         accessibilityLabel="Profil yükleniyor"
       >
         <ProfileHeaderSkeleton />
-        <ProfileStatsGridSkeleton />
+        <ProfileStatsHeroSkeleton />
+        <View style={styles.skeletonRank}>
+          <SkeletonText variant="subtitle" width="55%" />
+          <SkeletonText variant="body" width="88%" style={styles.skeletonGap} />
+        </View>
         <View style={styles.skeletonRecentSection}>
           <SkeletonText variant="subtitle" width={140} style={styles.skeletonRecentTitle} />
           <MatchCardSkeleton />
@@ -208,98 +235,30 @@ export function ProfileScreen() {
     <ScrollView
       style={styles.screen}
       contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={async () => {
-            setRefreshing(true);
-            try {
-              if (session) {
-                await refreshAuthSession();
-                await refreshRemoteProfile();
-                await hydrateRemoteMatches();
-              }
-            } finally {
-              setRefreshing(false);
-            }
-          }}
-          tintColor={colors.accent}
-        />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
-      <View style={styles.hero}>
-        <PlayerAvatar name={player.name} uri={player.photoUri} size={88} />
-        <Text style={styles.heroName}>{player.name}</Text>
-        <View style={styles.badges}>
-          <PositionBadge position={player.position} />
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelTxt}>{level}</Text>
-          </View>
-        </View>
-        {configured && session?.user ? (
-          <Text
-            style={isEmailVerified(session.user) ? styles.emailVerifyOk : styles.emailVerifyWarn}
-            testID="profile:main:email-verification:status"
-          >
-            {isEmailVerified(session.user) ? 'E-posta doğrulandı' : 'E-posta henüz doğrulanmadı'}
-          </Text>
-        ) : null}
-        {player.iban ? (
-          <View style={styles.ibanHero}>
-            <Text style={styles.ibanHeroLbl}>IBAN'ım</Text>
-            <Text style={styles.ibanHeroVal}>{maskIban(player.iban)}</Text>
-          </View>
-        ) : null}
-      </View>
+      <ProfileStatsHero
+        player={player}
+        winRatePct={wr}
+        winStreak={winStreak}
+        levelLabel={level}
+        tierProgress01={tierProgress01}
+        compositeScore={compositeScore}
+      />
 
-      <View style={styles.grid}>
-        <View style={styles.cell}>
-          <Text style={styles.cellVal}>{player.stats.matchesPlayed}</Text>
-          <Text style={styles.cellLbl}>Maç</Text>
-        </View>
-        <View style={styles.cell}>
-          <Text style={styles.cellVal}>{player.stats.goals}</Text>
-          <Text style={styles.cellLbl}>Gol</Text>
-        </View>
-        <View style={styles.cell}>
-          <Text style={styles.cellVal}>{player.stats.assists}</Text>
-          <Text style={styles.cellLbl}>Asist</Text>
-        </View>
-        <View style={styles.cell}>
-          <Text style={styles.cellVal}>{wr}%</Text>
-          <Text style={styles.cellLbl}>Galibiyet</Text>
-        </View>
-        <View style={styles.cell}>
-          <Text style={styles.cellVal}>{ratingAvg != null ? ratingAvg.toFixed(1) : '—'}</Text>
-          <Text style={styles.cellLbl}>Ortalama Puan</Text>
-        </View>
-        <View style={styles.cell}>
-          <Text style={styles.cellVal}>{motmCount}</Text>
-          <Text style={styles.cellLbl}>Maçın Adamı</Text>
-        </View>
-      </View>
+      <ProfileGlobalRankCard userId={player.id} remoteUserId={remoteUserId} refreshKey={rankRefreshKey} />
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Son maçlar</Text>
-        {recent.length === 0 ? (
-          <Text style={styles.muted}>Henüz kayıtlı maç yok.</Text>
-        ) : (
-          recent.map(({ m, outcome, myGoals }) => (
-            <View key={m.id} style={styles.rm}>
-              <Text style={styles.rmDate}>{formatShortDate(m.startsAt)}</Text>
-              <Text style={styles.rmMid}>
-                {m.result!.scoreA} — {m.result!.scoreB}
-              </Text>
-              <Text style={[styles.rmTag, outcome === 'W' && styles.win, outcome === 'L' && styles.loss]}>
-                {outcome === 'W' ? 'G' : outcome === 'L' ? 'M' : 'B'}
-              </Text>
-              <Text style={styles.rmG}>{myGoals} gol</Text>
-            </View>
-          ))
-        )}
-      </View>
+      <ProfileRecentMatches rows={recent} />
 
-      <PillButton title="Profili Düzenle" variant="ghost" onPress={openEdit} style={styles.editBtn} />
+      <ProfileAccountSection configured={configured} user={session?.user} player={player} />
+
+      <PillButton
+        title="Profili Düzenle"
+        variant="ghost"
+        onPress={openEdit}
+        style={styles.editBtn}
+        testID="profile:edit:press"
+      />
 
       <BottomSheetModal
         ref={sheetRef}
@@ -355,7 +314,6 @@ export function ProfileScreen() {
           <PillButton title="Kaydet" onPress={save} />
         </BottomSheetScrollView>
       </BottomSheetModal>
-
     </ScrollView>
   );
 }
@@ -374,96 +332,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-  hero: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    backgroundColor: colors.surfaceGlass,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.glassBorder,
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  heroName: {
-    ...typography.headlineStrong,
-    color: colors.text,
-    marginTop: spacing.sm,
-    letterSpacing: letterSpacing.wide,
-  },
-  badges: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  levelBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: colors.accentMuted,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  levelTxt: {
-    ...typography.micro,
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  emailVerifyOk: {
-    ...typography.caption,
-    color: colors.accent,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  emailVerifyWarn: {
-    ...typography.caption,
-    color: colors.danger,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  ibanHero: {
-    marginTop: spacing.sm,
-    alignItems: 'center',
-    gap: 4,
-  },
-  ibanHeroLbl: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  ibanHeroVal: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  cell: {
-    width: '47%',
-    backgroundColor: colors.surfaceGlass,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    padding: spacing.md,
-    alignItems: 'center',
-    ...shadows.sm,
-  },
-  cellVal: {
-    ...typography.title,
-    color: colors.accent,
-  },
-  cellLbl: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  section: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
   skeletonRecentSection: {
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
@@ -471,47 +339,12 @@ const styles = StyleSheet.create({
   skeletonRecentTitle: {
     marginBottom: spacing.sm,
   },
-  sectionTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginBottom: spacing.sm,
+  skeletonRank: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
   },
-  muted: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  rm: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  rmDate: {
-    ...typography.caption,
-    color: colors.textMuted,
-    width: 56,
-  },
-  rmMid: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  rmTag: {
-    ...typography.subtitle,
-    width: 24,
-    textAlign: 'center',
-    color: colors.textMuted,
-  },
-  win: { color: colors.accent },
-  loss: { color: colors.danger },
-  rmG: {
-    ...typography.caption,
-    color: colors.textMuted,
-    width: 52,
-    textAlign: 'right',
+  skeletonGap: {
+    marginTop: spacing.sm,
   },
   editBtn: {
     marginHorizontal: spacing.md,

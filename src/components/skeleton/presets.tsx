@@ -79,24 +79,37 @@ export function ProfileHeaderSkeleton() {
       <SkeletonText variant="title" width={180} />
       <View style={styles.profileBadges}>
         <SkeletonBlock width={56} height={24} radius={radius.pill} />
-        <SkeletonBlock width={56} height={24} radius={radius.pill} />
       </View>
-      <SkeletonText variant="caption" width="44%" />
     </View>
   );
 }
 
-export function ProfileStatsGridSkeleton() {
+/** KPI şeridi + performans kartı iskeleti (Profil / İstatistikler ekranı). */
+export function ProfileStatsHeroSkeleton() {
   return (
-    <View style={styles.grid}>
-      {Array.from({ length: 6 }, (_, index) => (
-        <View key={index} style={styles.gridCell}>
-          <SkeletonText variant="title" width="52%" />
-          <SkeletonText variant="caption" width="66%" />
-        </View>
-      ))}
+    <View style={styles.profileStatsHero}>
+      <View style={styles.kpiStripSkeleton}>
+        {Array.from({ length: 3 }, (_, i) => (
+          <View key={i} style={[styles.kpiCellSkeleton, i === 2 && styles.kpiCellSkeletonLast]}>
+            <SkeletonText variant="title" width="48%" />
+            <SkeletonText variant="caption" width="56%" />
+          </View>
+        ))}
+      </View>
+      <View style={styles.performanceCardSkeleton}>
+        <SkeletonText variant="subtitle" width="42%" />
+        <SkeletonBlock width="100%" height={6} radius={3} />
+        <SkeletonText variant="body" width="72%" />
+        <SkeletonText variant="body" width="88%" />
+        <SkeletonText variant="body" width="64%" />
+      </View>
     </View>
   );
+}
+
+/** @deprecated Yerine `ProfileStatsHeroSkeleton` kullanın. */
+export function ProfileStatsGridSkeleton() {
+  return <ProfileStatsHeroSkeleton />;
 }
 
 export function LeaderboardRowSkeleton() {
@@ -204,10 +217,10 @@ const styles = StyleSheet.create({
   profileHeader: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    backgroundColor: colors.surface,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.surfaceGlass,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.glassBorder,
     alignItems: 'center',
     gap: spacing.sm,
   },
@@ -215,21 +228,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: spacing.md,
+  profileStatsHero: {
+    paddingTop: spacing.sm,
     gap: spacing.sm,
   },
-  gridCell: {
-    width: '47%',
+  kpiStripSkeleton: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
+    overflow: 'hidden',
+  },
+  kpiCellSkeleton: {
+    flex: 1,
+    paddingVertical: spacing.md,
     alignItems: 'center',
     gap: 6,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+  },
+  kpiCellSkeletonLast: {
+    borderRightWidth: 0,
+  },
+  performanceCardSkeleton: {
+    marginHorizontal: spacing.md,
+    backgroundColor: colors.surfaceGlass,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    padding: spacing.md,
+    gap: spacing.sm,
   },
   leaderRow: {
     flexDirection: 'row',
