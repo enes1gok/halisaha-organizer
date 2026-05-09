@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { MatchHeroVenueTitle } from '../components/MatchHeroVenueTitle';
 import { PillButton } from '../components/PillButton';
+import { RsvpGoingButton } from '../components/RsvpGoingButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
 import { colors, letterSpacing, spacing, typography, radius } from '../theme';
@@ -90,6 +91,7 @@ export function MatchDetailScreen() {
   const rsvpRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['32%'], []);
   const [refreshing, setRefreshing] = useState(false);
+  const [rsvpGoingKey, setRsvpGoingKey] = useState(0);
 
   const countdown = useCountdown(match?.startsAt ?? new Date().toISOString());
   const { pastScheduledEnd, endsAtIso } = useMatchPostMatchWindow(match?.startsAt);
@@ -208,6 +210,7 @@ export function MatchDetailScreen() {
 
   const openRsvp = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setRsvpGoingKey((k) => k + 1);
     rsvpRef.current?.present();
   };
 
@@ -539,7 +542,13 @@ export function MatchDetailScreen() {
       >
         <BottomSheetView style={styles.rsvpBody}>
           <Text style={styles.sheetTitle}>Katılım</Text>
-          <PillButton title="Gidiyorum" onPress={() => applyRsvp('going')} />
+          <RsvpGoingButton
+            key={rsvpGoingKey}
+            onCommit={() => setRSVP(match.id, userId, 'going')}
+            onSuccess={() => rsvpRef.current?.dismiss()}
+            onError={(e) => Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.'))}
+            testID="match:rsvp-going:press"
+          />
           <PillButton title="Belki" variant="ghost" onPress={() => applyRsvp('maybe')} />
           <PillButton title="Gelmiyorum" variant="ghost" onPress={() => applyRsvp('notGoing')} />
         </BottomSheetView>

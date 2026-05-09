@@ -65,6 +65,7 @@ export function PillButton({
       accessibilityState={accessibilityState}
       disabled={disabled || loading}
       onPress={onPress}
+      pressedScale={0.95}
       style={[styles.base, { backgroundColor: bg }, borderStyle, style]}
     >
       {loading ? (

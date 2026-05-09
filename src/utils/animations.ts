@@ -42,6 +42,14 @@ export const Springs = {
   } satisfies WithSpringConfig,
 };
 
+/** RSVP “Gidiyorum” sheet button — fill from center + dismiss hold. */
+export const RsvpGoingMotion = {
+  minHoldMs: 340,
+  fillDuration: 280,
+  iconBounceUpPx: 6,
+  iconBounceUpMs: 90,
+} as const;
+
 /** Reanimated easing presets — prefer these over raw linear `withTiming`. */
 export const EasingPresets = {
   /** Tabs, toasts, chrome fades */
