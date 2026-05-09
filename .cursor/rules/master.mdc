@@ -16,6 +16,7 @@ alwaysApply: true
 | Zustand slice design, selectors, action conventions, persist/migrate changes | `store-architecture.mdc` |
 | Test strategy, quality gates, test matrix, or release-readiness checks | `testing-quality-gate.mdc` |
 | UI components, screens, layout, styling, animations | `ui-ux-design.mdc` |
+| Modern mobile UI guardrails: card depth (`elevation`/`shadow`), 44x44 touch targets, animated state transitions | `modern-ui-standards.mdc` |
 | Supabase auth, RLS, migrations, storage policies, or security-sensitive data access | `supabase-governance.mdc` |
 | SQL performance tuning, indexing, or Postgres-backed list/query optimization | `supabase-postgres-performance.mdc` |
 | Schema/migrations: new tables, enums, FK delete/update behavior | `supabase-schema-evolution.mdc` |

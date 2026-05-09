@@ -43,7 +43,7 @@ Prefer **`react-native-reanimated`** for motion:
 - `useSharedValue`, `useAnimatedStyle`, `withSpring`, `withTiming` for interactive feedback.
 - Tab/scene transitions follow [`TabSceneTransitionContext.tsx`](../../src/navigation/TabSceneTransitionContext.tsx) — do not bypass the provider without a reason.
 
-Avoid **`LayoutAnimation`** in new code where Reanimated can express the same behavior.
+For card depth, minimum touch-target sizing, and `Loading -> Success` transition requirements, follow [`modern-ui-standards.mdc`](modern-ui-standards.mdc). Reanimated is still preferred for complex motion, but `LayoutAnimation` is acceptable for simple state-transition polish.
 
 ## testID
 

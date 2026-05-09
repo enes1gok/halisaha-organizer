@@ -1,0 +1,92 @@
+---
+description: Modern mobile UI guardrails for card depth, touch targets, and state transitions
+globs: "{src/components/**/*.tsx,src/screens/**/*.tsx,src/navigation/**/*.tsx}"
+alwaysApply: false
+---
+
+# Modern UI standards
+
+These rules enforce baseline mobile usability and polish for interactive UI work.
+
+## 1) Card depth must use platform elevation/shadow
+
+- Do not create depth with border-only cards.
+- Card-like surfaces should include:
+  - Android: `elevation`
+  - iOS: `shadowColor`, `shadowOffset`, `shadowOpacity`, `shadowRadius`
+
+```tsx
+// ❌ BAD: Border-only card depth
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+  },
+});
+```
+
+```tsx
+// ✅ GOOD: Platform-aware card depth
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    elevation: 3, // Android
+    shadowColor: "#000", // iOS
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+});
+```
+
+## 2) Interactive controls need at least 44x44 touch area
+
+- Buttons, chips, icon buttons, and any pressable control must provide a minimum touch target of `44x44`.
+- Use size styles (`minWidth`, `minHeight`) and/or `hitSlop` if visual size must stay compact.
+
+```tsx
+// ❌ BAD: Touch area is too small
+<Pressable style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+  <Text>Katıl</Text>
+</Pressable>
+```
+
+```tsx
+// ✅ GOOD: Meets minimum touch target
+<Pressable
+  hitSlop={4}
+  style={{
+    minWidth: 44,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  }}
+>
+  <Text>Katıl</Text>
+</Pressable>
+```
+
+## 3) State changes must animate smoothly
+
+- For visual state changes (for example `Loading -> Success`), use smooth transition animation.
+- Use `LayoutAnimation` or `react-native-reanimated` APIs (`withTiming`, `withSpring`, layout transitions).
+- Avoid abrupt UI swaps with no transition.
+
+```tsx
+// ❌ BAD: Abrupt state switch
+return isLoading ? <ActivityIndicator /> : <SuccessView />;
+```
+
+```tsx
+// ✅ GOOD: Animated transition
+LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+setIsLoading(false);
+```
+
+Apply these checks whenever touching UI interactions, cards, or async status-driven surfaces.
