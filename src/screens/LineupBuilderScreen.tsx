@@ -22,6 +22,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
+import { Springs } from '../utils/animations';
 import {
   getLineupFormationById,
   getLineupFormationsForTotalPlayers,
@@ -153,14 +154,14 @@ function DraggableCard({
     })
     .onEnd((e) => {
       runOnJS(onDragEnd)(player.id, e.absoluteX, e.absoluteY);
-      tx.value = withSpring(0);
-      ty.value = withSpring(0);
-      dragging.value = withSpring(0);
+      tx.value = withSpring(0, Springs.interactive);
+      ty.value = withSpring(0, Springs.interactive);
+      dragging.value = withSpring(0, Springs.interactive);
     })
     .onFinalize(() => {
-      tx.value = withSpring(0);
-      ty.value = withSpring(0);
-      dragging.value = withSpring(0);
+      tx.value = withSpring(0, Springs.interactive);
+      ty.value = withSpring(0, Springs.interactive);
+      dragging.value = withSpring(0, Springs.interactive);
     });
 
   const style = useAnimatedStyle(() => ({

@@ -6,15 +6,10 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  AccessibilityInfo,
-  I18nManager,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { I18nManager, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useReduceMotion } from '../hooks/useReduceMotion';
 import { Durations, EasingPresets, TabSlide } from '../utils/animations';
 
 /** Must match `Tab.Screen` order in `AppNavigator.tsx`. */
@@ -101,18 +96,8 @@ export function AnimatedTabScene({ children }: AnimatedTabSceneProps) {
   const { width } = useWindowDimensions();
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReduceMotion();
   const layoutMeta = useRef({ width: 0, direction: 0 as -1 | 0 | 1, isFocused: false });
-
-  useLayoutEffect(() => {
-    const onReduceMotion = (enabled: boolean) => {
-      setReduceMotion(enabled);
-    };
-    let subscription: { remove: () => void } | undefined;
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', onReduceMotion);
-    return () => subscription?.remove();
-  }, []);
 
   useLayoutEffect(() => {
     if (!isFocused) {
@@ -145,7 +130,7 @@ export function AnimatedTabScene({ children }: AnimatedTabSceneProps) {
         cancelAnimation(opacity);
         opacity.value = 0;
         opacity.value = withTiming(1, {
-          duration: Durations.fast,
+          duration: Durations.normal,
           easing: EasingPresets.easeOutCubic,
         });
       } else {

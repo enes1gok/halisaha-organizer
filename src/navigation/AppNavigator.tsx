@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DarkTheme, type LinkingOptions, type NavigationState } from '@react-navigation/native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, letterSpacing, shadows, typography } from '../theme';
+import { useReduceMotion } from '../hooks/useReduceMotion';
 import { Durations, EasingPresets } from '../utils/animations';
 import { TabSceneTransitionProvider } from './TabSceneTransitionContext';
 import {
@@ -82,22 +83,7 @@ function renderIonicon(routeName: string, color: string) {
 
 function AnimatedTabIcon({ routeName, focused }: AnimatedTabIconProps) {
   const scale = useSharedValue(focused ? ACTIVE_SCALE : INACTIVE_SCALE);
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (!cancelled) setReduceMotion(enabled);
-    });
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotion,
-    );
-    return () => {
-      cancelled = true;
-      subscription.remove();
-    };
-  }, []);
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
     const target = focused ? ACTIVE_SCALE : INACTIVE_SCALE;

@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { useReduceMotion } from '../hooks/useReduceMotion';
 import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
@@ -7,14 +8,15 @@ import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
 import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
 import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
-import { defaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
+import { getDefaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
 import type { HomeStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 export function HomeStackNav() {
+  const reduceMotion = useReduceMotion();
   return (
-    <Stack.Navigator screenOptions={defaultNativeStackScreenOptions}>
+    <Stack.Navigator screenOptions={getDefaultNativeStackScreenOptions(reduceMotion)}>
       <Stack.Screen
         name="HomeMain"
         component={HomeScreen}

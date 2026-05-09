@@ -2,29 +2,33 @@ import { Easing as RNAnimatedEasing } from 'react-native';
 import { Easing } from 'react-native-reanimated';
 import type { WithSpringConfig } from 'react-native-reanimated';
 
-/**
- * Tab scene horizontal slide (`withTiming` + cubic ease-out in TabSceneTransitionContext).
- * Slightly longer than a typical 300ms so ease-out reads smoothly (matches ajandam).
- */
+/** Nav transitions must not exceed `normal`; tab horizontal slide uses the same cap (motion-governance). */
 export const Durations = {
   fast: 220,
+  /** Canonical UI duration cap (navigation + slide transitions). */
+  normal: 300,
+  /** Same ms as `normal`; kept for existing call sites. */
   standard: 300,
   slow: 400,
 } as const;
 
 export const TabSlide = {
-  duration: 420,
+  duration: Durations.normal,
 } as const;
 
-/** Horizontal stack card transition: JS stack (`defaultStackScreenOptions`) vs native stack (`defaultNativeStackScreenOptions`). */
+/** Horizontal stack card transition: JS stack vs native stack (`animationDuration`). */
 export const NavDurations = {
-  /** Legacy alias kept for native-stack experimentation notes */
-  nativeStack: 480,
-  stackCard: 440,
+  nativeStack: Durations.normal,
+  stackCard: Durations.normal,
 } as const;
 
 /** Physics-based press feedback — calibrated with legacy `withSpring(0.97)` feel. */
 export const Springs = {
+  /** Standard softness for interactive `withSpring` (motion-governance). */
+  interactive: {
+    stiffness: 150,
+    damping: 15,
+  } satisfies WithSpringConfig,
   press: {
     stiffness: 420,
     damping: 26,

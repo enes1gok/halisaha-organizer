@@ -1,12 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import {
-  AccessibilityInfo,
-  Pressable,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import React from 'react';
+import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useReduceMotion } from '../hooks/useReduceMotion';
 import { Springs } from '../utils/animations';
 import { lightImpact } from '../utils/haptics';
 
@@ -32,13 +27,7 @@ export function PressableScale({
   ...rest
 }: PressableScaleProps) {
   const scale = useSharedValue(1);
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => sub.remove();
-  }, []);
+  const reduceMotion = useReduceMotion();
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -51,13 +40,13 @@ export function PressableScale({
       onPressIn={(e) => {
         if (hapticOnPress && !disabled) void lightImpact();
         if (!reduceMotion) {
-          scale.value = withSpring(pressedScale, Springs.press);
+          scale.value = withSpring(pressedScale, Springs.interactive);
         }
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
         if (!reduceMotion) {
-          scale.value = withSpring(1, Springs.press);
+          scale.value = withSpring(1, Springs.interactive);
         }
         onPressOut?.(e);
       }}

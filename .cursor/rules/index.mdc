@@ -33,12 +33,13 @@ Authoritative static context for this repo.
 | File | Role |
 |------|------|
 | `AppNavigator.tsx` | `NavigationContainer`, tab navigator, custom tab bar, theme bridge |
+| `defaultNativeStackScreenOptions.ts` | Native stack defaults (`getDefaultNativeStackScreenOptions`, reduce-motion fade) |
 | `HomeStackNav.tsx` | Home tab stack: home, join, match detail, lineup, score |
 | `MyMatchesStackNav.tsx` | Maçlarım stack: list + shared detail/lineup/score screens |
 | `ProfileStackNav.tsx` | Profil stack |
 | `tabScreensWithTransition.tsx` | Tab scenes wrapped with `AnimatedTabScene` |
 | `TabSceneTransitionContext.tsx` | Shared tab transition / animation context |
-| `defaultStackScreenOptions.ts` | Stack header defaults |
+| `defaultStackScreenOptions.ts` | Stack header defaults (`getDefaultStackScreenOptions`) |
 
 **Screens** — [`src/screens/`](../../src/screens/)
 

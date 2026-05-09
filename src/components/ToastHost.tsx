@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
+import { useReduceMotion } from '../hooks/useReduceMotion';
 import {
   AccessibilityInfo,
   Platform,
@@ -44,6 +45,7 @@ type Props = {
 
 export function ToastHost({ entry, onConsumed }: Props) {
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
   const translateY = useSharedValue(SLIDE);
   const opacity = useSharedValue(0);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,7 +73,7 @@ export function ToastHost({ entry, onConsumed }: Props) {
     }
 
     if (!entry) {
-      translateY.value = SLIDE;
+      translateY.value = reduceMotion ? 0 : SLIDE;
       opacity.value = 0;
       return;
     }
@@ -82,33 +84,53 @@ export function ToastHost({ entry, onConsumed }: Props) {
       AccessibilityInfo.announceForAccessibility(announce);
     }
 
-    translateY.value = SLIDE;
-    opacity.value = 0;
-    translateY.value = withTiming(0, {
-      duration: ENTER_MS,
-      easing: EasingPresets.toastMotion,
-    });
-    opacity.value = withTiming(1, {
-      duration: ENTER_MS,
-      easing: EasingPresets.toastMotion,
-    });
-
     const duration = defaultDuration(payload);
-    hideTimerRef.current = setTimeout(() => {
-      translateY.value = withTiming(
-        SLIDE,
-        { duration: EXIT_MS, easing: EasingPresets.toastMotion },
-        (finished) => {
-          if (finished) {
-            runOnJS(finishDismiss)(payload, requestId);
-          }
-        },
-      );
-      opacity.value = withTiming(0, {
-        duration: EXIT_MS,
+
+    if (reduceMotion) {
+      translateY.value = 0;
+      opacity.value = 0;
+      opacity.value = withTiming(1, {
+        duration: ENTER_MS,
         easing: EasingPresets.toastMotion,
       });
-    }, duration);
+      hideTimerRef.current = setTimeout(() => {
+        opacity.value = withTiming(
+          0,
+          { duration: EXIT_MS, easing: EasingPresets.toastMotion },
+          (finished) => {
+            if (finished) {
+              runOnJS(finishDismiss)(payload, requestId);
+            }
+          },
+        );
+      }, duration);
+    } else {
+      translateY.value = SLIDE;
+      opacity.value = 0;
+      translateY.value = withTiming(0, {
+        duration: ENTER_MS,
+        easing: EasingPresets.toastMotion,
+      });
+      opacity.value = withTiming(1, {
+        duration: ENTER_MS,
+        easing: EasingPresets.toastMotion,
+      });
+      hideTimerRef.current = setTimeout(() => {
+        translateY.value = withTiming(
+          SLIDE,
+          { duration: EXIT_MS, easing: EasingPresets.toastMotion },
+          (finished) => {
+            if (finished) {
+              runOnJS(finishDismiss)(payload, requestId);
+            }
+          },
+        );
+        opacity.value = withTiming(0, {
+          duration: EXIT_MS,
+          easing: EasingPresets.toastMotion,
+        });
+      }, duration);
+    }
 
     return () => {
       if (hideTimerRef.current) {
@@ -116,7 +138,7 @@ export function ToastHost({ entry, onConsumed }: Props) {
         hideTimerRef.current = null;
       }
     };
-  }, [entry, finishDismiss, opacity, translateY]);
+  }, [entry, finishDismiss, opacity, reduceMotion, translateY]);
 
   if (!entry) {
     return null;
