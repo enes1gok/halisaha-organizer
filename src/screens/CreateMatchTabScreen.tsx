@@ -191,10 +191,10 @@ export function CreateMatchTabScreen() {
         paymentNote: paymentMethod === 'note_only' ? paymentNoteNorm : undefined,
         paymentMethod,
       });
-      const copyPayload = `Katılım kodu: ${m.joinCode}\nhalisaha://match/${m.id}`;
+      const copyPayload = `Katılım kodu: ${m.joinCode}`;
       pendingMatchToastRef.current = {
         title: 'Maç oluşturuldu',
-        message: `Katılım kodu: ${m.joinCode}\nBağlantı: halisaha://match/${m.id}`,
+        message: `Katılım kodu: ${m.joinCode}`,
         actionLabel: 'Kopyala',
         onActionPress: () => void Clipboard.setStringAsync(copyPayload),
       };

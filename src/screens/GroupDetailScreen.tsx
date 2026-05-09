@@ -50,13 +50,6 @@ export function GroupDetailScreen() {
   } = useClipboardCopyFeedback({
     idleLabel: 'Kodu kopyala',
   });
-  const {
-    label: copyLinkLabel,
-    runCopy: runCopyLink,
-    isCopied: linkCopied,
-  } = useClipboardCopyFeedback({
-    idleLabel: 'Davet bağlantısını kopyala',
-  });
 
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -86,12 +79,6 @@ export function GroupDetailScreen() {
       await Clipboard.setStringAsync(group.joinCode);
     });
   }, [group, runCopyCode]);
-
-  const onPressCopyInviteLink = useCallback(() => {
-    void runCopyLink(async () => {
-      await Clipboard.setStringAsync(`halisaha://group/${groupId}`);
-    });
-  }, [groupId, runCopyLink]);
 
   const onPressLeave = useCallback(() => {
     Alert.alert(
@@ -213,27 +200,14 @@ export function GroupDetailScreen() {
             {group.joinCode}
           </Text>
         </View>
-        <View style={styles.copyRow}>
-          <PillButton
-            title={copyCodeLabel}
-            variant="accent"
-            onPress={onPressCopyJoinCode}
-            titleColor={codeCopied ? colors.copyFeedbackLight : undefined}
-            testID="groups:detail:copy-code"
-            accessibilityLabel="Katılım kodunu panoya kopyala"
-          />
-          <PillButton
-            title={copyLinkLabel}
-            variant="ghost"
-            onPress={onPressCopyInviteLink}
-            titleColor={linkCopied ? colors.copyFeedbackLight : undefined}
-            testID="groups:detail:copy-invite-link"
-            accessibilityLabel="Grup davet bağlantısını panoya kopyala"
-          />
-        </View>
-        <Text style={styles.linkHint}>
-          Bağlantıyı üyeler grup ekranına gider; yeni katılımcılar önce kodu kullanmalıdır.
-        </Text>
+        <PillButton
+          title={copyCodeLabel}
+          variant="accent"
+          onPress={onPressCopyJoinCode}
+          titleColor={codeCopied ? colors.copyFeedbackLight : undefined}
+          testID="groups:detail:copy-code"
+          accessibilityLabel="Katılım kodunu panoya kopyala"
+        />
       </Card>
 
       <Card style={styles.cardGap} variant="glass">
@@ -388,14 +362,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     letterSpacing: letterSpacing.code,
     textAlign: 'center',
-  },
-  copyRow: {
-    gap: spacing.sm,
-  },
-  linkHint: {
-    ...typography.micro,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
   },
   memberList: {
     gap: spacing.md,

@@ -172,7 +172,7 @@ export function MatchDetailScreen() {
   const onPressCopyJoin = useCallback(() => {
     if (!match) return;
     runJoinCopy(async () => {
-      await Clipboard.setStringAsync(`halisaha://match/${match.id}`);
+      await Clipboard.setStringAsync(match.joinCode);
     });
   }, [match, runJoinCopy]);
 
@@ -285,7 +285,7 @@ export function MatchDetailScreen() {
             variant="ghost"
             onPress={onPressCopyJoin}
             titleColor={joinCopied ? colors.copyFeedbackLight : undefined}
-            accessibilityLabel={joinCopied ? 'Kopyalandı' : 'Katılım bağlantısını panoya kopyala'}
+            accessibilityLabel={joinCopied ? 'Kopyalandı' : 'Katılım kodunu panoya kopyala'}
           />
         </View>
       </View>
