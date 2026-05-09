@@ -4,6 +4,7 @@ import {
   BottomSheetScrollView,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
+import * as Clipboard from 'expo-clipboard';
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
@@ -18,6 +19,8 @@ import {
   View,
 } from 'react-native';
 import { PillButton } from '../components/PillButton';
+import { useToast } from '../context/ToastContext';
+import type { ShowToastOptions } from '../context/toastTypes';
 import { colors, spacing, typography } from '../theme';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
@@ -32,7 +35,9 @@ import {
 
 export function CreateMatchTabScreen() {
   const navigation = useNavigation();
+  const { showToast } = useToast();
   const sheetRef = useRef<BottomSheetModal>(null);
+  const pendingMatchToastRef = useRef<ShowToastOptions | null>(null);
   const snapPoints = useMemo(() => ['82%'], []);
   const createMatch = useMatchesStore((s) => s.createMatch);
   const userId = useAuthStore((s) => s.getCurrentUserId());
@@ -125,9 +130,18 @@ export function CreateMatchTabScreen() {
     }, [profileNorm, syncFromStored]),
   );
 
-  const goHome = () => {
+  const goHome = useCallback(() => {
     navigation.navigate('HomeTab' as never);
-  };
+  }, [navigation]);
+
+  const handleSheetDismiss = useCallback(() => {
+    goHome();
+    const pending = pendingMatchToastRef.current;
+    pendingMatchToastRef.current = null;
+    if (pending) {
+      setTimeout(() => showToast(pending), 400);
+    }
+  }, [goHome, showToast]);
 
   const onSubmit = async () => {
     if (!venue.trim()) {
@@ -177,11 +191,13 @@ export function CreateMatchTabScreen() {
         paymentNote: paymentMethod === 'note_only' ? paymentNoteNorm : undefined,
         paymentMethod,
       });
-      Alert.alert(
-        'Maç oluşturuldu',
-        `Katılım kodu: ${m.joinCode}\nBağlantı: halisaha://match/${m.id}`,
-        [{ text: 'Tamam', onPress: () => sheetRef.current?.dismiss() }],
-      );
+      const copyPayload = `Katılım kodu: ${m.joinCode}\nhalisaha://match/${m.id}`;
+      pendingMatchToastRef.current = {
+        title: 'Maç oluşturuldu',
+        message: `Katılım kodu: ${m.joinCode}\nBağlantı: halisaha://match/${m.id}`,
+        actionLabel: 'Kopyala',
+        onActionPress: () => void Clipboard.setStringAsync(copyPayload),
+      };
       setVenue('');
       setPrice('');
       setPaymentMethod(null);
@@ -189,6 +205,7 @@ export function CreateMatchTabScreen() {
       setPaymentNote('');
       syncFromStored('');
       setOverrideIban(!hasValidProfileIban);
+      sheetRef.current?.dismiss();
     } catch (e) {
       Alert.alert('Hata', toUserMessage(e, 'Maç oluşturulamadı.'));
     }
@@ -207,7 +224,7 @@ export function CreateMatchTabScreen() {
         ref={sheetRef}
         snapPoints={snapPoints}
         enablePanDownToClose
-        onDismiss={goHome}
+        onDismiss={handleSheetDismiss}
         backdropComponent={renderBackdrop}
         backgroundStyle={styles.sheetBg}
         handleIndicatorStyle={styles.handle}

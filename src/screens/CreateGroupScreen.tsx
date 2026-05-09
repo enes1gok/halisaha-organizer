@@ -3,6 +3,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
+import { useToast } from '../context/ToastContext';
 import { useGroupsStore } from '../store';
 import { shouldRetry, toUserMessage } from '../services/supabase/errors';
 import { colors, spacing, typography } from '../theme';
@@ -15,6 +16,7 @@ const GROUP_NAME_MAX = 80;
 
 export function CreateGroupScreen() {
   const navigation = useNavigation<Nav>();
+  const { showToast } = useToast();
   const createGroup = useGroupsStore((s) => s.createGroup);
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -33,16 +35,20 @@ export function CreateGroupScreen() {
     setSubmitting(true);
     try {
       const { group, hydrateFailed } = await createGroup(trimmed);
-      const goDetail = () => navigation.replace('GroupDetail', { groupId: group.id });
       if (hydrateFailed) {
-        Alert.alert(
-          'Grup oluşturuldu',
-          `Katılım kodu: ${group.joinCode}\n\nListe yenilenemedi. Gruplar sekmesinde aşağı çekerek yenileyin.`,
-          [{ text: 'Tamam', onPress: goDetail }],
-        );
+        showToast({
+          title: 'Grup oluşturuldu',
+          message: `Katılım kodu: ${group.joinCode}\nListe yenilenemedi. Gruplar sekmesinde aşağı çekerek yenileyin.`,
+          variant: 'warning',
+          durationMs: 6000,
+        });
       } else {
-        Alert.alert('Grup oluşturuldu', `Katılım kodu: ${group.joinCode}`, [{ text: 'Tamam', onPress: goDetail }]);
+        showToast({
+          title: 'Grup oluşturuldu',
+          message: `Katılım kodu: ${group.joinCode}`,
+        });
       }
+      navigation.replace('GroupDetail', { groupId: group.id });
     } catch (e) {
       const msg = toUserMessage(e, 'Grup oluşturulamadı.');
       const retryable = shouldRetry(e);
@@ -57,7 +63,7 @@ export function CreateGroupScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [createGroup, name, navigation]);
+  }, [createGroup, name, navigation, showToast]);
 
   return (
     <View style={styles.screen}>

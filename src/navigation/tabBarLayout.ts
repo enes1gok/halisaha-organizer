@@ -3,6 +3,8 @@
  */
 export const TAB_BAR_FLOAT_MARGIN_H = 16;
 export const TAB_BAR_FLOAT_MARGIN_BOTTOM = 12;
+/** Shell padding + pill row; snackbar clears above floating tab bar. */
+export const TAB_BAR_FLOATING_BLOCK_HEIGHT = 78;
 /** Small top inset so the bar shadow is not clipped (no FAB). */
 export const TAB_BAR_OVERFLOW_TOP = 8;
 

@@ -13,6 +13,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
+import { ToastProvider } from './src/context/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { openGroupDetail, openMatchDetail } from './src/navigation/navigationActions';
@@ -98,7 +99,9 @@ export default function App() {
       <SafeAreaProvider>
         <BottomSheetModalProvider>
           <SupabaseAuthProvider>
-            <AppShell />
+            <ToastProvider>
+              <AppShell />
+            </ToastProvider>
           </SupabaseAuthProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>
