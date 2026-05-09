@@ -68,7 +68,8 @@ select lives_ok(
     'ZZRPC03'::text,
     null::uuid,
     null::numeric,
-    null::text
+    null::text,
+    'cash'::text
   ) $$,
   'organizer_creates_match_via_rpc'
 );
@@ -82,7 +83,8 @@ select lives_ok(
     'ZZRPC04'::text,
     'd0000000-0000-4000-8000-000000000050'::uuid,
     null::numeric,
-    null::text
+    null::text,
+    'cash'::text
   ) $$,
   'organizer_creates_group_match_via_rpc'
 );

@@ -29,6 +29,22 @@ for each row execute procedure public.set_updated_at();
 
 - Every `REFERENCES` clause must specify **both** `ON DELETE` and `ON UPDATE` explicitly (`CASCADE`, `SET NULL`, `RESTRICT`, etc.). Do not rely on implicit defaults.
 
+## Function evolution
+
+`CREATE OR REPLACE FUNCTION` cannot change:
+
+- the return type — including any change to `RETURNS TABLE (...)` columns (add/remove/rename/reorder)
+- parameter names, defaults, or `IN`/`OUT` direction
+
+When any of these change, the migration must:
+
+1. `DROP FUNCTION IF EXISTS public.fn(<exact_old_signature>);` — full argument **type** list only, not `(...)` as a wildcard.
+2. Recreate the function with the new signature.
+3. Re-apply matching `COMMENT ON FUNCTION`, `REVOKE`, and `GRANT EXECUTE` using the **new** signature (a `DROP` removes prior grants on that OID).
+4. If the function is referenced by other functions or views, update or drop/recreate those in **dependency order** in the same migration (dependents dropped before the callee).
+
+See skill [`evolve-postgres-function`](../skills/evolve-postgres-function/SKILL.md) (SQLSTATE **`42P13`**, *cannot change return type of existing function*).
+
 ## Related
 
 - Migration workflow and RLS: [`supabase-governance.mdc`](supabase-governance.mdc).

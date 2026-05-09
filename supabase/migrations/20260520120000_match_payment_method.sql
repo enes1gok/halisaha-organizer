@@ -204,6 +204,8 @@ revoke execute on function public.create_match_with_organizer_attendee(
   text
 ) from anon;
 
+drop function if exists public.get_match_detail_for_user(uuid);
+
 create or replace function public.get_match_detail_for_user(p_match_id uuid)
 returns table (
   id uuid,
@@ -259,6 +261,12 @@ as $$
     and public.can_view_match(m.id, auth.uid());
 $$;
 
+revoke execute on function public.get_match_detail_for_user(uuid) from public;
+revoke execute on function public.get_match_detail_for_user(uuid) from anon;
+grant execute on function public.get_match_detail_for_user(uuid) to authenticated;
+
+drop function if exists public.list_visible_matches_for_user();
+
 create or replace function public.list_visible_matches_for_user()
 returns table (
   id uuid,
@@ -312,6 +320,14 @@ as $$
   from public.matches m
   where public.can_view_match(m.id, auth.uid());
 $$;
+
+revoke execute on function public.list_visible_matches_for_user() from public;
+revoke execute on function public.list_visible_matches_for_user() from anon;
+grant execute on function public.list_visible_matches_for_user() to authenticated;
+
+drop function if exists public.get_match_graph_for_user(uuid);
+drop function if exists public.list_visible_match_graphs_for_user();
+drop function if exists public.match_graph_row(uuid);
 
 create or replace function public.match_graph_row(p_match_id uuid)
 returns table (
@@ -454,6 +470,9 @@ as $$
     and public.can_view_match(m.id, auth.uid());
 $$;
 
+revoke execute on function public.match_graph_row(uuid) from public;
+revoke execute on function public.match_graph_row(uuid) from anon;
+
 create or replace function public.get_match_graph_for_user(p_match_id uuid)
 returns table (
   id uuid,
@@ -488,6 +507,10 @@ set search_path = public
 as $$
   select * from public.match_graph_row(p_match_id);
 $$;
+
+revoke execute on function public.get_match_graph_for_user(uuid) from public;
+revoke execute on function public.get_match_graph_for_user(uuid) from anon;
+grant execute on function public.get_match_graph_for_user(uuid) to authenticated;
 
 create or replace function public.list_visible_match_graphs_for_user()
 returns table (
@@ -527,3 +550,7 @@ as $$
   where public.can_view_match(m.id, auth.uid())
   order by mg.starts_at desc, mg.id desc;
 $$;
+
+revoke execute on function public.list_visible_match_graphs_for_user() from public;
+revoke execute on function public.list_visible_match_graphs_for_user() from anon;
+grant execute on function public.list_visible_match_graphs_for_user() to authenticated;

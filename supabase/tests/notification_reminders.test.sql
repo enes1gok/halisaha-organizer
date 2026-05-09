@@ -5,7 +5,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(22);
 
 select tests.reset_session();
 
@@ -241,6 +241,69 @@ select is_empty(
      where match_id = 'b0000000-0000-4000-8000-000000000082'::uuid
        and type = 'reminder' $$,
   'no reminders are queued for a kicked-off match'
+);
+
+-- ---------------------------------------------------------------------------
+-- Payment reminder: upcoming within 24h + attendee unpaid + going
+-- ---------------------------------------------------------------------------
+
+insert into public.matches (id, starts_at, venue, organizer_id, join_code, group_id, max_players, status)
+values (
+  'b0000000-0000-4000-8000-000000000083'::uuid,
+  now() + interval '6 hours',
+  'Saha D',
+  'a0000000-0000-4000-8000-000000000010'::uuid,
+  'MATCHRMD83',
+  'c0000000-0000-4000-8000-000000000050'::uuid,
+  10,
+  'upcoming'
+);
+
+insert into public.match_attendees (match_id, player_id, status, paid)
+values
+  ('b0000000-0000-4000-8000-000000000083'::uuid, 'a0000000-0000-4000-8000-000000000010'::uuid, 'going', false),
+  ('b0000000-0000-4000-8000-000000000083'::uuid, 'a0000000-0000-4000-8000-000000000011'::uuid, 'going', false),
+  ('b0000000-0000-4000-8000-000000000083'::uuid, 'a0000000-0000-4000-8000-000000000012'::uuid, 'maybe', false),
+  ('b0000000-0000-4000-8000-000000000083'::uuid, 'a0000000-0000-4000-8000-000000000013'::uuid, 'going', true);
+
+select public.enqueue_group_match_reminders();
+
+select is(
+  (select count(*)::int from public.notification_deliveries
+   where match_id = 'b0000000-0000-4000-8000-000000000083'::uuid
+     and type = 'payment_reminder'),
+  1,
+  'payment reminder targets only unpaid going attendee within 24 hours'
+);
+
+select is_empty(
+  $$ select 1 from public.notification_deliveries
+     where match_id = 'b0000000-0000-4000-8000-000000000083'::uuid
+       and type = 'payment_reminder'
+       and recipient_id = 'a0000000-0000-4000-8000-000000000010'::uuid $$,
+  'organizer never receives payment reminder'
+);
+
+select is_empty(
+  $$ select 1 from public.notification_deliveries
+     where match_id = 'b0000000-0000-4000-8000-000000000083'::uuid
+       and type = 'payment_reminder'
+       and recipient_id = 'a0000000-0000-4000-8000-000000000012'::uuid $$,
+  'maybe attendee receives no payment reminder'
+);
+
+select is_empty(
+  $$ select 1 from public.notification_deliveries
+     where match_id = 'b0000000-0000-4000-8000-000000000083'::uuid
+       and type = 'payment_reminder'
+       and recipient_id = 'a0000000-0000-4000-8000-000000000013'::uuid $$,
+  'paid attendee receives no payment reminder'
+);
+
+select is(
+  (select public.enqueue_group_match_reminders()),
+  0,
+  'payment reminder enqueue is idempotent within a single day'
 );
 
 -- ---------------------------------------------------------------------------

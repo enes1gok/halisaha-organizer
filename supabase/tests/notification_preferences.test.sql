@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(11);
 
 select tests.reset_session();
 
@@ -57,6 +57,21 @@ select is(
   'group_match_reminder false blocks reminder'
 );
 
+select is(
+  public.notification_delivery_allowed('{}'::jsonb, 'payment_reminder'),
+  true,
+  'empty prefs allow payment_reminder'
+);
+
+select is(
+  public.notification_delivery_allowed(
+    '{"types": {"group_match_payment_reminder": false}}'::jsonb,
+    'payment_reminder'
+  ),
+  false,
+  'group_match_payment_reminder false blocks payment_reminder'
+);
+
 -- ---------------------------------------------------------------------------
 -- Integration: initial enqueue skips opted-out member
 -- ---------------------------------------------------------------------------
@@ -68,6 +83,10 @@ select tests.create_user('a0000000-0000-4000-8000-000000000022'::uuid);
 update public.profiles
 set notification_preferences = '{"types": {"group_match_initial": false}}'::jsonb
 where id = 'a0000000-0000-4000-8000-000000000021'::uuid;
+
+update public.profiles
+set notification_preferences = '{"types": {"group_match_payment_reminder": false}}'::jsonb
+where id = 'a0000000-0000-4000-8000-000000000022'::uuid;
 
 insert into public.groups (id, name, owner_id, join_code)
 values (
@@ -114,6 +133,26 @@ select isnt_empty(
      where recipient_id is not null
        and delivery_id is not null $$,
   'claim_pending_deliveries returns recipient_id'
+);
+
+insert into public.match_attendees (match_id, player_id, status, paid)
+values
+  ('b0000000-0000-4000-8000-000000000090'::uuid, 'a0000000-0000-4000-8000-000000000020'::uuid, 'going', false),
+  ('b0000000-0000-4000-8000-000000000090'::uuid, 'a0000000-0000-4000-8000-000000000021'::uuid, 'going', false),
+  ('b0000000-0000-4000-8000-000000000090'::uuid, 'a0000000-0000-4000-8000-000000000022'::uuid, 'going', false);
+
+update public.matches
+set starts_at = now() + interval '6 hours'
+where id = 'b0000000-0000-4000-8000-000000000090'::uuid;
+
+select public.enqueue_group_match_reminders();
+
+select is(
+  (select count(*)::int from public.notification_deliveries
+   where match_id = 'b0000000-0000-4000-8000-000000000090'::uuid
+     and type = 'payment_reminder'),
+  1,
+  'payment_reminder enqueue skips opted-out member'
 );
 
 select * from finish();

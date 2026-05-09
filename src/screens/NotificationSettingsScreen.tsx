@@ -34,6 +34,7 @@ function toJsonRecord(p: NotificationPreferences): Record<string, unknown> {
       group_match_cancelled: p.types.group_match_cancelled,
       group_match_venue_change: p.types.group_match_venue_change,
       group_match_lineup_published: p.types.group_match_lineup_published,
+      group_match_payment_reminder: p.types.group_match_payment_reminder,
     },
     quiet_hours: {
       enabled: p.quiet_hours.enabled,
@@ -166,6 +167,16 @@ export function NotificationSettingsScreen() {
       void persist({
         ...prefs,
         types: { ...prefs.types, group_match_lineup_published: v },
+      });
+    },
+    [prefs, persist],
+  );
+
+  const onTogglePaymentReminder = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_payment_reminder: v },
       });
     },
     [prefs, persist],
@@ -344,6 +355,21 @@ export function NotificationSettingsScreen() {
             thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_lineup_published ? colors.accent : colors.textMuted) : undefined}
             testID="settings:notifications:type-lineup-published:switch"
             accessibilityLabel="Kadro yayınlandı bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Ödeme hatırlatıcıları</Text>
+            <Text style={styles.caption}>Maça 24 saat kala ödemediyseniz hatırlatma gönderilir</Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_payment_reminder}
+            onValueChange={onTogglePaymentReminder}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_payment_reminder ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-payment-reminder:switch"
+            accessibilityLabel="Ödeme hatırlatıcı bildirimleri"
           />
         </View>
       </View>

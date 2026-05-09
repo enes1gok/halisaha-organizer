@@ -14,6 +14,7 @@ const MAX_DRAIN_ITERATIONS = 10;
 type DeliveryType =
   | 'initial'
   | 'reminder'
+  | 'payment_reminder'
   | 'match_cancelled'
   | 'venue_change'
   | 'lineup_published';
@@ -51,6 +52,7 @@ type NotificationPreferences = {
   types?: {
     group_match_initial?: boolean;
     group_match_reminder?: boolean;
+    group_match_payment_reminder?: boolean;
     group_match_cancelled?: boolean;
     group_match_venue_change?: boolean;
     group_match_lineup_published?: boolean;
@@ -90,6 +92,7 @@ const PREF_KEY_BY_DELIVERY_TYPE: Record<
 > = {
   initial: 'group_match_initial',
   reminder: 'group_match_reminder',
+  payment_reminder: 'group_match_payment_reminder',
   match_cancelled: 'group_match_cancelled',
   venue_change: 'group_match_venue_change',
   lineup_published: 'group_match_lineup_published',
@@ -197,6 +200,18 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
       body: detail
         ? `${groupName} • ${detail} — RSVP'ni unutma`
         : `${groupName} grubu maçı için RSVP'ni unutma`,
+    };
+  }
+  if (delivery.type === 'payment_reminder') {
+    const detail = [formatMatchTime(delivery.match_starts_at), delivery.match_venue ?? '']
+      .map((part) => (part ?? '').trim())
+      .filter(Boolean)
+      .join(' • ');
+    return {
+      title: 'Odeme hatirlatmasi',
+      body: detail
+        ? `${groupName} • ${detail} — Odemeni tamamlamayi unutma`
+        : `${groupName} grubu maci icin odemeni tamamlamayi unutma`,
     };
   }
   if (delivery.type === 'match_cancelled') {
