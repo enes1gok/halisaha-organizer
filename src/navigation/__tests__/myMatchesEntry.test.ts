@@ -11,6 +11,7 @@ function bm(partial: Partial<Match>): Match {
     venue: 'Saha',
     organizerId: 'org',
     maxPlayers: 14,
+    paymentMethod: 'iban',
     joinCode: 'ABC',
     attendees: [{ playerId: user, status: 'going', paid: false }],
     teamAIds: [user],

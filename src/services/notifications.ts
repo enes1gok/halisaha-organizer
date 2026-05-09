@@ -31,6 +31,34 @@ type InAppDelivery = {
   group: { name: string | null } | null;
 };
 
+type InAppDeliveryRow = Omit<InAppDelivery, 'match' | 'group'> & {
+  match:
+    | { starts_at: string | null; venue: string | null; organizer: { display_name: string | null }[] | null }[]
+    | null;
+  group: { name: string | null }[] | null;
+};
+
+function normalizeInAppDelivery(row: InAppDeliveryRow): InAppDelivery {
+  const matchRow = row.match?.[0] ?? null;
+  const organizerRow = matchRow?.organizer?.[0] ?? null;
+  const groupRow = row.group?.[0] ?? null;
+  return {
+    id: row.id,
+    match_id: row.match_id,
+    group_id: row.group_id,
+    type: row.type,
+    created_at: row.created_at,
+    match: matchRow
+      ? {
+          starts_at: matchRow.starts_at,
+          venue: matchRow.venue,
+          organizer: organizerRow ? { display_name: organizerRow.display_name } : null,
+        }
+      : null,
+    group: groupRow ? { name: groupRow.name } : null,
+  };
+}
+
 const handledInAppDeliveryIds = new Set<string>();
 
 const matchTimeFormatter = new Intl.DateTimeFormat('tr-TR', {
@@ -135,7 +163,8 @@ async function showPendingInAppBanners(sinceIso: string): Promise<void> {
     .limit(20);
   if (error) return;
 
-  for (const row of (data ?? []) as InAppDelivery[]) {
+  const deliveries = ((data ?? []) as InAppDeliveryRow[]).map(normalizeInAppDelivery);
+  for (const row of deliveries) {
     if (handledInAppDeliveryIds.has(row.id)) continue;
     handledInAppDeliveryIds.add(row.id);
     const { title, body } = buildInAppMessage(row);

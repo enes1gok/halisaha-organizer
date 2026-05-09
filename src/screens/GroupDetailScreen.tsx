@@ -12,7 +12,7 @@ import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, letterSpacing, radius, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 
 type DetailRoute = RouteProp<GroupsStackParamList, 'GroupDetail'>;
@@ -155,7 +155,7 @@ export function GroupDetailScreen() {
         />
       ) : null}
 
-      <Card style={styles.cardGap}>
+      <Card style={styles.cardGap} variant="glass">
         <Text style={styles.cardTitle}>Katılım kodu</Text>
         <Text style={styles.inviteHint}>
           Arkadaşların Gruplar sekmesinden Gruba Katıl ekranında bu kodu girebilir.
@@ -188,7 +188,7 @@ export function GroupDetailScreen() {
         </Text>
       </Card>
 
-      <Card style={styles.cardGap}>
+      <Card style={styles.cardGap} variant="glass">
         <Text style={styles.cardTitle}>Üyeler</Text>
         <View style={styles.memberList}>
           {groupMembersSorted.map(({ membership, player }) => {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   codeText: {
     ...typography.subtitle,
     color: colors.text,
-    letterSpacing: 2,
+    letterSpacing: letterSpacing.code,
     textAlign: 'center',
   },
   copyRow: {

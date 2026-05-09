@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import React, { useCallback } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import type { Match, Player } from '../types/domain';
 import { formatMatchDateTimeWithWeekday } from '../utils/dates';
 import { maskIban } from '../utils/iban';
@@ -197,12 +197,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceGlass,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glassBorder,
     overflow: 'hidden',
     minHeight: 200,
+    ...shadows.md,
   },
   emptyInner: {
     paddingVertical: spacing.lg,
@@ -213,8 +214,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
+    borderBottomColor: colors.glassBorder,
+    backgroundColor: colors.surfaceSoft,
     alignItems: 'stretch',
   },
   bodySection: {
@@ -249,7 +250,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   orgNameLg: {
+    ...typography.headlineStrong,
     fontSize: 19,
+    letterSpacing: letterSpacing.normal,
   },
   afterTitle: {
     marginTop: spacing.sm,
@@ -290,7 +293,7 @@ const styles = StyleSheet.create({
   },
   copyBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(0, 210, 106, 0.45)',
+    borderColor: colors.accent,
     backgroundColor: 'rgba(0, 210, 106, 0.14)',
     borderRadius: 20,
     paddingHorizontal: 14,
@@ -302,12 +305,12 @@ const styles = StyleSheet.create({
   },
   copyBtnPressed: {
     opacity: 0.82,
-    backgroundColor: 'rgba(0, 210, 106, 0.22)',
+    backgroundColor: colors.accentMuted,
   },
   copyBtnText: {
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
-    color: '#8CF0C0',
+    color: colors.accent,
   },
   copyBtnTextCopied: {
     color: colors.copyFeedbackLight,
@@ -324,12 +327,13 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   venue: {
-    ...typography.title,
+    ...typography.headlineStrong,
     fontSize: 24,
     lineHeight: 30,
     color: colors.text,
     textAlign: 'center',
     alignSelf: 'stretch',
+    letterSpacing: letterSpacing.wide,
   },
   dateMuted: {
     ...typography.body,

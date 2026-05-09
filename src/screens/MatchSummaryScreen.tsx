@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
-import { colors, spacing, typography } from '../theme';
+import { colors, letterSpacing, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 import { formatMatchDateTime } from '../utils/dates';
 import { isRemoteMatchId } from '../utils/matchId';
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
   },
-  muted: { color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  muted: { color: colors.textMuted, textTransform: 'uppercase', letterSpacing: letterSpacing.normal },
   resultLine: { color: colors.text, marginTop: spacing.sm },
   miniAvg: { ...typography.caption, color: colors.accent, marginTop: spacing.xs },
   banner: { ...typography.caption, color: colors.accent },

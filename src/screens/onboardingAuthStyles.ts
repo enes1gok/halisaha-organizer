@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, letterSpacing, radius, spacing, typography } from '../theme';
 
 export const onboardingAuthStyles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
@@ -15,12 +15,13 @@ export const onboardingAuthStyles = StyleSheet.create({
   brand: {
     ...typography.micro,
     color: colors.accent,
-    letterSpacing: 1,
+    letterSpacing: letterSpacing.brand,
   },
   title: {
-    ...typography.title,
+    ...typography.headlineStrong,
     color: colors.text,
     fontSize: 28,
+    letterSpacing: letterSpacing.wide,
   },
   subtitle: {
     ...typography.body,

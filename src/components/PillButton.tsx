@@ -8,14 +8,14 @@ import {
   ViewStyle,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Props = {
   title: string;
   onPress?: () => void;
-  variant?: 'accent' | 'ghost' | 'danger';
+  variant?: 'accent' | 'ghost' | 'danger' | 'secondary';
   disabled?: boolean;
   loading?: boolean;
   style?: ViewStyle;
@@ -46,13 +46,18 @@ export function PillButton({
   const bg =
     variant === 'accent'
       ? colors.accent
+      : variant === 'secondary'
+        ? colors.indigoMuted
       : variant === 'danger'
         ? colors.danger
         : 'transparent';
-  const borderStyle = variant === 'ghost' ? styles.ghostBorder : undefined;
+  const borderStyle =
+    variant === 'ghost' ? styles.ghostBorder : variant === 'secondary' ? styles.secondaryBorder : undefined;
   const textColor =
     variant === 'ghost'
       ? colors.text
+      : variant === 'secondary'
+        ? colors.indigo
       : variant === 'accent'
         ? colors.background
         : variant === 'danger'
@@ -98,13 +103,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
+    ...shadows.sm,
   },
   ghostBorder: {
     borderWidth: 1,
     borderColor: colors.border,
   },
+  secondaryBorder: {
+    borderWidth: 1,
+    borderColor: colors.indigo,
+  },
   title: {
     ...typography.subtitle,
     fontSize: 15,
+    letterSpacing: letterSpacing.normal,
   },
 });

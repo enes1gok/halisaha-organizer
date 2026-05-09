@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Match } from '../types/domain';
-import { colors, spacing, typography } from '../theme';
+import { colors, letterSpacing, shadows, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
 
 type Props = {
@@ -39,14 +39,15 @@ export function MatchCard({ match, goingCount, userGoing, onPress }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceGlass,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glassBorder,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderLeftWidth: 4,
     borderLeftColor: 'transparent',
+    ...shadows.sm,
   },
   going: {
     borderLeftColor: colors.accent,
@@ -62,6 +63,7 @@ const styles = StyleSheet.create({
   },
   venue: {
     color: colors.text,
+    letterSpacing: letterSpacing.normal,
   },
   date: {
     color: colors.textMuted,
@@ -72,6 +74,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   slotTxt: {
     color: colors.accent,

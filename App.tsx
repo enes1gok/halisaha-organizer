@@ -2,6 +2,7 @@ import {
   Inter_400Regular,
   Inter_600SemiBold,
   Inter_700Bold,
+  Inter_900Black,
   useFonts,
 } from '@expo-google-fonts/inter';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -75,6 +76,7 @@ export default function App() {
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,
+    Inter_900Black,
   });
   const [hydrated, setHydrated] = useState(() => useAppStore.persist.hasHydrated());
 

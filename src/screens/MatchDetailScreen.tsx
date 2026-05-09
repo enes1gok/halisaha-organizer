@@ -23,7 +23,7 @@ import {
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
-import { colors, spacing, typography, radius } from '../theme';
+import { colors, letterSpacing, spacing, typography, radius } from '../theme';
 import type { RSVPStatus } from '../types/domain';
 import { maskIban } from '../utils/iban';
 import { formatMatchDateTime } from '../utils/dates';
@@ -285,7 +285,7 @@ export function MatchDetailScreen() {
           <Text style={styles.sectionTitle}>Ödeme</Text>
           {showPrice ? <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text> : null}
           {match.ibanAccountName ? <Text style={styles.body}>{match.ibanAccountName}</Text> : null}
-          <Text style={styles.iban}>{maskIban(match.iban)}</Text>
+          <Text style={styles.iban}>{maskIban(match.iban ?? '')}</Text>
           <PillButton
             title={ibanCopyLabel}
             onPress={onPressCopyIban}
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: letterSpacing.wide,
   },
   body: {
     ...typography.body,
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   iban: {
     ...typography.subtitle,
     color: colors.text,
-    letterSpacing: 1,
+    letterSpacing: letterSpacing.brand,
   },
   rowBetween: {
     flexDirection: 'row',

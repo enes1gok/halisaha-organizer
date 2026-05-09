@@ -6,7 +6,7 @@ import { PillButton } from '../components/PillButton';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { toUserMessage } from '../services/supabase/errors';
-import { colors, spacing, typography } from '../theme';
+import { colors, letterSpacing, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
 import { countGoing } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: letterSpacing.wide,
   },
   body: { ...typography.body, color: colors.text },
   muted: { ...typography.caption, color: colors.textMuted },

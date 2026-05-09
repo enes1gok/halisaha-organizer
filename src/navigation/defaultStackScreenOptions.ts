@@ -1,10 +1,11 @@
 import type { StackNavigationOptions } from '@react-navigation/stack';
 import { CardStyleInterpolators } from '@react-navigation/stack';
+import { colors, typography } from '../theme';
 
 export const defaultStackScreenOptions: StackNavigationOptions = {
-  headerStyle: { backgroundColor: '#0A0A0A' },
-  headerTintColor: '#fff',
-  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-  cardStyle: { backgroundColor: '#0A0A0A' },
+  headerStyle: { backgroundColor: colors.background },
+  headerTintColor: colors.text,
+  headerTitleStyle: { ...typography.subtitle },
+  cardStyle: { backgroundColor: colors.background },
   cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
 };

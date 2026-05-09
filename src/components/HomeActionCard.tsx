@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../theme';
+import { SurfaceGradient } from './SurfaceGradient';
+import { colors, letterSpacing, radius, spacing, typography } from '../theme';
 
 /** Text/icons on green accent for contrast (matches legacy FAB). */
 const ON_ACCENT = '#0A0A0A';
@@ -14,37 +15,43 @@ type Props = {
 
 export function HomeActionCard({ onJoinPress, onCreatePress }: Props) {
   return (
-    <View style={styles.row}>
-      <Pressable
-        onPress={onJoinPress}
-        style={({ pressed }) => [styles.cell, pressed && styles.cellPressed]}
-        android_ripple={{ color: 'rgba(10,10,10,0.12)' }}
-      >
-        <Ionicons name="enter-outline" size={22} color={ON_ACCENT} />
-        <Text style={styles.cellTitle}>Maça katıl</Text>
-        <Text style={styles.cellHint}>Kod ile katıl</Text>
-      </Pressable>
-      <View style={styles.divider} />
-      <Pressable
-        onPress={onCreatePress}
-        style={({ pressed }) => [styles.cell, pressed && styles.cellPressed]}
-        android_ripple={{ color: 'rgba(10,10,10,0.12)' }}
-      >
-        <Ionicons name="add-circle-outline" size={22} color={ON_ACCENT} />
-        <Text style={styles.cellTitle}>Maçı kur</Text>
-        <Text style={styles.cellHint}>Yeni maç oluştur</Text>
-      </Pressable>
-    </View>
+    <SurfaceGradient style={styles.row}>
+      <View style={styles.rowInner}>
+        <Pressable
+          onPress={onJoinPress}
+          style={({ pressed }) => [styles.cell, pressed && styles.cellPressed]}
+          android_ripple={{ color: 'rgba(10,10,10,0.12)' }}
+        >
+          <Ionicons name="enter-outline" size={22} color={ON_ACCENT} />
+          <Text style={styles.cellTitle}>Maça katıl</Text>
+          <Text style={styles.cellHint}>Kod ile katıl</Text>
+        </Pressable>
+        <View style={styles.divider} />
+        <Pressable
+          onPress={onCreatePress}
+          style={({ pressed }) => [styles.cell, pressed && styles.cellPressed]}
+          android_ripple={{ color: 'rgba(10,10,10,0.12)' }}
+        >
+          <Ionicons name="add-circle-outline" size={22} color={ON_ACCENT} />
+          <Text style={styles.cellTitle}>Maçı kur</Text>
+          <Text style={styles.cellHint}>Yeni maç oluştur</Text>
+        </Pressable>
+      </View>
+    </SurfaceGradient>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
+    backgroundColor: colors.accentMuted,
+    borderRadius: radius.card,
+    minHeight: 72,
+  },
+  rowInner: {
     flexDirection: 'row',
-    backgroundColor: colors.accent,
     borderRadius: radius.card,
     overflow: 'hidden',
-    minHeight: 72,
+    backgroundColor: colors.accent,
   },
   cell: {
     flex: 1,
@@ -61,6 +68,7 @@ const styles = StyleSheet.create({
     ...typography.subtitle,
     color: ON_ACCENT,
     fontSize: 15,
+    letterSpacing: letterSpacing.normal,
   },
   cellHint: {
     ...typography.micro,

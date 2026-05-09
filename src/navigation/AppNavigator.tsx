@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DarkTheme, type LinkingOptions, type NavigationState } from '@react-navigation/native';
 import React, { useCallback, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography } from '../theme';
+import { colors, letterSpacing, shadows, typography } from '../theme';
 import { TabSceneTransitionProvider } from './TabSceneTransitionContext';
 import {
   CreateTabWithTransition,
@@ -175,16 +175,6 @@ export function AppNavigator() {
   );
 }
 
-const barShadow =
-  Platform.OS === 'ios'
-    ? {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 16,
-      }
-    : { elevation: 14 };
-
 const styles = StyleSheet.create({
   shell: {
     overflow: 'visible',
@@ -193,13 +183,13 @@ const styles = StyleSheet.create({
   pill: {
     position: 'relative',
     borderRadius: 32,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceGlass,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glassBorder,
     overflow: 'visible',
     paddingVertical: 10,
     paddingHorizontal: 4,
-    ...barShadow,
+    ...shadows.lg,
   },
   row: {
     flexDirection: 'row',
@@ -215,5 +205,6 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     ...typography.micro,
+    letterSpacing: letterSpacing.normal,
   },
 });

@@ -24,7 +24,7 @@ import {
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
-import { colors, spacing, typography } from '../theme';
+import { colors, letterSpacing, shadows, spacing, typography } from '../theme';
 import type { Position, PreferredFoot } from '../types/domain';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { updateCurrentUserProfile } from '../services/supabase/profiles';
@@ -93,8 +93,8 @@ export function ProfileScreen() {
   const score = player ? playerScore(player) : 0;
   const level = levelLabelFromScore(score);
   const wr = player ? Math.round(winRate(player.stats) * 100) : 0;
-  const ratingAvg = player.stats.ratingAverage100;
-  const motmCount = player.stats.motmCount ?? 0;
+  const ratingAvg = player?.stats.ratingAverage100;
+  const motmCount = player?.stats.motmCount ?? 0;
   const effectiveUserId = player?.id ?? userId;
 
   const recent = useMemo(() => {
@@ -363,16 +363,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceGlass,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.glassBorder,
     alignItems: 'center',
     gap: spacing.sm,
   },
   heroName: {
-    ...typography.title,
+    ...typography.headlineStrong,
     color: colors.text,
     marginTop: spacing.sm,
+    letterSpacing: letterSpacing.wide,
   },
   badges: {
     flexDirection: 'row',
@@ -427,12 +428,13 @@ const styles = StyleSheet.create({
   },
   cell: {
     width: '47%',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceGlass,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glassBorder,
     padding: spacing.md,
     alignItems: 'center',
+    ...shadows.sm,
   },
   cellVal: {
     ...typography.title,
