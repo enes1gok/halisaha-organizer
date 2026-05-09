@@ -20,6 +20,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { MatchHeroVenueTitle } from '../components/MatchHeroVenueTitle';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
@@ -263,7 +264,7 @@ export function MatchDetailScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <View style={styles.hero}>
-        <Text style={styles.heroVenue}>{match.venue}</Text>
+        <MatchHeroVenueTitle venue={match.venue} variant="detail" />
         <Text style={styles.heroDate}>{formatMatchDateTime(match.startsAt)}</Text>
         <Text style={styles.heroCd}>{match.status === 'upcoming' ? countdown : 'Maç Bitti'}</Text>
         {match.status === 'finished' && match.result ? (
@@ -569,10 +570,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     gap: spacing.sm,
-  },
-  heroVenue: {
-    ...typography.title,
-    color: colors.text,
   },
   heroDate: {
     ...typography.body,

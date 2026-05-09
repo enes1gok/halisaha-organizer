@@ -1,8 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Match } from '../types/domain';
-import { colors, letterSpacing, shadows, spacing, typography } from '../theme';
+import { colors, shadows, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
+import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
+import { PressableScale } from './PressableScale';
 
 type Props = {
   match: Match;
@@ -13,16 +15,14 @@ type Props = {
 
 export function MatchCard({ match, goingCount, userGoing, onPress }: Props) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       style={[styles.wrap, userGoing && styles.going]}
       android_ripple={{ color: colors.accentMuted }}
     >
       <View style={styles.row}>
         <View style={styles.main}>
-          <Text style={[typography.subtitle, styles.venue]} numberOfLines={1}>
-            {match.venue}
-          </Text>
+          <MatchHeroVenueTitle venue={match.venue} variant="list" />
           <Text style={[typography.caption, styles.date]}>
             {formatMatchDateTime(match.startsAt)}
           </Text>
@@ -33,7 +33,7 @@ export function MatchCard({ match, goingCount, userGoing, onPress }: Props) {
           </Text>
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -60,10 +60,6 @@ const styles = StyleSheet.create({
   },
   main: {
     flex: 1,
-  },
-  venue: {
-    color: colors.text,
-    letterSpacing: letterSpacing.normal,
   },
   date: {
     color: colors.textMuted,

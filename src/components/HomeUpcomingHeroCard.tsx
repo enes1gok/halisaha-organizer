@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import React, { useCallback } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import type { Match, Player } from '../types/domain';
@@ -163,9 +164,9 @@ export function HomeUpcomingHeroCard({
           {priceInHeader}
         </View>
 
-        <Pressable
+        <PressableScale
           onPress={onOpenDetail}
-          style={({ pressed }) => [styles.bodySection, pressed && styles.bodyPressed]}
+          style={styles.bodySection}
           android_ripple={{ color: colors.accentMuted }}
         >
           <Text style={styles.venue} numberOfLines={2}>
@@ -188,7 +189,7 @@ export function HomeUpcomingHeroCard({
           {gkMissing ? (
             <Text style={[typography.body, styles.gkAlert]}>Kaleci eksiği — kaleci yok</Text>
           ) : null}
-        </Pressable>
+        </PressableScale>
       </View>
     </View>
   );
@@ -324,9 +325,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     alignSelf: 'stretch',
-  },
-  bodyPressed: {
-    opacity: 0.92,
   },
   venue: {
     ...typography.headlineStrong,

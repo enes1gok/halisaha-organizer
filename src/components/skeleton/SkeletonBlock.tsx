@@ -1,13 +1,8 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { colors } from '../../theme';
+import { EasingPresets } from '../../utils/animations';
 
 type Props = {
   width?: ViewStyle['width'];
@@ -32,7 +27,7 @@ export function SkeletonBlock({
       return;
     }
     opacity.value = withRepeat(
-      withTiming(0.42, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+      withTiming(0.42, { duration: 900, easing: EasingPresets.skeletonPulse }),
       -1,
       true,
     );

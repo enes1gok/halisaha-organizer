@@ -14,14 +14,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
-import { Durations, TabSlide } from '../utils/animations';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Durations, EasingPresets, TabSlide } from '../utils/animations';
 
 /** Must match `Tab.Screen` order in `AppNavigator.tsx`. */
 export const TAB_ROUTE_ORDER = [
@@ -98,8 +92,6 @@ type AnimatedTabSceneProps = {
   children: React.ReactNode;
 };
 
-const easeOutCubic = Easing.out(Easing.cubic);
-
 /**
  * Wrap each tab route root so the screen slides horizontally when the tab gains focus.
  */
@@ -154,7 +146,7 @@ export function AnimatedTabScene({ children }: AnimatedTabSceneProps) {
         opacity.value = 0;
         opacity.value = withTiming(1, {
           duration: Durations.fast,
-          easing: easeOutCubic,
+          easing: EasingPresets.easeOutCubic,
         });
       } else {
         cancelAnimation(opacity);
@@ -171,7 +163,7 @@ export function AnimatedTabScene({ children }: AnimatedTabSceneProps) {
       translateX.value = direction * width;
       translateX.value = withTiming(0, {
         duration: TabSlide.duration,
-        easing: easeOutCubic,
+        easing: EasingPresets.easeOutCubic,
       });
     } else {
       cancelAnimation(translateX);

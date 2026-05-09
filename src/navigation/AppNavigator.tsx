@@ -3,15 +3,10 @@ import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/b
 import { NavigationContainer, DarkTheme, type LinkingOptions, type NavigationState } from '@react-navigation/native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, letterSpacing, shadows, typography } from '../theme';
-import { Durations } from '../utils/animations';
+import { Durations, EasingPresets } from '../utils/animations';
 import { TabSceneTransitionProvider } from './TabSceneTransitionContext';
 import {
   CreateTabWithTransition,
@@ -61,7 +56,6 @@ const NavTheme = {
 
 const ACTIVE_SCALE = 1.2;
 const INACTIVE_SCALE = 1;
-const easeOutCubic = Easing.out(Easing.cubic);
 
 type TabIconRouteName = 'HomeTab' | 'MyMatchesTab' | 'GroupsTab' | 'ProfileTab';
 
@@ -113,7 +107,7 @@ function AnimatedTabIcon({ routeName, focused }: AnimatedTabIconProps) {
     }
     scale.value = withTiming(target, {
       duration: Durations.fast,
-      easing: easeOutCubic,
+      easing: EasingPresets.easeOutCubic,
     });
   }, [focused, reduceMotion, scale]);
 

@@ -2,15 +2,12 @@ import React from 'react';
 import {
   ActivityIndicator,
   type AccessibilityState,
-  Pressable,
   StyleSheet,
   Text,
   ViewStyle,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { PressableScale } from './PressableScale';
 import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Props = {
   title: string;
@@ -38,19 +35,14 @@ export function PillButton({
   accessibilityState,
   testID,
 }: Props) {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
   const bg =
     variant === 'accent'
       ? colors.accent
       : variant === 'secondary'
         ? colors.indigoMuted
-      : variant === 'danger'
-        ? colors.danger
-        : 'transparent';
+        : variant === 'danger'
+          ? colors.danger
+          : 'transparent';
   const borderStyle =
     variant === 'ghost' ? styles.ghostBorder : variant === 'secondary' ? styles.secondaryBorder : undefined;
   const textColor =
@@ -58,28 +50,22 @@ export function PillButton({
       ? colors.text
       : variant === 'secondary'
         ? colors.indigo
-      : variant === 'accent'
-        ? colors.background
-        : variant === 'danger'
-          ? colors.text
-          : colors.text;
+        : variant === 'accent'
+          ? colors.background
+          : variant === 'danger'
+            ? colors.text
+            : colors.text;
   const resolvedTitleColor = titleColor ?? textColor;
 
   return (
-    <AnimatedPressable
+    <PressableScale
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={accessibilityState}
       disabled={disabled || loading}
       onPress={onPress}
-      onPressIn={() => {
-        scale.value = withSpring(0.97);
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1);
-      }}
-      style={[styles.base, { backgroundColor: bg }, borderStyle, animStyle, style]}
+      style={[styles.base, { backgroundColor: bg }, borderStyle, style]}
     >
       {loading ? (
         <ActivityIndicator color={resolvedTitleColor} />
@@ -91,7 +77,7 @@ export function PillButton({
           {title}
         </Text>
       )}
-    </AnimatedPressable>
+    </PressableScale>
   );
 }
 

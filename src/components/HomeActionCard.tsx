@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { SurfaceGradient } from './SurfaceGradient';
 import { colors, letterSpacing, radius, spacing, typography } from '../theme';
 
-/** Text/icons on green accent for contrast (matches legacy FAB). */
-const ON_ACCENT = '#0A0A0A';
+/** Text/icons on green accent — same canvas as app bg for contrast on accent bar */
+const ON_ACCENT = colors.background;
 const ON_ACCENT_MUTED = 'rgba(10,10,10,0.72)';
 
 type Props = {
@@ -17,25 +18,25 @@ export function HomeActionCard({ onJoinPress, onCreatePress }: Props) {
   return (
     <SurfaceGradient style={styles.row}>
       <View style={styles.rowInner}>
-        <Pressable
+        <PressableScale
           onPress={onJoinPress}
-          style={({ pressed }) => [styles.cell, pressed && styles.cellPressed]}
+          style={styles.cell}
           android_ripple={{ color: 'rgba(10,10,10,0.12)' }}
         >
           <Ionicons name="enter-outline" size={22} color={ON_ACCENT} />
           <Text style={styles.cellTitle}>Maça katıl</Text>
           <Text style={styles.cellHint}>Kod ile katıl</Text>
-        </Pressable>
+        </PressableScale>
         <View style={styles.divider} />
-        <Pressable
+        <PressableScale
           onPress={onCreatePress}
-          style={({ pressed }) => [styles.cell, pressed && styles.cellPressed]}
+          style={styles.cell}
           android_ripple={{ color: 'rgba(10,10,10,0.12)' }}
         >
           <Ionicons name="add-circle-outline" size={22} color={ON_ACCENT} />
           <Text style={styles.cellTitle}>Maçı kur</Text>
           <Text style={styles.cellHint}>Yeni maç oluştur</Text>
-        </Pressable>
+        </PressableScale>
       </View>
     </SurfaceGradient>
   );
@@ -60,9 +61,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-  },
-  cellPressed: {
-    opacity: 0.9,
   },
   cellTitle: {
     ...typography.subtitle,

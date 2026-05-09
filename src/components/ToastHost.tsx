@@ -20,6 +20,7 @@ import {
   TAB_BAR_FLOATING_BLOCK_HEIGHT,
 } from '../navigation/tabBarLayout';
 import { colors, radius, shadows, spacing, typography } from '../theme';
+import { EasingPresets } from '../utils/animations';
 
 const SLIDE = 110;
 const ENTER_MS = 280;
@@ -83,17 +84,30 @@ export function ToastHost({ entry, onConsumed }: Props) {
 
     translateY.value = SLIDE;
     opacity.value = 0;
-    translateY.value = withTiming(0, { duration: ENTER_MS });
-    opacity.value = withTiming(1, { duration: ENTER_MS });
+    translateY.value = withTiming(0, {
+      duration: ENTER_MS,
+      easing: EasingPresets.toastMotion,
+    });
+    opacity.value = withTiming(1, {
+      duration: ENTER_MS,
+      easing: EasingPresets.toastMotion,
+    });
 
     const duration = defaultDuration(payload);
     hideTimerRef.current = setTimeout(() => {
-      translateY.value = withTiming(SLIDE, { duration: EXIT_MS }, (finished) => {
-        if (finished) {
-          runOnJS(finishDismiss)(payload, requestId);
-        }
+      translateY.value = withTiming(
+        SLIDE,
+        { duration: EXIT_MS, easing: EasingPresets.toastMotion },
+        (finished) => {
+          if (finished) {
+            runOnJS(finishDismiss)(payload, requestId);
+          }
+        },
+      );
+      opacity.value = withTiming(0, {
+        duration: EXIT_MS,
+        easing: EasingPresets.toastMotion,
       });
-      opacity.value = withTiming(0, { duration: EXIT_MS });
     }, duration);
 
     return () => {
