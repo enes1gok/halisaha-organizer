@@ -1,6 +1,6 @@
 import type { Group, GroupMembership } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
-import { createAuthRequiredError, createNotFoundError, mapSupabaseError } from './errors';
+import { createAuthRequiredError, mapSupabaseError } from './errors';
 import { ensureMyProfile } from './profiles';
 import { mapGroup, mapMembership } from './mappers';
 import type { GroupMemberRow, GroupRow } from './types';
@@ -64,7 +64,8 @@ export async function leaveGroupRemote(groupId: string): Promise<void> {
   if (error) throw mapSupabaseError(error, 'leaveGroupRemote');
 }
 
-export async function deleteGroupRemote(groupId: string): Promise<void> {
+/** Sunucuda bir grup satırı silindiyse true; RLS veya zaten yoksa false (use case reconcile eder). */
+export async function deleteGroupRemote(groupId: string): Promise<{ deletedRow: boolean }> {
   const supabase = getSupabaseClient();
   const {
     data: { user },
@@ -72,7 +73,5 @@ export async function deleteGroupRemote(groupId: string): Promise<void> {
   if (!user) throw createAuthRequiredError('deleteGroupRemote');
   const { data, error } = await supabase.from('groups').delete().eq('id', groupId).select('id');
   if (error) throw mapSupabaseError(error, 'deleteGroupRemote');
-  if (!data?.length) {
-    throw createNotFoundError('deleteGroupRemote', 'Grup silinemedi veya yetkin yok.');
-  }
+  return { deletedRow: Boolean(data?.length) };
 }

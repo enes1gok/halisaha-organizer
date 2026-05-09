@@ -20,7 +20,6 @@ import {
   UIManager,
   View,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
 import { MatchHeroVenueTitle } from '../components/MatchHeroVenueTitle';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
@@ -40,11 +39,6 @@ import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList 
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { isRemoteMatchId } from '../utils/matchId';
-import {
-  matchHeroDateSharedTag,
-  matchHeroSharedTransition,
-  matchHeroVenueSharedTag,
-} from '../utils/matchHeroSharedTransition';
 
 type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type MatchDetailRoute =
@@ -270,18 +264,8 @@ export function MatchDetailScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <View style={styles.hero}>
-        <MatchHeroVenueTitle
-          venue={match.venue}
-          variant="detail"
-          sharedTransitionTag={matchHeroVenueSharedTag(matchId)}
-          sharedTransitionStyle={matchHeroSharedTransition}
-        />
-        <Animated.View
-          sharedTransitionTag={matchHeroDateSharedTag(matchId)}
-          sharedTransitionStyle={matchHeroSharedTransition}
-        >
-          <Text style={styles.heroDate}>{formatMatchDateTime(match.startsAt)}</Text>
-        </Animated.View>
+        <MatchHeroVenueTitle venue={match.venue} variant="detail" />
+        <Text style={styles.heroDate}>{formatMatchDateTime(match.startsAt)}</Text>
         <Text style={styles.heroCd}>{match.status === 'upcoming' ? countdown : 'Maç Bitti'}</Text>
         {match.status === 'finished' && match.result ? (
           <Text style={styles.heroScore}>

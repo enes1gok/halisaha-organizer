@@ -14,24 +14,16 @@ export const matchVenueTextStyle = {
 type Props = {
   venue: string;
   variant: 'list' | 'detail';
-  sharedTransitionTag?: string;
-  sharedTransitionStyle?: SharedTransitionStyle;
 } & Pick<TextProps, 'numberOfLines' | 'testID'>;
 
-type SharedTransitionStyle = NonNullable<
-  React.ComponentProps<typeof Animated.View>['sharedTransitionStyle']
->;
-
 /**
- * Liste ve detayda aynı tipografi; paylaşımlı öğe geçişi yoksa detayda FadeIn kullanılır.
+ * Liste ve detayda aynı tipografi; detayda FadeIn kullanılır.
  */
 export function MatchHeroVenueTitle({
   venue,
   variant,
   numberOfLines,
   testID,
-  sharedTransitionTag,
-  sharedTransitionStyle,
 }: Props) {
   const lines = numberOfLines ?? (variant === 'list' ? 1 : undefined);
   const text = (
@@ -39,17 +31,6 @@ export function MatchHeroVenueTitle({
       {venue}
     </Text>
   );
-
-  if (sharedTransitionTag) {
-    return (
-      <Animated.View
-        sharedTransitionTag={sharedTransitionTag}
-        sharedTransitionStyle={sharedTransitionStyle}
-      >
-        {text}
-      </Animated.View>
-    );
-  }
 
   if (variant === 'detail') {
     return (

@@ -1,14 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 import type { Match } from '../types/domain';
 import { colors, shadows, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
-import {
-  matchHeroDateSharedTag,
-  matchHeroSharedTransition,
-  matchHeroVenueSharedTag,
-} from '../utils/matchHeroSharedTransition';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
 import { PressableScale } from './PressableScale';
 
@@ -28,20 +22,8 @@ export function MatchCard({ match, goingCount, userGoing, onPress }: Props) {
     >
       <View style={styles.row}>
         <View style={styles.main}>
-          <MatchHeroVenueTitle
-            venue={match.venue}
-            variant="list"
-            sharedTransitionTag={matchHeroVenueSharedTag(match.id)}
-            sharedTransitionStyle={matchHeroSharedTransition}
-          />
-          <Animated.View
-            sharedTransitionTag={matchHeroDateSharedTag(match.id)}
-            sharedTransitionStyle={matchHeroSharedTransition}
-          >
-            <Text style={[typography.caption, styles.date]}>
-              {formatMatchDateTime(match.startsAt)}
-            </Text>
-          </Animated.View>
+          <MatchHeroVenueTitle venue={match.venue} variant="list" />
+          <Text style={[typography.caption, styles.date]}>{formatMatchDateTime(match.startsAt)}</Text>
         </View>
         <View style={styles.slot}>
           <Text style={[typography.subtitle, styles.slotTxt]}>

@@ -16,6 +16,7 @@ import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '
 import { toUserMessage } from '../services/supabase/errors';
 import { colors, letterSpacing, radius, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
+import { isRemoteUuid } from '../utils/matchId';
 
 type DetailRoute = RouteProp<GroupsStackParamList, 'GroupDetail'>;
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'GroupDetail'>;
@@ -29,12 +30,17 @@ export function GroupDetailScreen() {
   const memberships = useGroupsStore((s) => s.groupMemberships);
   const leaveGroup = useGroupsStore((s) => s.leaveGroup);
   const deleteGroup = useGroupsStore((s) => s.deleteGroup);
+  const hydrateRemoteGroups = useGroupsStore((s) => s.hydrateRemoteGroups);
   const matches = useMatchesStore((s) => s.matches);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const { configured, loading } = useSupabaseAuth();
 
+  const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const group = groups.find((item) => item.id === groupId);
   const isOwner = group?.ownerId === userId;
+  /** Uzak oturumda silme yolu UUID ise sunucu DELETE kullanır; yerel id ile yalnızca yerel temizlik. */
+  const deleteUsesRemoteTable =
+    Boolean(remoteUserId) && isRemoteUuid(groupId);
   const isMember = memberships.some((item) => item.groupId === groupId && item.playerId === userId);
   const memberCount = memberships.filter((item) => item.groupId === groupId).length;
 
@@ -123,6 +129,11 @@ export function GroupDetailScreen() {
                 await deleteGroup(groupId);
                 navigation.navigate('GroupsMain');
               } catch (e) {
+                try {
+                  await hydrateRemoteGroups();
+                } catch {
+                  /* listeyi yenileyemediysek yine de kullanıcıya ilk hatayı göster */
+                }
                 Alert.alert('Hata', toUserMessage(e, 'Grup kaldırılamadı.'));
               } finally {
                 setDeleting(false);
@@ -132,7 +143,7 @@ export function GroupDetailScreen() {
         },
       ],
     );
-  }, [groupId, deleteGroup, navigation]);
+  }, [groupId, deleteGroup, hydrateRemoteGroups, navigation]);
 
   if (showInitialSkeleton) {
     return (
@@ -249,6 +260,9 @@ export function GroupDetailScreen() {
           <Text style={styles.cardTitle}>Grup ayarları</Text>
           <Text style={styles.settingsHint}>
             Yalnızca grup yöneticisi bu grubu kaldırabilir. Bu işlem geri alınamaz.
+            {remoteUserId && !deleteUsesRemoteTable
+              ? ' Bu kayıt salt bu cihazda oluşturulmuş bir grup; sunucuda ayrı bir kopyası olmayabilir.'
+              : ''}
           </Text>
           <PillButton
             title="Grubu kaldır"

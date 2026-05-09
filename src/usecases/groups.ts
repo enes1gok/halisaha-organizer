@@ -4,6 +4,7 @@ import {
   upsertGroupWeeklySeriesRemote,
   type UpsertGroupWeeklySeriesInput,
 } from '../services/supabase/groupWeeklySeries';
+import { createNotFoundError } from '../services/supabase/errors';
 import {
   createGroupRemote,
   deleteGroupRemote,
@@ -14,6 +15,7 @@ import {
 import type { Group, GroupMembership, GroupWeeklySeries } from '../types/domain';
 import type { CreateGroupResult } from '../store/types';
 import { createId } from '../utils/id';
+import { isRemoteUuid } from '../utils/matchId';
 import { rethrowUseCaseError } from './errors';
 
 type GroupsDeps = {
@@ -91,9 +93,17 @@ export async function leaveGroupUseCase(deps: GroupsDeps, groupId: string): Prom
 export async function deleteGroupUseCase(deps: GroupsDeps, groupId: string): Promise<void> {
   const uid = deps.getRemoteUserId();
   if (uid) {
+    if (!isRemoteUuid(groupId)) {
+      deps.deleteLocalGroupState(groupId);
+      await deps.hydrateRemoteMatches();
+      return;
+    }
     try {
-      await deleteGroupRemote(groupId);
+      const { deletedRow } = await deleteGroupRemote(groupId);
       const payload = await fetchMyGroups();
+      if (!deletedRow && payload.groups.some((g) => g.id === groupId)) {
+        throw createNotFoundError('deleteGroupRemote', 'Grup silinemedi veya yetkin yok.');
+      }
       deps.hydrateLocalGroups(payload);
       await deps.hydrateRemoteMatches();
       return;
