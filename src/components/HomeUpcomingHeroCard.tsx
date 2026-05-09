@@ -12,7 +12,6 @@ import { countGoalkeepersAmongGoing, rosterMissingSlots } from '../utils/matchRo
 type Props = {
   match: Match | null;
   goingCount: number;
-  organizerName?: string;
   /** Kullanıcı bu maç için ödeme yaptıysa ana ekranda IBAN gösterilmez */
   userHasPaid?: boolean;
   getPlayer: (id: string) => Player | undefined;
@@ -22,7 +21,6 @@ type Props = {
 export function HomeUpcomingHeroCard({
   match,
   goingCount,
-  organizerName,
   userHasPaid,
   getPlayer,
   onOpenDetail,
@@ -30,8 +28,9 @@ export function HomeUpcomingHeroCard({
   const { label: ibanBtnLabel, runCopy: runIbanCopy, isCopied: ibanCopied } = useClipboardCopyFeedback({
     idleLabel: 'Kopyala',
   });
-  const { label: organizerBtnLabel, runCopy: runOrganizerCopy, isCopied: organizerCopied } =
-    useClipboardCopyFeedback({ idleLabel: 'Kopyala' });
+  const { label: nameBtnLabel, runCopy: runNameCopy, isCopied: nameCopied } = useClipboardCopyFeedback({
+    idleLabel: 'Kopyala',
+  });
 
   const onPressCopyIban = useCallback(() => {
     runIbanCopy(async () => {
@@ -40,16 +39,16 @@ export function HomeUpcomingHeroCard({
     });
   }, [runIbanCopy, match?.iban]);
 
-  const onPressCopyOrganizer = useCallback(() => {
-    const name = (organizerName ?? '').trim();
+  const onPressCopyIbanAccountName = useCallback(() => {
+    const name = (match?.ibanAccountName ?? '').trim();
     if (!name) {
-      Alert.alert('Kopyalanamadı', 'Organizatör adı bulunamadı.');
+      Alert.alert('Kopyalanamadı', 'Alıcı adı bulunamadı.');
       return;
     }
-    runOrganizerCopy(async () => {
+    runNameCopy(async () => {
       await Clipboard.setStringAsync(name);
     });
-  }, [runOrganizerCopy, organizerName]);
+  }, [runNameCopy, match?.ibanAccountName]);
 
   const copyRowProps =
     Platform.OS === 'android' ? ({ collapsable: false } as const) : {};
@@ -98,31 +97,47 @@ export function HomeUpcomingHeroCard({
         {match.paymentNote ?? 'Ödeme notu eklenmemiş.'}
       </Text>
     ) : match.iban ? (
-      <View style={[styles.copyRow, styles.afterTitle]} {...copyRowProps}>
-        <View style={styles.ibanTextBlock}>
-          {match.ibanAccountName ? (
-            <Text style={[typography.caption, styles.muted, styles.ibanOwner]} numberOfLines={1}>
-              {match.ibanAccountName}
-            </Text>
-          ) : null}
+      <View style={styles.ibanPayBlock} {...copyRowProps}>
+        <View style={[styles.copyRow, styles.afterTitle]}>
           <Text style={[typography.body, styles.ibanMasked]} numberOfLines={2}>
             {maskIban(match.iban)}
           </Text>
-        </View>
-        <Pressable
-          onPress={onPressCopyIban}
-          style={({ pressed }) => [styles.copyBtn, pressed && styles.copyBtnPressed]}
-          hitSlop={6}
-          accessibilityRole="button"
-          accessibilityLabel={ibanCopied ? 'Kopyalandı' : 'IBAN\'ı panoya kopyala'}
-        >
-          <Text
-            style={[styles.copyBtnText, ibanCopied && styles.copyBtnTextCopied]}
-            accessibilityLiveRegion="polite"
+          <Pressable
+            onPress={onPressCopyIban}
+            style={({ pressed }) => [styles.copyBtn, pressed && styles.copyBtnPressed]}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={ibanCopied ? 'Kopyalandı' : 'IBAN\'ı panoya kopyala'}
           >
-            {ibanBtnLabel}
-          </Text>
-        </Pressable>
+            <Text
+              style={[styles.copyBtnText, ibanCopied && styles.copyBtnTextCopied]}
+              accessibilityLiveRegion="polite"
+            >
+              {ibanBtnLabel}
+            </Text>
+          </Pressable>
+        </View>
+        {match.ibanAccountName?.trim() ? (
+          <View style={[styles.copyRow, styles.nameRowAfterIban]}>
+            <Text style={[typography.body, styles.ibanAccountNameText]} numberOfLines={2}>
+              {match.ibanAccountName.trim()}
+            </Text>
+            <Pressable
+              onPress={onPressCopyIbanAccountName}
+              style={({ pressed }) => [styles.copyBtn, pressed && styles.copyBtnPressed]}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={nameCopied ? 'Kopyalandı' : 'Alıcı adını panoya kopyala'}
+            >
+              <Text
+                style={[styles.copyBtnText, nameCopied && styles.copyBtnTextCopied]}
+                accessibilityLiveRegion="polite"
+              >
+                {nameBtnLabel}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
     ) : (
       <Text style={[typography.body, styles.muted, styles.afterTitle, styles.ibanMissing]}>
@@ -130,37 +145,12 @@ export function HomeUpcomingHeroCard({
       </Text>
     );
 
-  const showOrganizerCopyRow = match.paymentMethod === 'iban';
-
-  const organizerLine = showOrganizerCopyRow ? (
-    <View style={[styles.copyRow, styles.organizerSlot]} {...copyRowProps}>
-      <Text style={[typography.subtitle, styles.orgName, styles.orgNameLg]} numberOfLines={2}>
-        {organizerName ?? 'Organizatör'}
-      </Text>
-      <Pressable
-        onPress={onPressCopyOrganizer}
-        style={({ pressed }) => [styles.copyBtn, pressed && styles.copyBtnPressed]}
-        hitSlop={6}
-        accessibilityRole="button"
-        accessibilityLabel={organizerCopied ? 'Kopyalandı' : 'Organizatör adını panoya kopyala'}
-      >
-        <Text
-          style={[styles.copyBtnText, organizerCopied && styles.copyBtnTextCopied]}
-          accessibilityLiveRegion="polite"
-        >
-          {organizerBtnLabel}
-        </Text>
-      </Pressable>
-    </View>
-  ) : null;
-
   return (
     <View style={styles.outer}>
       <View style={styles.card}>
         <View style={styles.headerSection}>
           <Text style={[typography.body, styles.tabTitle]}>Önümüzdeki maç</Text>
           {ibanLine}
-          {organizerLine}
           {priceInHeader}
         </View>
 
@@ -246,16 +236,17 @@ const styles = StyleSheet.create({
   placeholderTitle: {
     fontSize: 19,
   },
-  orgName: {
+  ibanPayBlock: {
+    alignSelf: 'stretch',
+  },
+  ibanAccountNameText: {
     color: colors.text,
     textAlign: 'left',
     flex: 1,
     minWidth: 0,
   },
-  orgNameLg: {
-    ...typography.headlineStrong,
-    fontSize: 19,
-    letterSpacing: letterSpacing.normal,
+  nameRowAfterIban: {
+    marginTop: spacing.sm,
   },
   afterTitle: {
     marginTop: spacing.sm,
@@ -276,9 +267,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     zIndex: 1,
   },
-  organizerSlot: {
-    marginTop: spacing.md,
-  },
   ibanMasked: {
     color: colors.accent,
     textAlign: 'left',
@@ -286,23 +274,16 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  ibanTextBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  ibanOwner: {
-    textAlign: 'left',
-    marginBottom: 2,
-  },
   copyBtn: {
     borderWidth: 1,
     borderColor: colors.accent,
     backgroundColor: 'rgba(0, 210, 106, 0.14)',
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     flexShrink: 0,
     minWidth: 100,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

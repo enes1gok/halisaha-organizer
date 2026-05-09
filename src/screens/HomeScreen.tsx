@@ -59,7 +59,6 @@ export function HomeScreen() {
     }
   }, [hydrateRemoteMatches, remoteUserId]);
 
-  const organizerName = nextMatch ? getPlayer(nextMatch.organizerId)?.name : undefined;
   const userAttendee = nextMatch?.attendees.find((a) => a.playerId === userId);
   const userHasPaid = userAttendee?.paid === true;
 
@@ -68,7 +67,6 @@ export function HomeScreen() {
       <HomeUpcomingHeroCard
         match={nextMatch}
         goingCount={nextMatch ? countGoing(nextMatch) : 0}
-        organizerName={organizerName}
         userHasPaid={userHasPaid}
         getPlayer={getPlayer}
         onOpenDetail={() => {
@@ -76,7 +74,7 @@ export function HomeScreen() {
         }}
       />
     ),
-    [getPlayer, navigation, nextMatch, organizerName, userHasPaid],
+    [getPlayer, navigation, nextMatch, userHasPaid],
   );
 
   const showInitialSkeleton = configured && loading && matches.length === 0;
