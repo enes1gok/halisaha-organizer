@@ -76,6 +76,9 @@ export async function createMatchUseCase(deps: MatchesDeps, input: CreateMatchIn
         groupId: input.groupId,
         pricePerPerson: input.pricePerPerson ?? null,
         iban: input.iban ?? null,
+        ibanAccountName: input.ibanAccountName ?? null,
+        paymentNote: input.paymentNote ?? null,
+        paymentMethod: input.paymentMethod,
       });
       const graph = await fetchMatchGraph(row.id);
       deps.mergeRemoteGraph(graph);

@@ -226,6 +226,9 @@ export function MatchDetailScreen() {
   }
 
   const showPrice = (match.pricePerPerson ?? 0) > 0;
+  const showIbanPayment = match.paymentMethod === 'iban' && Boolean(match.iban);
+  const showCashPayment = match.paymentMethod === 'cash';
+  const showNoteOnlyPayment = match.paymentMethod === 'note_only';
 
   const pending = match.selfReports.filter((r) => r.status === 'pending');
 
@@ -277,10 +280,11 @@ export function MatchDetailScreen() {
         </View>
       ) : null}
 
-      {showPrice && match.iban ? (
+      {showIbanPayment ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ödeme</Text>
-          <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text>
+          {showPrice ? <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text> : null}
+          {match.ibanAccountName ? <Text style={styles.body}>{match.ibanAccountName}</Text> : null}
           <Text style={styles.iban}>{maskIban(match.iban)}</Text>
           <PillButton
             title={ibanCopyLabel}
@@ -289,6 +293,19 @@ export function MatchDetailScreen() {
             titleColor={ibanCopied ? colors.copyFeedbackLight : undefined}
             accessibilityLabel={ibanCopied ? 'Kopyalandı' : 'IBAN\'ı panoya kopyala'}
           />
+        </View>
+      ) : null}
+      {showCashPayment ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ödeme</Text>
+          {showPrice ? <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text> : null}
+          <Text style={styles.muted}>Ödeme nakit olarak sahada toplanacaktır.</Text>
+        </View>
+      ) : null}
+      {showNoteOnlyPayment ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ödeme</Text>
+          <Text style={styles.body}>{match.paymentNote ?? 'Not eklenmemiş.'}</Text>
         </View>
       ) : null}
 

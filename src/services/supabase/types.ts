@@ -7,6 +7,7 @@ export type PreferredFootRow = 'left' | 'right' | 'both';
 export type RsvpStatusRow = 'going' | 'maybe' | 'not_going';
 
 export type MatchStatusRow = 'upcoming' | 'ongoing' | 'finished' | 'cancelled';
+export type MatchPaymentMethodRow = 'note_only' | 'iban' | 'cash';
 
 export type TeamSideRow = 'A' | 'B';
 
@@ -48,6 +49,9 @@ export interface MatchRow {
   max_players: number;
   price_per_person: number | null;
   iban: string | null;
+  iban_account_name: string | null;
+  payment_note: string | null;
+  payment_method: MatchPaymentMethodRow;
   join_code: string;
   lineup_locked: boolean;
   self_report_enabled: boolean;

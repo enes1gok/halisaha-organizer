@@ -24,6 +24,9 @@ export type CreateMatchInput = {
   groupId?: string;
   pricePerPerson?: number;
   iban?: string;
+  ibanAccountName?: string;
+  paymentNote?: string;
+  paymentMethod: 'note_only' | 'iban' | 'cash';
 };
 
 export type RemoteProfileRow = {

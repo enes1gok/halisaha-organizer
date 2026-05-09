@@ -21,6 +21,9 @@ export async function insertMatchAsOrganizer(
     p_group_id: null,
     p_price_per_person: null,
     p_iban: null,
+    p_payment_method: 'cash',
+    p_iban_account_name: null,
+    p_payment_note: null,
   });
 
   if (error) throw error;
@@ -46,6 +49,9 @@ export async function insertGroupMatchAsOrganizer(
     p_group_id: groupId,
     p_price_per_person: null,
     p_iban: null,
+    p_payment_method: 'cash',
+    p_iban_account_name: null,
+    p_payment_note: null,
   });
 
   if (error) throw error;

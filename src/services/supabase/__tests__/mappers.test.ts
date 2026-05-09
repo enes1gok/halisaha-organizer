@@ -35,6 +35,9 @@ function baseMatchRow(overrides: Partial<MatchRow> = {}): MatchRow {
     max_players: 10,
     price_per_person: null,
     iban: null,
+    iban_account_name: null,
+    payment_method: 'cash',
+    payment_note: null,
     join_code: 'ABC123',
     lineup_locked: false,
     self_report_enabled: true,
@@ -187,6 +190,30 @@ describe('rowsToMatch', () => {
     const row = baseMatchRow({ group_id: 'g1' });
     const match = rowsToMatch(row, [], [], [], []);
     expect(match.groupId).toBe('g1');
+  });
+
+  it('maps payment fields from DB', () => {
+    const row = baseMatchRow({
+      payment_method: 'iban',
+      iban: 'TR330006100519786457841326',
+      iban_account_name: 'ALI YILMAZ',
+    });
+    const match = rowsToMatch(row, [], [], [], []);
+    expect(match.paymentMethod).toBe('iban');
+    expect(match.iban).toBe('TR330006100519786457841326');
+    expect(match.ibanAccountName).toBe('ALI YILMAZ');
+  });
+
+  it('maps note_only payment note', () => {
+    const row = baseMatchRow({
+      payment_method: 'note_only',
+      payment_note: 'Herkes kendi suyunu getirsin.',
+      iban: null,
+      iban_account_name: null,
+    });
+    const match = rowsToMatch(row, [], [], [], []);
+    expect(match.paymentMethod).toBe('note_only');
+    expect(match.paymentNote).toBe('Herkes kendi suyunu getirsin.');
   });
 });
 

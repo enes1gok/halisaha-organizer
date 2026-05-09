@@ -6,6 +6,7 @@ export type RSVPStatus = 'going' | 'maybe' | 'notGoing';
 
 export type MatchStatus = 'upcoming' | 'ongoing' | 'finished' | 'cancelled';
 export type GroupRole = 'owner' | 'member';
+export type MatchPaymentMethod = 'note_only' | 'iban' | 'cash';
 
 export interface PlayerStats {
   matchesPlayed: number;
@@ -89,6 +90,9 @@ export interface Match {
   maxPlayers: number;
   pricePerPerson?: number;
   iban?: string;
+  ibanAccountName?: string;
+  paymentNote?: string;
+  paymentMethod: MatchPaymentMethod;
   joinCode: string;
   attendees: Attendee[];
   teamAIds: string[];

@@ -8,6 +8,10 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Skor bilgisi tutarsız: her iki takım skoru birlikte ve sıfır veya pozitif olmalı.',
   'errors.db.matches_starts_at_upper_chk':
     'Maç başlangıç tarihi çok ileri bir tarih olarak görünüyor. Lütfen tarihi kontrol edin.',
+  'errors.db.matches_payment_method_chk':
+    'Ödeme yöntemi geçersiz. IBAN, nakit veya sadece not ekle seçin.',
+  'errors.db.matches_payment_note_chk':
+    'Sadece not ekle seçildiğinde 1-120 karakter arası not zorunludur.',
   'errors.db.profiles_display_name_len_chk':
     'Görünen ad en fazla 80 karakter olabilir.',
   'errors.db.groups_name_check': 'Grup adı en az 2 karakter olmalı.',
@@ -20,6 +24,14 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Bu grubun istatistiklerini görme yetkiniz yok.',
   'errors.rpc.matchCreateGroupForbidden':
     'Bu grupta maç oluşturma yetkiniz yok.',
+  'errors.rpc.matchPaymentMethodInvalid':
+    'Ödeme yöntemi geçersiz. IBAN, nakit veya sadece not ekle seçin.',
+  'errors.rpc.matchPaymentIbanRequired':
+    'IBAN ile tahsilat için IBAN ve alıcı ad soyad zorunludur.',
+  'errors.rpc.matchPaymentNoteRequired':
+    'Sadece not ekle seçeneğinde ödeme notu zorunludur.',
+  'errors.rpc.matchPaymentNoteTooLong':
+    'Ödeme notu en fazla 120 karakter olabilir.',
   'errors.rpc.groupNameMin': 'Grup adı en az 2 karakter olmalı.',
   'errors.rpc.groupNameMax': 'Grup adı en fazla 80 karakter olabilir.',
   'errors.rpc.matchNotFound': 'Maç bulunamadı.',

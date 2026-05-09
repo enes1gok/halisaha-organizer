@@ -22,6 +22,7 @@ import { colors, spacing, typography } from '../theme';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
+import type { MatchPaymentMethod } from '../types/domain';
 import {
   formatIbanForInput,
   isValidTurkishIban,
@@ -57,6 +58,9 @@ export function CreateMatchTabScreen() {
   const [venue, setVenue] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('14');
   const [price, setPrice] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<MatchPaymentMethod | null>(null);
+  const [ibanAccountName, setIbanAccountName] = useState('');
+  const [paymentNote, setPaymentNote] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 86400000));
   const myGroups = useMemo(
@@ -130,13 +134,32 @@ export function CreateMatchTabScreen() {
       Alert.alert('Eksik bilgi', 'Saha adını girin.');
       return;
     }
+    if (!paymentMethod) {
+      Alert.alert('Eksik bilgi', 'Lütfen ödeme yöntemini seçin.');
+      return;
+    }
     const ibanNormForMatch =
-      !overrideIban && hasValidProfileIban ? profileNorm : normalizeIban(iban);
-    if (ibanNormForMatch.length > 0 && !isValidTurkishIban(ibanNormForMatch)) {
+      paymentMethod === 'iban' ? (!overrideIban && hasValidProfileIban ? profileNorm : normalizeIban(iban)) : '';
+    if (paymentMethod === 'iban' && (ibanNormForMatch.length === 0 || !isValidTurkishIban(ibanNormForMatch))) {
       Alert.alert(
         'Geçersiz IBAN',
         'Türkiye IBAN’ı TR ile başlamalı, toplam 26 karakter olmalı ve kontrol basamağı doğru olmalı. Örn: TR33 0006 1005 1978 6457 8413 26',
       );
+      return;
+    }
+    const ibanAccountNameNorm =
+      paymentMethod === 'iban' ? ibanAccountName.trim().toLocaleUpperCase('tr-TR') : '';
+    if (paymentMethod === 'iban' && ibanAccountNameNorm.length === 0) {
+      Alert.alert('Eksik bilgi', 'IBAN alıcı ad soyad bilgisini girin.');
+      return;
+    }
+    const paymentNoteNorm = paymentMethod === 'note_only' ? paymentNote.trim() : '';
+    if (paymentMethod === 'note_only' && paymentNoteNorm.length === 0) {
+      Alert.alert('Eksik bilgi', 'Sadece not ekle seçeneğinde ödeme notu zorunludur.');
+      return;
+    }
+    if (paymentMethod === 'note_only' && paymentNoteNorm.length > 120) {
+      Alert.alert('Geçersiz not', 'Ödeme notu en fazla 120 karakter olabilir.');
       return;
     }
     const mp = Math.min(22, Math.max(4, parseInt(maxPlayers || '14', 10) || 14));
@@ -147,8 +170,12 @@ export function CreateMatchTabScreen() {
         startsAt: startsAt.toISOString(),
         maxPlayers: mp,
         groupId: selectedGroupId ?? undefined,
-        pricePerPerson: priceNum && priceNum > 0 ? priceNum : undefined,
-        iban: ibanNormForMatch || undefined,
+        pricePerPerson:
+          paymentMethod === 'note_only' ? undefined : priceNum && priceNum > 0 ? priceNum : undefined,
+        iban: paymentMethod === 'iban' ? ibanNormForMatch : undefined,
+        ibanAccountName: paymentMethod === 'iban' ? ibanAccountNameNorm : undefined,
+        paymentNote: paymentMethod === 'note_only' ? paymentNoteNorm : undefined,
+        paymentMethod,
       });
       Alert.alert(
         'Maç oluşturuldu',
@@ -157,6 +184,9 @@ export function CreateMatchTabScreen() {
       );
       setVenue('');
       setPrice('');
+      setPaymentMethod(null);
+      setIbanAccountName('');
+      setPaymentNote('');
       syncFromStored('');
       setOverrideIban(!hasValidProfileIban);
     } catch (e) {
@@ -268,54 +298,117 @@ export function CreateMatchTabScreen() {
             placeholderTextColor={colors.textMuted}
             style={styles.input}
           />
-          <Text style={styles.label}>Kişi başı ücret (₺) — isteğe bağlı</Text>
-          <BottomSheetTextInput
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="decimal-pad"
-            placeholder="0"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-          />
-          <Text style={styles.label}>IBAN — isteğe bağlı</Text>
-          {hasValidProfileIban && !overrideIban ? (
-            <View style={styles.ibanBlock}>
-              <Text style={styles.ibanMasked}>{maskIban(profileNorm)}</Text>
-              <Text style={styles.ibanHint}>Profilinizdeki IBAN bu maç için kullanılacak.</Text>
-              <PillButton
-                title="Başka IBAN kullanacağım"
-                variant="ghost"
-                onPress={() => {
-                  setOverrideIban(true);
-                  setIban(formatIbanForInput('TR'));
-                }}
-              />
-            </View>
-          ) : (
-            <View style={styles.ibanBlock}>
-              {hasValidProfileIban ? (
-                <PillButton
-                  title="Profil IBAN'ına dön"
-                  variant="ghost"
-                  onPress={() => {
-                    setOverrideIban(false);
-                    syncFromStored('');
-                  }}
-                />
-              ) : null}
+          <Text style={styles.label}>Ödeme yöntemi</Text>
+          <View style={styles.groupRow}>
+            <Pressable
+              onPress={() => setPaymentMethod('iban')}
+              style={[styles.groupChip, paymentMethod === 'iban' && styles.groupChipActive]}
+            >
+              <Text style={[styles.groupChipText, paymentMethod === 'iban' && styles.groupChipTextActive]}>
+                IBAN
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setPaymentMethod('cash')}
+              style={[styles.groupChip, paymentMethod === 'cash' && styles.groupChipActive]}
+            >
+              <Text style={[styles.groupChipText, paymentMethod === 'cash' && styles.groupChipTextActive]}>
+                Nakit
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setPaymentMethod('note_only')}
+              style={[styles.groupChip, paymentMethod === 'note_only' && styles.groupChipActive]}
+            >
+              <Text style={[styles.groupChipText, paymentMethod === 'note_only' && styles.groupChipTextActive]}>
+                Sadece not ekle
+              </Text>
+            </Pressable>
+          </View>
+          {paymentMethod !== 'note_only' ? (
+            <>
+              <Text style={styles.label}>Kişi başı ücret (₺) — isteğe bağlı</Text>
               <BottomSheetTextInput
-                value={iban}
-                onChangeText={onIbanChange}
-                onFocus={onIbanFocus}
-                placeholder="33 0006 1005 1978 6457 8413 26"
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="decimal-pad"
+                placeholder="0"
                 placeholderTextColor={colors.textMuted}
-                keyboardType="number-pad"
-                autoCorrect={false}
                 style={styles.input}
               />
-            </View>
-          )}
-          <PillButton title="Maçı Oluştur" onPress={onSubmit} style={styles.cta} />
+            </>
+          ) : null}
+          {paymentMethod === 'iban' ? (
+            <>
+              <Text style={styles.label}>IBAN</Text>
+              {hasValidProfileIban && !overrideIban ? (
+                <View style={styles.ibanBlock}>
+                  <Text style={styles.ibanMasked}>{maskIban(profileNorm)}</Text>
+                  <Text style={styles.ibanHint}>Profilinizdeki IBAN bu maç için kullanılacak.</Text>
+                  <PillButton
+                    title="Başka IBAN kullanacağım"
+                    variant="ghost"
+                    onPress={() => {
+                      setOverrideIban(true);
+                      setIban(formatIbanForInput('TR'));
+                    }}
+                  />
+                </View>
+              ) : (
+                <View style={styles.ibanBlock}>
+                  {hasValidProfileIban ? (
+                    <PillButton
+                      title="Profil IBAN'ına dön"
+                      variant="ghost"
+                      onPress={() => {
+                        setOverrideIban(false);
+                        syncFromStored('');
+                      }}
+                    />
+                  ) : null}
+                  <BottomSheetTextInput
+                    value={iban}
+                    onChangeText={onIbanChange}
+                    onFocus={onIbanFocus}
+                    placeholder="33 0006 1005 1978 6457 8413 26"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="number-pad"
+                    autoCorrect={false}
+                    style={styles.input}
+                  />
+                </View>
+              )}
+              <Text style={styles.label}>IBAN alıcı ad soyad</Text>
+              <BottomSheetTextInput
+                value={ibanAccountName}
+                onChangeText={(v) => setIbanAccountName(v.toLocaleUpperCase('tr-TR'))}
+                placeholder="Örn. ALİ YILMAZ"
+                placeholderTextColor={colors.textMuted}
+                autoCorrect={false}
+                autoCapitalize="characters"
+                style={styles.input}
+              />
+            </>
+          ) : null}
+          {paymentMethod === 'cash' ? (
+            <Text style={styles.ibanHint}>Ödeme nakit olarak sahada toplanacaktır.</Text>
+          ) : null}
+          {paymentMethod === 'note_only' ? (
+            <>
+              <Text style={styles.label}>Ödeme notu</Text>
+              <BottomSheetTextInput
+                value={paymentNote}
+                onChangeText={(v) => setPaymentNote(v.slice(0, 120))}
+                placeholder="Örn: Maç ücretsiz olacak beyler."
+                placeholderTextColor={colors.textMuted}
+                autoCorrect={false}
+                multiline
+                style={[styles.input, styles.noteInput]}
+              />
+              <Text style={styles.ibanHint}>{paymentNote.trim().length}/120 karakter</Text>
+            </>
+          ) : null}
+          <PillButton title="Maçı Oluştur" onPress={onSubmit} disabled={!paymentMethod} style={styles.cta} />
         </BottomSheetScrollView>
       </BottomSheetModal>
     </View>
@@ -398,5 +491,9 @@ const styles = StyleSheet.create({
   ibanHint: {
     ...typography.caption,
     color: colors.textMuted,
+  },
+  noteInput: {
+    minHeight: 88,
+    textAlignVertical: 'top',
   },
 });

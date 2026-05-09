@@ -88,11 +88,26 @@ export function HomeUpcomingHeroCard({
   ) : null;
 
   const ibanLine =
-    userHasPaid ? null : match.iban ? (
+    userHasPaid ? null : match.paymentMethod === 'cash' ? (
+      <Text style={[typography.body, styles.muted, styles.afterTitle, styles.ibanMissing]}>
+        Ödeme nakit olarak sahada toplanacaktır.
+      </Text>
+    ) : match.paymentMethod === 'note_only' ? (
+      <Text style={[typography.body, styles.muted, styles.afterTitle, styles.ibanMissing]}>
+        {match.paymentNote ?? 'Ödeme notu eklenmemiş.'}
+      </Text>
+    ) : match.iban ? (
       <View style={[styles.copyRow, styles.afterTitle]} {...copyRowProps}>
-        <Text style={[typography.body, styles.ibanMasked]} numberOfLines={2}>
-          {maskIban(match.iban)}
-        </Text>
+        <View style={styles.ibanTextBlock}>
+          {match.ibanAccountName ? (
+            <Text style={[typography.caption, styles.muted, styles.ibanOwner]} numberOfLines={1}>
+              {match.ibanAccountName}
+            </Text>
+          ) : null}
+          <Text style={[typography.body, styles.ibanMasked]} numberOfLines={2}>
+            {maskIban(match.iban)}
+          </Text>
+        </View>
         <Pressable
           onPress={onPressCopyIban}
           style={({ pressed }) => [styles.copyBtn, pressed && styles.copyBtnPressed]}
@@ -264,6 +279,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     flex: 1,
     minWidth: 0,
+  },
+  ibanTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  ibanOwner: {
+    textAlign: 'left',
+    marginBottom: 2,
   },
   copyBtn: {
     borderWidth: 1,

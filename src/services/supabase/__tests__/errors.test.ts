@@ -73,6 +73,30 @@ describe('mapSupabaseError', () => {
     expect(err.message).toContain('grupta maç');
   });
 
+  it('maps ERR_MATCH_PAYMENT_METHOD_INVALID token to translation', () => {
+    const err = mapSupabaseError({ message: 'ERR_MATCH_PAYMENT_METHOD_INVALID', code: 'P0001' }, 'createMatchRpc');
+    expect(err.translationKey).toBe('errors.rpc.matchPaymentMethodInvalid');
+    expect(err.code).toBe('VALIDATION');
+  });
+
+  it('maps ERR_MATCH_PAYMENT_IBAN_REQUIRED token to translation', () => {
+    const err = mapSupabaseError({ message: 'ERR_MATCH_PAYMENT_IBAN_REQUIRED', code: 'P0001' }, 'createMatchRpc');
+    expect(err.translationKey).toBe('errors.rpc.matchPaymentIbanRequired');
+    expect(err.code).toBe('VALIDATION');
+  });
+
+  it('maps ERR_MATCH_PAYMENT_NOTE_REQUIRED token to translation', () => {
+    const err = mapSupabaseError({ message: 'ERR_MATCH_PAYMENT_NOTE_REQUIRED', code: 'P0001' }, 'createMatchRpc');
+    expect(err.translationKey).toBe('errors.rpc.matchPaymentNoteRequired');
+    expect(err.code).toBe('VALIDATION');
+  });
+
+  it('maps ERR_MATCH_PAYMENT_NOTE_TOO_LONG token to translation', () => {
+    const err = mapSupabaseError({ message: 'ERR_MATCH_PAYMENT_NOTE_TOO_LONG', code: 'P0001' }, 'createMatchRpc');
+    expect(err.translationKey).toBe('errors.rpc.matchPaymentNoteTooLong');
+    expect(err.code).toBe('VALIDATION');
+  });
+
   it('maps named check constraint matches_max_players_chk', () => {
     const err = mapSupabaseError(
       {

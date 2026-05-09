@@ -72,6 +72,8 @@ const CONSTRAINT_TO_TRANSLATION_KEY: Record<string, ErrorTranslationKey> = {
   matches_max_players_chk: 'errors.db.matches_max_players_chk',
   matches_scores_consistency_chk: 'errors.db.matches_scores_consistency_chk',
   matches_starts_at_upper_chk: 'errors.db.matches_starts_at_upper_chk',
+  matches_payment_method_chk: 'errors.db.matches_payment_method_chk',
+  matches_payment_note_chk: 'errors.db.matches_payment_note_chk',
   profiles_display_name_len_chk: 'errors.db.profiles_display_name_len_chk',
   groups_name_check: 'errors.db.groups_name_check',
 };
@@ -94,6 +96,22 @@ const ERR_REGISTRY: Record<
   ERR_MATCH_CREATE_GROUP_FORBIDDEN: {
     key: 'errors.rpc.matchCreateGroupForbidden',
     code: 'FORBIDDEN',
+  },
+  ERR_MATCH_PAYMENT_METHOD_INVALID: {
+    key: 'errors.rpc.matchPaymentMethodInvalid',
+    code: 'VALIDATION',
+  },
+  ERR_MATCH_PAYMENT_IBAN_REQUIRED: {
+    key: 'errors.rpc.matchPaymentIbanRequired',
+    code: 'VALIDATION',
+  },
+  ERR_MATCH_PAYMENT_NOTE_REQUIRED: {
+    key: 'errors.rpc.matchPaymentNoteRequired',
+    code: 'VALIDATION',
+  },
+  ERR_MATCH_PAYMENT_NOTE_TOO_LONG: {
+    key: 'errors.rpc.matchPaymentNoteTooLong',
+    code: 'VALIDATION',
   },
   ERR_GROUP_NAME_MIN: { key: 'errors.rpc.groupNameMin', code: 'VALIDATION' },
   ERR_GROUP_NAME_MAX: { key: 'errors.rpc.groupNameMax', code: 'VALIDATION' },

@@ -65,4 +65,57 @@ describeIntegration('flows organizer lifecycle', () => {
     expect(row?.score_a).toBe(5);
     expect(row?.score_b).toBe(4);
   });
+
+  it('supports note_only/iban/cash payment methods at creation', async () => {
+    const org = await createAuthedUser('pay_org');
+    const now = Date.now();
+    const base = {
+      p_starts_at: new Date(now + 72 * 60 * 60 * 1000).toISOString(),
+      p_venue: 'RLS odeme sahasi',
+      p_max_players: 14,
+      p_group_id: null,
+      p_price_per_person: 120,
+    };
+
+    const noteOnly = await org.client.rpc('create_match_with_organizer_attendee', {
+      ...base,
+      p_join_code: `PAYNOT${now.toString(36).toUpperCase().slice(-6)}`,
+      p_iban: null,
+      p_payment_method: 'note_only',
+      p_iban_account_name: null,
+      p_payment_note: 'Top ve forma herkesin kendi sorumluluğunda.',
+    });
+    expect(noteOnly.error).toBeNull();
+
+    const iban = await org.client.rpc('create_match_with_organizer_attendee', {
+      ...base,
+      p_join_code: `PAYIBN${(now + 1).toString(36).toUpperCase().slice(-6)}`,
+      p_iban: 'TR330006100519786457841326',
+      p_payment_method: 'iban',
+      p_iban_account_name: 'Ali Yilmaz',
+      p_payment_note: null,
+    });
+    expect(iban.error).toBeNull();
+    expect((iban.data as { iban_account_name?: string } | null)?.iban_account_name).toBe('ALI YILMAZ');
+
+    const cash = await org.client.rpc('create_match_with_organizer_attendee', {
+      ...base,
+      p_join_code: `PAYCSH${(now + 2).toString(36).toUpperCase().slice(-6)}`,
+      p_iban: null,
+      p_payment_method: 'cash',
+      p_iban_account_name: null,
+      p_payment_note: null,
+    });
+    expect(cash.error).toBeNull();
+
+    const invalidNoteOnly = await org.client.rpc('create_match_with_organizer_attendee', {
+      ...base,
+      p_join_code: `PAYINV${(now + 3).toString(36).toUpperCase().slice(-6)}`,
+      p_iban: null,
+      p_payment_method: 'note_only',
+      p_iban_account_name: null,
+      p_payment_note: '   ',
+    });
+    expect(invalidNoteOnly.error?.message).toContain('ERR_MATCH_PAYMENT_NOTE_REQUIRED');
+  });
 });

@@ -10,6 +10,9 @@ export type CreateMatchRowInput = {
   groupId?: string;
   pricePerPerson?: number | null;
   iban?: string | null;
+  ibanAccountName?: string | null;
+  paymentNote?: string | null;
+  paymentMethod: 'note_only' | 'iban' | 'cash';
 };
 
 /** Maç oluşturur ve organizatörü `going` davetli olarak ekler (atomik RPC; yerel store ile aynı akış). */
@@ -29,6 +32,9 @@ export async function insertMatchWithOrganizerAttendee(input: CreateMatchRowInpu
     p_group_id: input.groupId ?? null,
     p_price_per_person: input.pricePerPerson ?? null,
     p_iban: input.iban ?? null,
+    p_payment_method: input.paymentMethod,
+    p_iban_account_name: input.ibanAccountName ?? null,
+    p_payment_note: input.paymentNote ?? null,
   });
 
   if (error) throw mapSupabaseError(error, 'insertMatchWithOrganizerAttendee.create_match_rpc');
