@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/Card';
@@ -10,7 +10,7 @@ import { useAuthStore, useGroupsStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
 
-type Nav = StackNavigationProp<GroupsStackParamList, 'GroupsMain'>;
+type Nav = NativeStackNavigationProp<GroupsStackParamList, 'GroupsMain'>;
 
 export function GroupsScreen() {
   const navigation = useNavigation<Nav>();

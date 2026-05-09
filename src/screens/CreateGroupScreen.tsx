@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
@@ -9,7 +9,7 @@ import { shouldRetry, toUserMessage } from '../services/supabase/errors';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
 
-type Nav = StackNavigationProp<GroupsStackParamList, 'CreateGroup'>;
+type Nav = NativeStackNavigationProp<GroupsStackParamList, 'CreateGroup'>;
 
 const GROUP_NAME_MIN = 2;
 const GROUP_NAME_MAX = 80;

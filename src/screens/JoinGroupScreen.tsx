@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
@@ -7,7 +7,7 @@ import { useGroupsStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
 
-type Nav = StackNavigationProp<GroupsStackParamList, 'JoinGroup'>;
+type Nav = NativeStackNavigationProp<GroupsStackParamList, 'JoinGroup'>;
 
 export function JoinGroupScreen() {
   const navigation = useNavigation<Nav>();

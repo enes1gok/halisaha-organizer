@@ -1,4 +1,4 @@
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
@@ -6,14 +6,14 @@ import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
 import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
 import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
 import { MyMatchesScreen } from '../screens/MyMatchesScreen';
-import { defaultStackScreenOptions } from './defaultStackScreenOptions';
+import { defaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
 import type { MyMatchesStackParamList } from './types';
 
-const Stack = createStackNavigator<MyMatchesStackParamList>();
+const Stack = createNativeStackNavigator<MyMatchesStackParamList>();
 
 export function MyMatchesStackNav() {
   return (
-    <Stack.Navigator screenOptions={defaultStackScreenOptions}>
+    <Stack.Navigator screenOptions={defaultNativeStackScreenOptions}>
       <Stack.Screen
         name="MyMatchesMain"
         component={MyMatchesScreen}

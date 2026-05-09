@@ -1,4 +1,4 @@
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -7,14 +7,14 @@ import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
 import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
 import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
-import { defaultStackScreenOptions } from './defaultStackScreenOptions';
+import { defaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
 import type { HomeStackParamList } from './types';
 
-const Stack = createStackNavigator<HomeStackParamList>();
+const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 export function HomeStackNav() {
   return (
-    <Stack.Navigator screenOptions={defaultStackScreenOptions}>
+    <Stack.Navigator screenOptions={defaultNativeStackScreenOptions}>
       <Stack.Screen
         name="HomeMain"
         component={HomeScreen}

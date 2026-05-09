@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
@@ -17,7 +17,7 @@ type R =
   | RouteProp<HomeStackParamList, 'MatchPostgame'>
   | RouteProp<MyMatchesStackParamList, 'MatchPostgame'>
   | RouteProp<GroupsStackParamList, 'MatchPostgame'>;
-type Nav = StackNavigationProp<Stacks>;
+type Nav = NativeStackNavigationProp<Stacks>;
 
 export function MatchPostgameScreen() {
   const route = useRoute<R>();

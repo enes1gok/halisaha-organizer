@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
@@ -18,7 +18,7 @@ type R =
   | RouteProp<HomeStackParamList, 'MatchSummary'>
   | RouteProp<MyMatchesStackParamList, 'MatchSummary'>
   | RouteProp<GroupsStackParamList, 'MatchSummary'>;
-type Nav = StackNavigationProp<Stacks>;
+type Nav = NativeStackNavigationProp<Stacks>;
 
 export function MatchSummaryScreen() {
   const route = useRoute<R>();

@@ -1,4 +1,4 @@
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { CreateGroupScreen } from '../screens/CreateGroupScreen';
 import { GroupDetailScreen } from '../screens/GroupDetailScreen';
@@ -11,14 +11,14 @@ import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
 import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
 import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
-import { defaultStackScreenOptions } from './defaultStackScreenOptions';
+import { defaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
 import type { GroupsStackParamList } from './types';
 
-const Stack = createStackNavigator<GroupsStackParamList>();
+const Stack = createNativeStackNavigator<GroupsStackParamList>();
 
 export function GroupsStackNav() {
   return (
-    <Stack.Navigator screenOptions={defaultStackScreenOptions}>
+    <Stack.Navigator screenOptions={defaultNativeStackScreenOptions}>
       <Stack.Screen name="GroupsMain" component={GroupsScreen} options={{ title: 'Gruplarım' }} />
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Grup Detayı' }} />
       <Stack.Screen

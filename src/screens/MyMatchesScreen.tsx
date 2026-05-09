@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { EmptyState } from '../components/EmptyState';
@@ -13,7 +13,7 @@ import { countGoing } from '../utils/matchRoster';
 import { useAuthStore, useMatchesStore } from '../store';
 import type { MyMatchesStackParamList } from '../navigation/types';
 
-type Nav = StackNavigationProp<MyMatchesStackParamList, 'MyMatchesMain'>;
+type Nav = NativeStackNavigationProp<MyMatchesStackParamList, 'MyMatchesMain'>;
 
 export function MyMatchesScreen() {
   const navigation = useNavigation<Nav>();

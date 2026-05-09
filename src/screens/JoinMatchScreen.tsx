@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
@@ -9,7 +9,7 @@ import { isAppError } from '../services/supabase/errors';
 import { showUserFacingErrorAlert } from '../components/UserFacingErrorAlert';
 import type { HomeStackParamList } from '../navigation/types';
 
-type Nav = StackNavigationProp<HomeStackParamList, 'JoinMatch'>;
+type Nav = NativeStackNavigationProp<HomeStackParamList, 'JoinMatch'>;
 
 export function JoinMatchScreen() {
   const navigation = useNavigation<Nav>();

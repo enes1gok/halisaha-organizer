@@ -1,5 +1,5 @@
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -27,7 +27,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 type Nav = CompositeNavigationProp<
-  StackNavigationProp<HomeStackParamList, 'HomeMain'>,
+  NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
   BottomTabNavigationProp<RootTabParamList>
 >;
 

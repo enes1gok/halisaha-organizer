@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/Card';
@@ -18,7 +18,7 @@ import { colors, letterSpacing, radius, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 
 type DetailRoute = RouteProp<GroupsStackParamList, 'GroupDetail'>;
-type Nav = StackNavigationProp<GroupsStackParamList, 'GroupDetail'>;
+type Nav = NativeStackNavigationProp<GroupsStackParamList, 'GroupDetail'>;
 
 export function GroupDetailScreen() {
   const route = useRoute<DetailRoute>();

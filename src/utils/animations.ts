@@ -16,7 +16,7 @@ export const TabSlide = {
   duration: 420,
 } as const;
 
-/** Horizontal stack (@react-navigation/stack) card transition duration (both platforms). */
+/** Horizontal stack card transition: JS stack (`defaultStackScreenOptions`) vs native stack (`defaultNativeStackScreenOptions`). */
 export const NavDurations = {
   /** Legacy alias kept for native-stack experimentation notes */
   nativeStack: 480,

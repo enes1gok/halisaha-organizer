@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -40,12 +40,15 @@ import { buildSlotsFromCompact, compactSlots } from '../utils/lineupSlots';
 import { hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
-import type { HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 
 type Route =
   | RouteProp<HomeStackParamList, 'LineupBuilder'>
-  | RouteProp<MyMatchesStackParamList, 'LineupBuilder'>;
-type Nav = StackNavigationProp<HomeStackParamList & MyMatchesStackParamList>;
+  | RouteProp<MyMatchesStackParamList, 'LineupBuilder'>
+  | RouteProp<GroupsStackParamList, 'LineupBuilder'>;
+type Nav = NativeStackNavigationProp<
+  HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList
+>;
 
 const LONG_PRESS_MS = 300;
 const DRAG_SCALE = 1.03;

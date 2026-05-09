@@ -1,5 +1,5 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
@@ -17,7 +17,7 @@ type RatingsRoute =
   | RouteProp<HomeStackParamList, 'MatchRatings'>
   | RouteProp<MyMatchesStackParamList, 'MatchRatings'>
   | RouteProp<GroupsStackParamList, 'MatchRatings'>;
-type Nav = StackNavigationProp<Stacks>;
+type Nav = NativeStackNavigationProp<Stacks>;
 
 const DEFAULT_SCORE = 70;
 const SCORE_STEP = 5;
