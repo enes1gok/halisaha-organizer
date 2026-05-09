@@ -8,6 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
+import Slider from '@react-native-community/slider';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -21,7 +22,7 @@ import {
 import { PillButton } from '../components/PillButton';
 import { useToast } from '../context/ToastContext';
 import type { ShowToastOptions } from '../context/toastTypes';
-import { colors, spacing, typography } from '../theme';
+import { colors, shadows, spacing, typography } from '../theme';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
@@ -32,10 +33,50 @@ import {
   maskIban,
   normalizeIban,
 } from '../utils/iban';
+import { selectionTick } from '../utils/haptics';
 
-function clampStartsAtToNow(d: Date): Date {
+const MIN_MAX_PLAYERS = 4;
+const MAX_MAX_PLAYERS = 22;
+
+/** Seçilen zamanı en yakın tam / buçuk saate (:00 veya :30) yuvarlar. */
+function snapStartsAtToNearestHalfHour(d: Date): Date {
+  const x = new Date(d);
+  const minutes = x.getMinutes();
+  if (minutes < 15) {
+    x.setMinutes(0, 0, 0);
+  } else if (minutes < 45) {
+    x.setMinutes(30, 0, 0);
+  } else {
+    x.setHours(x.getHours() + 1, 0, 0, 0);
+  }
+  return x;
+}
+
+/** Geçerli andan sonraki tam veya buçuk saat (dakika/saniye sıfırlanmış). */
+function roundUpToNextHalfHour(d: Date): Date {
+  const x = new Date(d);
+  const mins = x.getMinutes();
+  const secs = x.getSeconds();
+  const ms = x.getMilliseconds();
+  if (secs === 0 && ms === 0 && (mins === 0 || mins === 30)) {
+    return x;
+  }
+  if (mins < 30) {
+    x.setMinutes(30, 0, 0);
+  } else {
+    x.setHours(x.getHours() + 1, 0, 0, 0);
+  }
+  return x;
+}
+
+/** Picker çıktısı: yarım saat grid + geçmişte kalmışsa şu andan sonraki uygun slot. */
+function normalizeStartsAtFromPicker(d: Date): Date {
+  const snapped = snapStartsAtToNearestHalfHour(d);
   const t = Date.now();
-  return d.getTime() < t ? new Date(t) : d;
+  if (snapped.getTime() >= t) {
+    return snapped;
+  }
+  return roundUpToNextHalfHour(new Date(t));
 }
 
 export function CreateMatchTabScreen() {
@@ -66,13 +107,15 @@ export function CreateMatchTabScreen() {
   const [overrideIban, setOverrideIban] = useState(true);
 
   const [venue, setVenue] = useState('');
-  const [maxPlayers, setMaxPlayers] = useState('14');
+  const [maxPlayers, setMaxPlayers] = useState(14);
   const [price, setPrice] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<MatchPaymentMethod | null>(null);
   const [ibanAccountName, setIbanAccountName] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 86400000));
+  const [startsAt, setStartsAt] = useState(() =>
+    normalizeStartsAtFromPicker(new Date(Date.now() + 86400000)),
+  );
   const myGroups = useMemo(
     () =>
       groups.filter((group) =>
@@ -80,6 +123,27 @@ export function CreateMatchTabScreen() {
       ),
     [groups, memberships, userId],
   );
+
+  const { startsAtDateLine, startsAtTimeLine, startsAtAccessibilityLabel } = useMemo(() => {
+    const dateLine = startsAt.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const timeLine = startsAt.toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const a11y = startsAt.toLocaleString('tr-TR', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    });
+    return {
+      startsAtDateLine: dateLine,
+      startsAtTimeLine: timeLine,
+      startsAtAccessibilityLabel: a11y,
+    };
+  }, [startsAt]);
 
   const [showPicker, setShowPicker] = useState(false);
   /** Android: `datetime` mode is unsupported; use date then time (see datetimepicker #907). */
@@ -100,7 +164,7 @@ export function CreateMatchTabScreen() {
           prev.getSeconds(),
           prev.getMilliseconds(),
         );
-        return clampStartsAtToNow(merged);
+        return normalizeStartsAtFromPicker(merged);
       });
       setAndroidPickerStep('time');
     }
@@ -120,7 +184,7 @@ export function CreateMatchTabScreen() {
           picked.getSeconds(),
           picked.getMilliseconds(),
         );
-        return clampStartsAtToNow(merged);
+        return normalizeStartsAtFromPicker(merged);
       });
       setAndroidPickerStep(null);
     }
@@ -186,7 +250,7 @@ export function CreateMatchTabScreen() {
       Alert.alert('Geçersiz tarih', 'Maç başlangıcı geçmişte olamaz.');
       return;
     }
-    const mp = Math.min(22, Math.max(4, parseInt(maxPlayers || '14', 10) || 14));
+    const mp = Math.min(MAX_MAX_PLAYERS, Math.max(MIN_MAX_PLAYERS, Math.round(maxPlayers)));
     const priceNum = price.trim() ? parseFloat(price.replace(',', '.')) : undefined;
     try {
       const m = await createMatch({
@@ -209,6 +273,7 @@ export function CreateMatchTabScreen() {
         onActionPress: () => void Clipboard.setStringAsync(copyPayload),
       };
       setVenue('');
+      setMaxPlayers(14);
       setPrice('');
       setPaymentMethod(null);
       setIbanAccountName('');
@@ -242,26 +307,54 @@ export function CreateMatchTabScreen() {
         <BottomSheetScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
           <Text style={[typography.title, styles.title]}>Yeni Maç</Text>
           <Text style={styles.label}>Grup (isteğe bağlı)</Text>
-          <View style={styles.groupRow}>
+          <View style={styles.groupSelectList}>
             <Pressable
-              onPress={() => setSelectedGroupId(null)}
-              style={[styles.groupChip, selectedGroupId === null && styles.groupChipActive]}
+              testID="match:create:group-general"
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedGroupId === null }}
+              accessibilityLabel="Genel maç"
+              onPress={() => {
+                void selectionTick();
+                setSelectedGroupId(null);
+              }}
+              style={({ pressed }) => [
+                styles.groupSelectRow,
+                selectedGroupId === null && styles.groupSelectRowActive,
+                pressed && styles.groupSelectRowPressed,
+              ]}
             >
-              <Text style={[styles.groupChipText, selectedGroupId === null && styles.groupChipTextActive]}>
+              <Text
+                style={[
+                  styles.groupSelectRowText,
+                  selectedGroupId === null && styles.groupSelectRowTextActive,
+                ]}
+              >
                 Genel maç
               </Text>
             </Pressable>
             {myGroups.map((group) => (
               <Pressable
                 key={group.id}
-                onPress={() => setSelectedGroupId(group.id)}
-                style={[styles.groupChip, selectedGroupId === group.id && styles.groupChipActive]}
+                testID={`match:create:group:${group.id}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedGroupId === group.id }}
+                accessibilityLabel={group.name}
+                onPress={() => {
+                  void selectionTick();
+                  setSelectedGroupId(group.id);
+                }}
+                style={({ pressed }) => [
+                  styles.groupSelectRow,
+                  selectedGroupId === group.id && styles.groupSelectRowActive,
+                  pressed && styles.groupSelectRowPressed,
+                ]}
               >
                 <Text
                   style={[
-                    styles.groupChipText,
-                    selectedGroupId === group.id && styles.groupChipTextActive,
+                    styles.groupSelectRowText,
+                    selectedGroupId === group.id && styles.groupSelectRowTextActive,
                   ]}
+                  numberOfLines={2}
                 >
                   {group.name}
                 </Text>
@@ -278,8 +371,9 @@ export function CreateMatchTabScreen() {
           />
           <Text style={styles.label}>Tarih ve saat</Text>
           <PillButton
-            title={startsAt.toLocaleString('tr-TR')}
             variant="ghost"
+            testID="match:create:starts-at"
+            accessibilityLabel={startsAtAccessibilityLabel}
             onPress={() => {
               setPickerMinDate(new Date());
               if (Platform.OS === 'android') {
@@ -288,16 +382,22 @@ export function CreateMatchTabScreen() {
                 setShowPicker(true);
               }
             }}
-          />
+          >
+            <View style={styles.startsAtButtonInner}>
+              <Text style={styles.startsAtDateLine}>{startsAtDateLine}</Text>
+              <Text style={styles.startsAtTimeLine}>{startsAtTimeLine}</Text>
+            </View>
+          </PillButton>
           {Platform.OS === 'ios' && showPicker ? (
             <DateTimePicker
               value={startsAt}
               mode="datetime"
               display="spinner"
+              minuteInterval={30}
               minimumDate={pickerMinDate}
               onChange={(_, d) => {
                 setShowPicker(Platform.OS === 'ios');
-                if (d) setStartsAt(clampStartsAtToNow(d));
+                if (d) setStartsAt(normalizeStartsAtFromPicker(d));
               }}
             />
           ) : null}
@@ -316,42 +416,111 @@ export function CreateMatchTabScreen() {
               mode="time"
               display="default"
               is24Hour
+              minuteInterval={30}
               onChange={onAndroidTimeChange}
             />
           ) : null}
           <Text style={styles.label}>Maksimum oyuncu</Text>
-          <BottomSheetTextInput
-            value={maxPlayers}
-            onChangeText={setMaxPlayers}
-            keyboardType="number-pad"
-            placeholder="14"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-          />
-          <Text style={styles.label}>Ödeme yöntemi</Text>
-          <View style={styles.groupRow}>
-            <Pressable
-              onPress={() => setPaymentMethod('iban')}
-              style={[styles.groupChip, paymentMethod === 'iban' && styles.groupChipActive]}
+          <View style={styles.maxPlayersBlock}>
+            <Text
+              style={styles.maxPlayersValue}
+              accessibilityLabel={`Maksimum oyuncu: ${maxPlayers}`}
             >
-              <Text style={[styles.groupChipText, paymentMethod === 'iban' && styles.groupChipTextActive]}>
+              {maxPlayers}
+            </Text>
+            <Slider
+              testID="match:create:max-players"
+              accessibilityLabel={`Maksimum oyuncu, ${maxPlayers} kişi`}
+              style={styles.maxPlayersSlider}
+              value={maxPlayers}
+              onValueChange={setMaxPlayers}
+              minimumValue={MIN_MAX_PLAYERS}
+              maximumValue={MAX_MAX_PLAYERS}
+              step={1}
+              minimumTrackTintColor={colors.accent}
+              maximumTrackTintColor={colors.border}
+              thumbTintColor={colors.accent}
+            />
+            <View style={styles.maxPlayersRange}>
+              <Text style={styles.ibanHint}>{MIN_MAX_PLAYERS}</Text>
+              <Text style={styles.ibanHint}>{MAX_MAX_PLAYERS}</Text>
+            </View>
+          </View>
+          <Text style={styles.label}>Ödeme yöntemi</Text>
+          <View style={styles.paymentSegmentRow}>
+            <Pressable
+              testID="match:create:payment-iban"
+              accessibilityRole="button"
+              accessibilityState={{ selected: paymentMethod === 'iban' }}
+              accessibilityLabel="IBAN"
+              onPress={() => {
+                void selectionTick();
+                setPaymentMethod('iban');
+              }}
+              style={({ pressed }) => [
+                styles.paymentSegment,
+                paymentMethod === 'iban' && styles.paymentSegmentActive,
+                pressed && styles.paymentSegmentPressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.paymentSegmentText,
+                  paymentMethod === 'iban' && styles.paymentSegmentTextActive,
+                ]}
+                numberOfLines={2}
+              >
                 IBAN
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => setPaymentMethod('cash')}
-              style={[styles.groupChip, paymentMethod === 'cash' && styles.groupChipActive]}
+              testID="match:create:payment-cash"
+              accessibilityRole="button"
+              accessibilityState={{ selected: paymentMethod === 'cash' }}
+              accessibilityLabel="Nakit"
+              onPress={() => {
+                void selectionTick();
+                setPaymentMethod('cash');
+              }}
+              style={({ pressed }) => [
+                styles.paymentSegment,
+                paymentMethod === 'cash' && styles.paymentSegmentActive,
+                pressed && styles.paymentSegmentPressed,
+              ]}
             >
-              <Text style={[styles.groupChipText, paymentMethod === 'cash' && styles.groupChipTextActive]}>
+              <Text
+                style={[
+                  styles.paymentSegmentText,
+                  paymentMethod === 'cash' && styles.paymentSegmentTextActive,
+                ]}
+                numberOfLines={2}
+              >
                 Nakit
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => setPaymentMethod('note_only')}
-              style={[styles.groupChip, paymentMethod === 'note_only' && styles.groupChipActive]}
+              testID="match:create:payment-note"
+              accessibilityRole="button"
+              accessibilityState={{ selected: paymentMethod === 'note_only' }}
+              accessibilityLabel="Sadece not ekle"
+              onPress={() => {
+                void selectionTick();
+                setPaymentMethod('note_only');
+              }}
+              style={({ pressed }) => [
+                styles.paymentSegment,
+                paymentMethod === 'note_only' && styles.paymentSegmentActive,
+                pressed && styles.paymentSegmentPressed,
+              ]}
             >
-              <Text style={[styles.groupChipText, paymentMethod === 'note_only' && styles.groupChipTextActive]}>
-                Sadece not ekle
+              <Text
+                style={[
+                  styles.paymentSegmentText,
+                  paymentMethod === 'note_only' && styles.paymentSegmentTextActive,
+                ]}
+                numberOfLines={2}
+              >
+                Not
               </Text>
             </Pressable>
           </View>
@@ -483,35 +652,115 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: colors.background,
   },
+  maxPlayersBlock: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+    backgroundColor: colors.background,
+    ...shadows.sm,
+  },
+  maxPlayersValue: {
+    ...typography.subtitle,
+    fontSize: 20,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  maxPlayersSlider: {
+    width: '100%',
+    height: 40,
+  },
+  maxPlayersRange: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xs,
+  },
   cta: {
     marginTop: spacing.lg,
   },
   ibanBlock: {
     gap: spacing.sm,
   },
-  groupRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  groupSelectList: {
+    width: '100%',
     gap: spacing.sm,
   },
-  groupChip: {
+  groupSelectRow: {
+    width: '100%',
+    minHeight: 44,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.background,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
+    justifyContent: 'center',
+    ...shadows.sm,
   },
-  groupChipActive: {
+  groupSelectRowActive: {
     borderColor: colors.accent,
     backgroundColor: colors.accentMuted,
   },
-  groupChipText: {
+  groupSelectRowPressed: {
+    opacity: 0.92,
+  },
+  groupSelectRowText: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  groupSelectRowTextActive: {
+    color: colors.accent,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  startsAtButtonInner: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  startsAtDateLine: {
+    ...typography.subtitle,
+    fontSize: 15,
+    color: colors.text,
+  },
+  startsAtTimeLine: {
     ...typography.caption,
     color: colors.textMuted,
   },
-  groupChipTextActive: {
+  paymentSegmentRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: spacing.xs,
+  },
+  paymentSegment: {
+    flex: 1,
+    minHeight: 44,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  paymentSegmentActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+  },
+  paymentSegmentPressed: {
+    opacity: 0.92,
+  },
+  paymentSegmentText: {
+    ...typography.caption,
+    textAlign: 'center',
+    color: colors.textMuted,
+  },
+  paymentSegmentTextActive: {
     color: colors.accent,
+    fontFamily: 'Inter_600SemiBold',
   },
   ibanMasked: {
     ...typography.body,

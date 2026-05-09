@@ -9,8 +9,7 @@ import {
 import { PressableScale } from './PressableScale';
 import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
 
-type Props = {
-  title: string;
+type BaseProps = {
   onPress?: () => void;
   variant?: 'accent' | 'ghost' | 'danger' | 'secondary';
   disabled?: boolean;
@@ -23,8 +22,13 @@ type Props = {
   testID?: string;
 };
 
+export type Props =
+  | (BaseProps & { title: string; children?: undefined })
+  | (BaseProps & { children: React.ReactNode; title?: undefined });
+
 export function PillButton({
   title,
+  children,
   onPress,
   variant = 'accent',
   disabled,
@@ -70,6 +74,8 @@ export function PillButton({
     >
       {loading ? (
         <ActivityIndicator color={resolvedTitleColor} />
+      ) : children != null ? (
+        children
       ) : (
         <Text
           style={[styles.title, { color: resolvedTitleColor }]}
