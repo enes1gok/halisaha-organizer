@@ -46,7 +46,7 @@ export function AuthWelcomeScreen() {
           <PillButton
             title="Giriş Yap"
             variant="ghost"
-            onPress={() => navigation.navigate('SignIn')}
+            onPress={() => navigation.navigate('SignIn', {})}
             testID="onboarding:welcome:signin:press"
             accessibilityLabel="Giriş yap"
           />

@@ -6,6 +6,7 @@ import { AuthWelcomeScreen } from '../screens/AuthWelcomeScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
+import { VerifyEmailScreen } from '../screens/VerifyEmailScreen';
 import { TermsOfUseScreen } from '../screens/TermsOfUseScreen';
 import { colors } from '../theme';
 import { getDefaultStackScreenOptions } from './defaultStackScreenOptions';
@@ -47,6 +48,11 @@ export function OnboardingNavigator() {
           name="SignUp"
           component={SignUpScreen}
           options={{ title: 'Kayıt Ol' }}
+        />
+        <Stack.Screen
+          name="VerifyEmail"
+          component={VerifyEmailScreen}
+          options={{ title: 'E-posta doğrulama' }}
         />
         <Stack.Screen
           name="PrivacyPolicy"

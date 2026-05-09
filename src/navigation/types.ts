@@ -28,8 +28,9 @@ export type ProfileStackParamList = {
 
 export type OnboardingStackParamList = {
   AuthWelcome: undefined;
-  SignIn: undefined;
+  SignIn: { prefilledEmail?: string };
   SignUp: undefined;
+  VerifyEmail: { email: string };
   PrivacyPolicy: undefined;
   TermsOfUse: undefined;
 };

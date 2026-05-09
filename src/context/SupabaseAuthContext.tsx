@@ -29,7 +29,7 @@ export type SupabaseAuthContextValue = {
   signOut: () => Promise<void>;
   refreshRemoteProfile: () => Promise<void>;
   refreshAuthSession: () => Promise<void>;
-  resendSignupConfirmationEmail: () => Promise<{ error: Error | null }>;
+  resendSignupConfirmationEmail: (emailOverride?: string) => Promise<{ error: Error | null }>;
 };
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextValue | null>(null);
@@ -223,18 +223,21 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     }
   }, [configured, applySession]);
 
-  const resendSignupConfirmationEmail = useCallback(async () => {
-    if (!configured) return { error: new Error('Supabase yapılandırılmadı') };
-    const email = session?.user?.email?.trim();
-    if (!email) return { error: new Error('E-posta bulunamadı') };
-    const supabase = getSupabaseClient();
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: getEmailRedirectUrl() },
-    });
-    return { error: error ? new Error(error.message) : null };
-  }, [configured, session?.user?.email]);
+  const resendSignupConfirmationEmail = useCallback(
+    async (emailOverride?: string) => {
+      if (!configured) return { error: new Error('Supabase yapılandırılmadı') };
+      const email = (emailOverride?.trim() || session?.user?.email?.trim()) ?? '';
+      if (!email) return { error: new Error('E-posta bulunamadı') };
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: getEmailRedirectUrl() },
+      });
+      return { error: error ? new Error(error.message) : null };
+    },
+    [configured, session?.user?.email],
+  );
 
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {

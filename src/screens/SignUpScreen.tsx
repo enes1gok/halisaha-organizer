@@ -49,12 +49,9 @@ export function SignUpScreen() {
     if (error) {
       Alert.alert('Kayıt', error.message);
     } else if (sessionCreated) {
-      Alert.alert('Kayıt', 'Hesabınız hazır. Hoş geldiniz!');
+      // Oturum onAuthStateChange ile gelir; ek uyarı kullanıcıyı gereksiz yere durdurmasın.
     } else {
-      Alert.alert(
-        'Kayıt',
-        'Hesabınız oluşturuldu. E-postanızdaki doğrulama bağlantısına tıklayarak giriş yapabilirsiniz.',
-      );
+      navigation.replace('VerifyEmail', { email: email.trim() });
     }
   };
 
