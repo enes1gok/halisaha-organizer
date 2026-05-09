@@ -2,6 +2,8 @@
 
 `public.groups` satırının uygulama ile silinebilmesi için RLS politikasının (`groups_delete_owner`) hedef ortamda **uygulanmış** olması ve kayıt düzeyinde sahibin oturum kullanıcısıyla **eşleşmesi** gerekir.
 
+**İlgili:** App Review test kullanıcısı için `owner_id` düzeltme playbook’u [group-ownership-review-account.md](./group-ownership-review-account.md); mağaza hesap bilgisi [app-review-test-account.md](./app-review-test-account.md).
+
 ## 1. Politikanın varlığı
 
 Supabase SQL Editor veya `psql`:

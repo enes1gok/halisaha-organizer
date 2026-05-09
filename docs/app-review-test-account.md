@@ -38,3 +38,9 @@ where id = '<paste-user-uid-here>';
 ```
 
 3. Expect **one row**. If none, apply pending migrations (including `ensure_my_profile`), then sign in once with the app; the RPC should create the row. If it still fails, check RLS and that `grant execute on function public.ensure_my_profile() to authenticated` ran.
+
+## Grup silme ve veritabanı sahipliği
+
+“Grubu kaldır” yalnızca **`public.groups.owner_id`** oturumdaki kullanıcı id’si ile aynı olduğunda (RLS) veritabanından siler. İnceleme hesabında silme “yetkin yok” veriyorsa önce **User UID** ile `owner_id` eşleşmesini kontrol edin.
+
+Operasyon adımları (teşhis SQL, `owner_id` düzeltme, doğrulama): [group-ownership-review-account.md](./group-ownership-review-account.md). RLS politikası özeti: [group-delete-db-verify.md](./group-delete-db-verify.md).
