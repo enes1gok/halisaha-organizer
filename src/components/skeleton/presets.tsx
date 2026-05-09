@@ -123,6 +123,37 @@ export function LeaderboardRowSkeleton() {
   );
 }
 
+export function MyMatchesCalendarSkeleton() {
+  return (
+    <View style={styles.calendarShell}>
+      <View style={styles.calendarHeader}>
+        <SkeletonBlock width={36} height={36} radius={radius.pill} />
+        <View style={styles.calendarTitleStack}>
+          <SkeletonText variant="subtitle" width={120} />
+          <SkeletonText variant="micro" width={64} style={styles.topGap4} />
+        </View>
+        <SkeletonBlock width={36} height={36} radius={radius.pill} />
+      </View>
+      <View style={styles.calendarWeekRow}>
+        {Array.from({ length: 7 }, (_, idx) => (
+          <View key={idx} style={styles.calendarWeekCell}>
+            <SkeletonText variant="micro" width={20} />
+          </View>
+        ))}
+      </View>
+      {Array.from({ length: 6 }, (_, rowIdx) => (
+        <View key={rowIdx} style={styles.calendarGridRow}>
+          {Array.from({ length: 7 }, (_, colIdx) => (
+            <View key={colIdx} style={styles.calendarDayCell}>
+              <SkeletonBlock width={28} height={28} radius={14} />
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function GroupCardSkeleton() {
   return (
     <View style={styles.groupCard}>
@@ -275,6 +306,41 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 14,
     padding: spacing.md,
+  },
+  calendarShell: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xs,
+  },
+  calendarTitleStack: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  calendarWeekRow: {
+    flexDirection: 'row',
+    paddingVertical: spacing.xs,
+  },
+  calendarWeekCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  calendarGridRow: {
+    flexDirection: 'row',
+  },
+  calendarDayCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
   },
   groupCardRow: {
     flexDirection: 'row',

@@ -7,6 +7,7 @@ export {
   HomeHeroSkeleton,
   LeaderboardRowSkeleton,
   MatchCardSkeleton,
+  MyMatchesCalendarSkeleton,
   ProfileHeaderSkeleton,
   ProfileStatsGridSkeleton,
   ProfileStatsHeroSkeleton,
