@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Card } from '../components/Card';
 import { PillButton } from '../components/PillButton';
 import { GroupCardSkeleton, SkeletonList } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
@@ -22,6 +23,41 @@ export function GroupsScreen() {
     memberships.some((membership) => membership.groupId === group.id && membership.playerId === userId),
   );
   const showInitialSkeleton = configured && loading && groups.length === 0 && memberships.length === 0;
+  const showCenteredEmptyCTAs = !showInitialSkeleton && myGroups.length === 0;
+
+  if (showCenteredEmptyCTAs) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.centeredEmpty}>
+          <Card style={styles.ctaBlockCard}>
+            <PillButton
+              title="Grup Oluştur"
+              onPress={() => navigation.navigate('CreateGroup')}
+              testID="groups:create:press"
+              accessibilityLabel="Grup oluştur"
+              style={styles.ctaButton}
+            />
+            <Text style={styles.ctaDescription} accessibilityRole="text">
+              Arkadaşlarınla grup aç, birlikte maç organize et ve grubunun aktivitelerini buradan yönet.
+            </Text>
+          </Card>
+          <Card style={styles.ctaBlockCard}>
+            <PillButton
+              title="Kod ile Katıl"
+              variant="ghost"
+              onPress={() => navigation.navigate('JoinGroup')}
+              testID="groups:join:press"
+              accessibilityLabel="Kod ile gruba katıl"
+              style={styles.ctaButton}
+            />
+            <Text style={styles.ctaDescription} accessibilityRole="text">
+              Sana iletilen davet kodunu girerek var olan bir gruba katıl ve o grubun maçlarına dahil ol.
+            </Text>
+          </Card>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -48,9 +84,7 @@ export function GroupsScreen() {
         ListEmptyComponent={
           showInitialSkeleton ? (
             <SkeletonList count={4} renderItem={() => <GroupCardSkeleton />} />
-          ) : (
-            <Text style={styles.empty}>Henüz bir grubun yok. Yeni grup oluşturabilirsin.</Text>
-          )
+          ) : null
         }
         renderItem={({ item }) => (
           <Pressable
@@ -71,6 +105,27 @@ export function GroupsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  centeredEmpty: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+    width: '100%',
+  },
+  ctaBlockCard: {
+    alignSelf: 'stretch',
+    width: '100%',
+    gap: spacing.sm,
+  },
+  ctaDescription: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: 'left',
+  },
+  ctaButton: {
+    alignSelf: 'stretch',
+    width: '100%',
+  },
   actions: { padding: spacing.md, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   list: { padding: spacing.md, gap: spacing.sm, flexGrow: 1 },
   card: {
@@ -83,5 +138,4 @@ const styles = StyleSheet.create({
   },
   name: { ...typography.subtitle, color: colors.text },
   meta: { ...typography.caption, color: colors.textMuted },
-  empty: { ...typography.body, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl },
 });
