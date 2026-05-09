@@ -129,7 +129,9 @@ export function HomeUpcomingHeroCard({
       </Text>
     );
 
-  const organizerLine = (
+  const showOrganizerCopyRow = match.paymentMethod === 'iban';
+
+  const organizerLine = showOrganizerCopyRow ? (
     <View style={[styles.copyRow, styles.organizerSlot]} {...copyRowProps}>
       <Text style={[typography.subtitle, styles.orgName, styles.orgNameLg]} numberOfLines={2}>
         {organizerName ?? 'Organizatör'}
@@ -149,7 +151,7 @@ export function HomeUpcomingHeroCard({
         </Text>
       </Pressable>
     </View>
-  );
+  ) : null;
 
   return (
     <View style={styles.outer}>
