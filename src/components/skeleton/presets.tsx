@@ -113,8 +113,13 @@ export function LeaderboardRowSkeleton() {
 export function GroupCardSkeleton() {
   return (
     <View style={styles.groupCard}>
-      <SkeletonText variant="subtitle" width="58%" />
-      <SkeletonText variant="caption" width="40%" />
+      <View style={styles.groupCardRow}>
+        <View style={styles.groupCardMain}>
+          <SkeletonText variant="subtitle" width="58%" />
+          <SkeletonText variant="caption" width="40%" />
+        </View>
+        <SkeletonBlock width={44} height={24} radius={8} />
+      </View>
     </View>
   );
 }
@@ -240,6 +245,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 14,
     padding: spacing.md,
+  },
+  groupCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  groupCardMain: {
+    flex: 1,
     gap: spacing.xs,
+    minWidth: 0,
   },
 });

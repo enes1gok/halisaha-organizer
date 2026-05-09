@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/Card';
 import { PillButton } from '../components/PillButton';
@@ -22,6 +23,13 @@ export function GroupsScreen() {
   const myGroups = groups.filter((group) =>
     memberships.some((membership) => membership.groupId === group.id && membership.playerId === userId),
   );
+  const memberCountByGroupId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const m of memberships) {
+      map.set(m.groupId, (map.get(m.groupId) ?? 0) + 1);
+    }
+    return map;
+  }, [memberships]);
   const showInitialSkeleton = configured && loading && groups.length === 0 && memberships.length === 0;
   const showCenteredEmptyCTAs = !showInitialSkeleton && myGroups.length === 0;
 
@@ -86,18 +94,31 @@ export function GroupsScreen() {
             <SkeletonList count={4} renderItem={() => <GroupCardSkeleton />} />
           ) : null
         }
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.card}
-            onPress={() => navigation.navigate('GroupDetail', { groupId: item.id })}
-            testID="groups:group:open"
-            accessibilityRole="button"
-            accessibilityLabel={`${item.name} grubunu aç`}
-          >
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.meta}>Kod: {item.joinCode}</Text>
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const memberCount = memberCountByGroupId.get(item.id) ?? 0;
+          return (
+            <Pressable
+              style={styles.card}
+              onPress={() => navigation.navigate('GroupDetail', { groupId: item.id })}
+              testID="groups:group:open"
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name} grubunu aç, ${memberCount} üye`}
+            >
+              <View style={styles.cardRow}>
+                <View style={styles.cardMain}>
+                  <Text style={styles.name} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.meta}>Kod: {item.joinCode}</Text>
+                </View>
+                <View style={styles.memberHint} accessibilityElementsHidden>
+                  <Ionicons name="people-outline" size={18} color={colors.textMuted} />
+                  <Text style={styles.memberCount}>{memberCount}</Text>
+                </View>
+              </View>
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
@@ -134,7 +155,28 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 14,
     padding: spacing.md,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  cardMain: {
+    flex: 1,
     gap: spacing.xs,
+    minWidth: 0,
+  },
+  memberHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  memberCount: {
+    ...typography.caption,
+    color: colors.textMuted,
+    minWidth: 20,
+    textAlign: 'right',
   },
   name: { ...typography.subtitle, color: colors.text },
   meta: { ...typography.caption, color: colors.textMuted },
