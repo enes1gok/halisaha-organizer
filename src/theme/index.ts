@@ -25,6 +25,17 @@ export const colors = {
     MID: '#22C55E',
     FWD: '#EF4444',
   },
+  /** Taktik tahta / yarı saha (koyu tema üzerinde okunaklı çim tonları) */
+  pitch: {
+    grassDeep: '#0F2418',
+    grassMid: '#143028',
+    grassLight: '#1A3D32',
+    line: 'rgba(255, 255, 255, 0.22)',
+    lineStrong: 'rgba(255, 255, 255, 0.38)',
+    slotRing: 'rgba(255, 255, 255, 0.35)',
+    slotRingGlow: 'rgba(0, 210, 106, 0.55)',
+    slotFill: 'rgba(0, 0, 0, 0.18)',
+  },
 } as const;
 
 export const radius = {

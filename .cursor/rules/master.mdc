@@ -26,6 +26,7 @@ alwaysApply: true
 | Multi-table writes, RPC transactions, optimistic update ordering | `atomic-mutation-policy.mdc` |
 | Supabase error mapping, `ERR_*` tokens, `mapSupabaseError`, RPC `raise_app_error`, error logging | `error-handling-governance.mdc` |
 | Push queue / `notification_deliveries`, notification Edge Functions, enqueue/drain RPCs, notification pgTAP | `notification-governance.mdc` |
+| Taktik tahta / Kadro Kur: pitch koordinatları, drop zone ölçümü, swap, haptics, reduce-motion | `tactical-board-governance.mdc` |
 
 Rules apply when matching files are open (`globs`) or when the task clearly fits the column.
 
@@ -45,6 +46,7 @@ Skills live in `.cursor/skills/{name}/SKILL.md`. Read the matching skill when th
 | `debug-supabase-error` | Diagnosing SQLSTATE, RLS, and RPC `ERR_*` / `raise_app_error` failures |
 | `add-notification-flow` | New `notification_deliveries` type, enqueue trigger/cron, Edge `buildMessage`, notification pgTAP |
 | `evolve-postgres-function` | Postgres function signature/return-type change in a migration; 42P13 / DROP+recreate + grants |
+| `add-formation-logic` | New `LineupFormation` in `lineupFormations.ts`, anchors, tests, tactical board behavior |
 
 ## Maintenance contract
 

@@ -3,12 +3,15 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  LayoutAnimation,
   LayoutChangeEvent,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
+  UIManager,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -35,8 +38,14 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
+import { useReduceMotion } from '../hooks/useReduceMotion';
 import { colors, radius, spacing, typography } from '../theme';
 import type { Player, Position } from '../types/domain';
+import { lightImpact, selectionTick } from '../utils/haptics';
+import {
+  applyLineupFormationDrop,
+  pickFormationZoneOrdered,
+} from '../utils/lineupFormationDrop';
 import { buildSlotsFromCompact, compactSlots } from '../utils/lineupSlots';
 import { hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
@@ -55,6 +64,10 @@ const LONG_PRESS_MS = 300;
 const DRAG_SCALE = 1.03;
 
 const FORMATION_TOTALS = new Set([14, 16, 22]);
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 function arraysShallowEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
@@ -125,21 +138,18 @@ function inside(r: DropRect | undefined, absX: number, absY: number): boolean {
   );
 }
 
-function pickZone(zones: ZoneMap, absX: number, absY: number): string | null {
-  for (const [key, r] of zones) {
-    if (inside(r, absX, absY)) return key;
-  }
-  return null;
-}
-
 function DraggableCard({
   player,
   onDragEnd,
   testID,
+  onDragActivated,
+  onDragFinalize,
 }: {
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
   testID: string;
+  onDragActivated?: (playerId: string) => void;
+  onDragFinalize?: () => void;
 }) {
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
@@ -147,6 +157,11 @@ function DraggableCard({
 
   const pan = Gesture.Pan()
     .activateAfterLongPress(LONG_PRESS_MS)
+    .onStart(() => {
+      if (onDragActivated) {
+        runOnJS(onDragActivated)(player.id);
+      }
+    })
     .onUpdate((e) => {
       dragging.value = 1;
       tx.value = e.translationX;
@@ -159,6 +174,9 @@ function DraggableCard({
       dragging.value = withSpring(0, Springs.interactive);
     })
     .onFinalize(() => {
+      if (onDragFinalize) {
+        runOnJS(onDragFinalize)();
+      }
       tx.value = withSpring(0, Springs.interactive);
       ty.value = withSpring(0, Springs.interactive);
       dragging.value = withSpring(0, Springs.interactive);
@@ -218,6 +236,9 @@ export function LineupBuilderScreen() {
   );
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
+
+  const reduceMotion = useReduceMotion();
 
   const zoneA = useRef<View>(null);
   const zoneB = useRef<View>(null);
@@ -246,14 +267,23 @@ export function LineupBuilderScreen() {
     return playersAll.filter((p) => goingIds.has(p.id));
   }, [match, playersAll]);
 
+  const formationRosterTotal = match?.maxPlayers ?? 0;
+
   const formationMode = useMemo(
-    () => FORMATION_TOTALS.has(goingPlayers.length),
-    [goingPlayers.length],
+    () => FORMATION_TOTALS.has(formationRosterTotal),
+    [formationRosterTotal],
   );
 
   const formationsForCount = useMemo(
-    () => getLineupFormationsForTotalPlayers(goingPlayers.length),
-    [goingPlayers.length],
+    () => getLineupFormationsForTotalPlayers(formationRosterTotal),
+    [formationRosterTotal],
+  );
+
+  /** Tam katılım: tüm slotların dolu olması zorunlu (aksi halde sadece “going” oyuncular sahada). */
+  const strictFormationFill = useMemo(
+    () =>
+      !!match && formationMode && goingPlayers.length === match.maxPlayers,
+    [formationMode, goingPlayers.length, match],
   );
 
   const [teamAIds, setTeamAIds] = useState<string[]>([]);
@@ -322,7 +352,7 @@ export function LineupBuilderScreen() {
 
   useEffect(() => {
     if (!match || !formationMode || formationsForCount.length === 0) return;
-    const key = `${match.id}:${goingPlayers.length}`;
+    const key = `${match.id}:${formationRosterTotal}`;
     if (formationInitKey.current === key) return;
     formationInitKey.current = key;
     const fid =
@@ -334,7 +364,7 @@ export function LineupBuilderScreen() {
     setFormationId(fid);
     setSlotsA(buildSlotsFromCompact(match.teamAIds, f.playersPerTeam));
     setSlotsB(buildSlotsFromCompact(match.teamBIds, f.playersPerTeam));
-  }, [match, formationMode, formationsForCount, goingPlayers.length]);
+  }, [match, formationMode, formationsForCount, formationRosterTotal]);
 
   useEffect(() => {
     if (!match || !formationMode || !selectedFormation) return;
@@ -396,7 +426,7 @@ export function LineupBuilderScreen() {
 
   const handleDropFormation = useCallback(
     (playerId: string, absX: number, absY: number) => {
-      const zone = pickZone(formationZonesRef.current, absX, absY);
+      const zone = pickFormationZoneOrdered(formationZonesRef.current, absX, absY);
       if (!zone) return;
 
       if (stepMode) {
@@ -404,27 +434,24 @@ export function LineupBuilderScreen() {
         if (lineupPhase === 'siyah' && zone.startsWith('B:')) return;
       }
 
-      let curA = slotsA.map((s) => (s === playerId ? null : s));
-      let curB = slotsB.map((s) => (s === playerId ? null : s));
+      const result = applyLineupFormationDrop(slotsA, slotsB, playerId, zone);
+      if (!result || !result.changed) return;
 
-      if (zone === 'bench') {
-        setSlotsA(curA);
-        setSlotsB(curB);
-        return;
-      }
-
-      const m = /^([AB]):(\d+)$/.exec(zone);
-      if (!m) return;
-      const side = m[1] as 'A' | 'B';
-      const idx = Number(m[2]);
-      if (side === 'A') curA[idx] = playerId;
-      else curB[idx] = playerId;
-
-      setSlotsA(curA);
-      setSlotsB(curB);
+      setSlotsA(result.slotsA);
+      setSlotsB(result.slotsB);
+      void lightImpact();
     },
     [lineupPhase, slotsA, slotsB, stepMode],
   );
+
+  const onFormationDragActivated = useCallback((playerId: string) => {
+    void selectionTick();
+    setDraggingPlayerId(playerId);
+  }, []);
+
+  const onFormationDragFinalize = useCallback(() => {
+    setDraggingPlayerId(null);
+  }, []);
 
   const benchPlayerIds = useMemo(() => {
     if (!formationMode || !selectedFormation) return [];
@@ -484,7 +511,26 @@ export function LineupBuilderScreen() {
   const onPickFormation = (id: string) => {
     const f = getLineupFormationById(id);
     if (!f) return;
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
+    const sameSize =
+      selectedFormation != null && selectedFormation.playersPerTeam === f.playersPerTeam;
     setFormationId(id);
+    if (sameSize) {
+      setLineupPhase('beyaz');
+      if (match) {
+        void setMatchTeams(
+          match.id,
+          compactSlots(slotsA),
+          compactSlots(slotsB),
+          id,
+        ).catch((err) =>
+          Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+        );
+      }
+      return;
+    }
     setSlotsA(Array.from({ length: f.playersPerTeam }, () => null));
     setSlotsB(Array.from({ length: f.playersPerTeam }, () => null));
     setLineupPhase('beyaz');
@@ -507,13 +553,15 @@ export function LineupBuilderScreen() {
         return;
       }
       const incomplete =
-        slotsA.some((s) => s == null) ||
-        slotsB.some((s) => s == null) ||
-        benchPlayerIds.length > 0;
+        benchPlayerIds.length > 0 ||
+        (strictFormationFill &&
+          (slotsA.some((s) => s == null) || slotsB.some((s) => s == null)));
       if (incomplete) {
         Alert.alert(
           'Eksik yerleştirme',
-          'Şablona göre tüm slotları doldurun; bekleyen oyuncu kalmamalı.',
+          strictFormationFill
+            ? 'Şablona göre tüm slotları doldurun; bekleyen oyuncu kalmamalı.'
+            : 'Tüm katılımcıları sahaya yerleştirin; havuzda oyuncu kalmamalı. (Tam kadro değilken boş slot kalabilir.)',
         );
         return;
       }
@@ -542,6 +590,7 @@ export function LineupBuilderScreen() {
     formationMode,
     selectedFormation,
     lineupDimensionsReady,
+    strictFormationFill,
     slotsA,
     slotsB,
     benchPlayerIds.length,
@@ -559,13 +608,15 @@ export function LineupBuilderScreen() {
         return;
       }
       const incomplete =
-        slotsA.some((s) => s == null) ||
-        slotsB.some((s) => s == null) ||
-        benchPlayerIds.length > 0;
+        benchPlayerIds.length > 0 ||
+        (strictFormationFill &&
+          (slotsA.some((s) => s == null) || slotsB.some((s) => s == null)));
       if (incomplete) {
         Alert.alert(
           'Eksik yerleştirme',
-          'Şablona göre tüm slotları doldurun; bekleyen oyuncu kalmamalı.',
+          strictFormationFill
+            ? 'Şablona göre tüm slotları doldurun; bekleyen oyuncu kalmamalı.'
+            : 'Tüm katılımcıları sahaya yerleştirin; havuzda oyuncu kalmamalı. (Tam kadro değilken boş slot kalabilir.)',
         );
         return;
       }
@@ -604,6 +655,7 @@ export function LineupBuilderScreen() {
     slotsA,
     slotsB,
     benchPlayerIds.length,
+    strictFormationFill,
     setMatchTeams,
     lockLineup,
     resolvedFormationId,
@@ -655,12 +707,15 @@ export function LineupBuilderScreen() {
     slots: (string | null)[],
     side: 'A' | 'B',
     dimmed: boolean,
+    highlightEmptySlots: boolean,
   ) => (
     <PitchHalfField
       formation={formation}
       slots={slots}
       side={side}
       dimmed={dimmed}
+      highlightEmptySlots={highlightEmptySlots}
+      reduceMotion={reduceMotion}
       zonesRef={formationZonesRef}
       getPlayer={getPlayer}
       testID={`lineup:pitch:${side.toLowerCase()}`}
@@ -670,6 +725,8 @@ export function LineupBuilderScreen() {
             <DraggableCard
               player={p}
               onDragEnd={handleDropFormation}
+              onDragActivated={onFormationDragActivated}
+              onDragFinalize={onFormationDragFinalize}
               testID={slotTestId}
             />
           </View>
@@ -688,10 +745,17 @@ export function LineupBuilderScreen() {
     return (
       <View style={styles.screen}>
         <Text style={styles.formationTitle}>
-          {goingPlayers.length} kişi · {selectedFormation.playersPerTeam}’şer · {selectedFormation.label}
+          {goingPlayers.length}/{match.maxPlayers} katılımcı · {selectedFormation.playersPerTeam}’şer ·{' '}
+          {selectedFormation.label}
         </Text>
+        {!strictFormationFill ? (
+          <Text style={styles.hintWarn} accessibilityRole="text">
+            Tam kadro değil; boş slot bırakabilirsiniz. Tüm katılımcılar sahada olmalı.
+          </Text>
+        ) : null}
         <Text style={styles.hint} accessibilityRole="text">
-          Havuzu kaydırın. Oyuncuyu basılı tutup slota veya havuza bırakın. Soldan sağa: Beyaz, Siyah.
+          Havuzu kaydırın. Oyuncuyu basılı tutup slota veya havuza bırakın. Dolu slotta yer değiştirir.
+          Soldan sağa: Siyah, Beyaz.
         </Text>
 
         <ScrollView
@@ -760,6 +824,7 @@ export function LineupBuilderScreen() {
                 slotsB,
                 'B',
                 stepMode && lineupPhase === 'siyah',
+                draggingPlayerId != null && (!stepMode || lineupPhase === 'beyaz'),
               )}
             </View>
             <View style={styles.pitchCol}>
@@ -769,6 +834,7 @@ export function LineupBuilderScreen() {
                 slotsA,
                 'A',
                 stepMode && lineupPhase === 'beyaz',
+                draggingPlayerId != null && (!stepMode || lineupPhase === 'siyah'),
               )}
             </View>
           </View>
@@ -791,6 +857,8 @@ export function LineupBuilderScreen() {
                     key={id}
                     player={p}
                     onDragEnd={handleDropFormation}
+                    onDragActivated={onFormationDragActivated}
+                    onDragFinalize={onFormationDragFinalize}
                     testID={`lineup:player-card:${id}`}
                   />
                 );
@@ -837,8 +905,8 @@ export function LineupBuilderScreen() {
   return (
     <View style={styles.screen}>
       <Text style={styles.hint} accessibilityRole="text">
-        Katılımcı sayısı şablon için 14, 16 veya 22 değil. Listeleri kaydırın; takımlar arası için basılı
-        tutup sürükleyin.
+        Maç kadro boyutu (max) 14, 16 veya 22 değil; taktik şablon kapalı. Listeleri kaydırın; takımlar
+        arası için basılı tutup sürükleyin.
       </Text>
 
       <View style={styles.row}>
@@ -898,6 +966,11 @@ const styles = StyleSheet.create({
   hint: {
     ...typography.caption,
     color: colors.textMuted,
+    lineHeight: 18,
+  },
+  hintWarn: {
+    ...typography.caption,
+    color: colors.accent,
     lineHeight: 18,
   },
   chipRow: {
@@ -977,16 +1050,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   slotEmpty: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 56,
-    backgroundColor: colors.background,
+    minHeight: 40,
+    minWidth: 44,
+    paddingHorizontal: spacing.xs,
   },
   slotRole: {
     ...typography.micro,
