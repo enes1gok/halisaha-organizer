@@ -5,6 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/Card';
 import { MatchCard } from '../components/MatchCard';
+import { MatchCardListRow } from '../components/MatchCardListRow';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { MatchCardSkeleton, SettingsSectionSkeleton, SkeletonList, SkeletonText } from '../components/skeleton';
@@ -313,12 +314,14 @@ export function GroupDetailScreen() {
           <Text style={styles.empty}>Bu grupta henüz planlanan maç yok.</Text>
         }
         renderItem={({ item }) => (
-          <MatchCard
-            match={item}
-            goingCount={countGoing(item)}
-            userGoing={item.attendees.some((att) => att.playerId === userId && att.status === 'going')}
-            onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
-          />
+          <MatchCardListRow matchId={item.id}>
+            <MatchCard
+              match={item}
+              goingCount={countGoing(item)}
+              userGoing={item.attendees.some((att) => att.playerId === userId && att.status === 'going')}
+              onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
+            />
+          </MatchCardListRow>
         )}
       />
     </View>

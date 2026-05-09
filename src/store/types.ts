@@ -68,6 +68,11 @@ export interface MatchesSlice {
   /** Maç Ratings gönderildi (persist dışı; Maçlarım özeti yönlendirmesi için). */
   matchRatingsSubmissionByMatchId: Record<string, true>;
 
+  /** Persist dışı: liste satırı giriş animasyonu bekleyen maç id'leri. */
+  matchIdsPendingListEntrance: string[];
+  markMatchPendingListEntrance: (id: string) => void;
+  clearMatchPendingListEntrance: (id: string) => void;
+
   /** Oturum + Supabase maçları yeniden yükler. */
   hydrateRemoteMatches: () => Promise<void>;
   refreshRemoteMatch: (matchId: string) => Promise<void>;

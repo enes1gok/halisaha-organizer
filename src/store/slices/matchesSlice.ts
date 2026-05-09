@@ -311,12 +311,28 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
   };
 }
 
+function pushPendingListEntrance(prev: string[], id: string): string[] {
+  return prev.includes(id) ? prev : [...prev, id];
+}
+
 export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = (set, get) => ({
   matches: storeSeed.matches,
 
   matchRatingSummariesById: {},
 
   matchRatingsSubmissionByMatchId: {},
+
+  matchIdsPendingListEntrance: [],
+
+  markMatchPendingListEntrance: (id) =>
+    set((s) => ({
+      matchIdsPendingListEntrance: pushPendingListEntrance(s.matchIdsPendingListEntrance, id),
+    })),
+
+  clearMatchPendingListEntrance: (id) =>
+    set((s) => ({
+      matchIdsPendingListEntrance: s.matchIdsPendingListEntrance.filter((x) => x !== id),
+    })),
 
   getMatch: (id) => get().matches.find((m) => m.id === id),
 
@@ -354,9 +370,24 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
     });
   },
 
-  createMatch: (input) => createMatchUseCase(buildMatchesUseCaseDeps(set, get), input),
+  createMatch: async (input) => {
+    const m = await createMatchUseCase(buildMatchesUseCaseDeps(set, get), input);
+    set((s) => ({
+      matchIdsPendingListEntrance: pushPendingListEntrance(s.matchIdsPendingListEntrance, m.id),
+    }));
+    return m;
+  },
 
-  joinMatchByJoinCode: (code) => joinMatchByJoinCodeUseCase(buildMatchesUseCaseDeps(set, get), code),
+  joinMatchByJoinCode: async (code) => {
+    const beforeIds = new Set(get().matches.map((x) => x.id));
+    const m = await joinMatchByJoinCodeUseCase(buildMatchesUseCaseDeps(set, get), code);
+    if (m && !beforeIds.has(m.id)) {
+      set((s) => ({
+        matchIdsPendingListEntrance: pushPendingListEntrance(s.matchIdsPendingListEntrance, m.id),
+      }));
+    }
+    return m;
+  },
 
   setRSVP: (matchId, playerId, status) =>
     setRsvpUseCase(buildMatchesUseCaseDeps(set, get), matchId, playerId, status),

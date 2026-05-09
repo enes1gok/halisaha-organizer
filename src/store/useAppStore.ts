@@ -32,6 +32,7 @@ export const useAppStore = create<AppState>()(
           remoteUserId: null,
           matchRatingSummariesById: {},
           matchRatingsSubmissionByMatchId: {},
+          matchIdsPendingListEntrance: [],
         });
       },
     }),

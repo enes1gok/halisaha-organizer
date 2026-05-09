@@ -56,9 +56,18 @@ export const EasingPresets = {
   easeOutCubic: Easing.out(Easing.cubic),
   /** Toast enter/exit, overlay fades */
   toastMotion: Easing.out(Easing.cubic),
-  /** Skeleton shimmer pulse */
+  /** Skeleton reduce-motion opacity pulse */
   skeletonPulse: Easing.inOut(Easing.ease),
+  /** Skeleton shimmer sweep (default motion) */
+  skeletonShimmer: Easing.inOut(Easing.ease),
 };
+
+/** Horizontal skeleton shimmer loop duration (ms). */
+export const SkeletonMotion = {
+  shimmerMs: 1400,
+  /** Reduce-motion skeleton pulse (ms) */
+  pulseMs: 900,
+} as const;
 
 /** React Navigation stack uses RN Animated — separate Bezier from Reanimated. */
 export const StackTransition = {

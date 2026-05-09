@@ -1,7 +1,7 @@
 import * as groupsService from '../../services/supabase/groups';
 import { AppError } from '../../services/supabase/errors';
 import type { Group, GroupMembership } from '../../types/domain';
-import { deleteGroupUseCase } from '../groups';
+import { deleteGroupUseCase, type GroupsHydrationPayload } from '../groups';
 
 jest.mock('../../services/supabase/groups', () => ({
   createGroupRemote: jest.fn(),
@@ -20,8 +20,8 @@ const REMOTE_USER = 'a0000000-0000-4000-8000-000000000001';
 const GROUP_UUID = 'c0000000-0000-4000-8000-000000000010';
 const LOCAL_GROUP_ID = 'group-m3k9xj-a1b2c3';
 
-function samplePayload(groups: Group[], memberships: GroupMembership[] = []) {
-  return { groups, memberships };
+function samplePayload(groups: Group[], memberships: GroupMembership[] = []): GroupsHydrationPayload {
+  return { groups, memberships, profiles: [] };
 }
 
 function buildDeps(overrides: Partial<Parameters<typeof deleteGroupUseCase>[0]> = {}) {

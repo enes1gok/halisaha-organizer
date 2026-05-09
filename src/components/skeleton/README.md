@@ -19,6 +19,10 @@ This module standardizes first-load placeholders across screens.
 - Render skeleton only on first-load gap.
 - After first content load, keep content visible for refresh and background fetches.
 
+## Motion
+
+- `SkeletonBlock` uses a **horizontal shimmer** (highlight sweep) by default. With **Reduce Motion** enabled, it falls back to a subtle **opacity pulse** instead.
+
 ## Presets
 
 - `HomeHeroSkeleton`, `HomeActionStripSkeleton`, `MatchCardSkeleton`

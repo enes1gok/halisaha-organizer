@@ -13,6 +13,7 @@ import {
 import { HomeActionCard } from '../components/HomeActionCard';
 import { HomeUpcomingHeroCard } from '../components/HomeUpcomingHeroCard';
 import { MatchCard } from '../components/MatchCard';
+import { MatchCardListRow } from '../components/MatchCardListRow';
 import { HomeActionStripSkeleton, HomeHeroSkeleton, MatchCardSkeleton, SkeletonList } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { colors, spacing } from '../theme';
@@ -108,12 +109,14 @@ export function HomeScreen() {
           const mine = item.attendees.find((a) => a.playerId === userId);
           const userGoing = mine?.status === 'going';
           return (
-            <MatchCard
-              match={item}
-              goingCount={goingC}
-              userGoing={userGoing}
-              onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
-            />
+            <MatchCardListRow matchId={item.id}>
+              <MatchCard
+                match={item}
+                goingCount={goingC}
+                userGoing={userGoing}
+                onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
+              />
+            </MatchCardListRow>
           );
         }}
         ListEmptyComponent={null}

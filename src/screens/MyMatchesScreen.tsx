@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { EmptyState } from '../components/EmptyState';
 import { MatchCard } from '../components/MatchCard';
+import { MatchCardListRow } from '../components/MatchCardListRow';
 import { MatchCardSkeleton, SkeletonList } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
@@ -73,18 +74,20 @@ export function MyMatchesScreen() {
           const att = item.attendees.find((a) => a.playerId === userId);
           const userGoing = att?.status === 'going';
           return (
-            <MatchCard
-              match={item}
-              goingCount={goingCount}
-              userGoing={userGoing}
-              onPress={() => {
-                const dest = resolveMyMatchesEntryScreen(item, userId, ratingsSubmission);
-                const p = { matchId: item.id };
-                if (dest === 'MatchPostgame') navigation.navigate('MatchPostgame', p);
-                else if (dest === 'MatchSummary') navigation.navigate('MatchSummary', p);
-                else navigation.navigate('MatchDetail', p);
-              }}
-            />
+            <MatchCardListRow matchId={item.id}>
+              <MatchCard
+                match={item}
+                goingCount={goingCount}
+                userGoing={userGoing}
+                onPress={() => {
+                  const dest = resolveMyMatchesEntryScreen(item, userId, ratingsSubmission);
+                  const p = { matchId: item.id };
+                  if (dest === 'MatchPostgame') navigation.navigate('MatchPostgame', p);
+                  else if (dest === 'MatchSummary') navigation.navigate('MatchSummary', p);
+                  else navigation.navigate('MatchDetail', p);
+                }}
+              />
+            </MatchCardListRow>
           );
         }}
       />
