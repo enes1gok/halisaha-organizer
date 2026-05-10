@@ -7,7 +7,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { PressableScale } from './PressableScale';
-import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 
 type BaseProps = {
   onPress?: () => void;
@@ -39,6 +40,8 @@ export function PillButton({
   accessibilityState,
   testID,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const bg =
     variant === 'accent'
       ? colors.accent
@@ -88,27 +91,29 @@ export function PillButton({
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-    ...shadows.sm,
-  },
-  ghostBorder: {
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  secondaryBorder: {
-    borderWidth: 1,
-    borderColor: colors.indigo,
-  },
-  title: {
-    ...typography.subtitle,
-    fontSize: 15,
-    letterSpacing: letterSpacing.normal,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    base: {
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 48,
+      ...shadows.sm,
+    },
+    ghostBorder: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+    },
+    secondaryBorder: {
+      borderWidth: 1,
+      borderColor: t.colors.indigo,
+    },
+    title: {
+      ...typography.subtitle,
+      fontSize: 15,
+      letterSpacing: letterSpacing.normal,
+    },
+  }),
+);

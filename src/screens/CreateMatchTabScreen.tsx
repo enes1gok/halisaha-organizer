@@ -23,7 +23,8 @@ import {
 import { PillButton } from '../components/PillButton';
 import { useToast } from '../context/ToastContext';
 import type { ShowToastOptions } from '../context/toastTypes';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
@@ -101,6 +102,8 @@ function normalizeStartsAtFromPicker(d: Date): Date {
 export function CreateMatchTabScreen() {
   const navigation = useNavigation();
   const { showToast } = useToast();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const sheetRef = useRef<BottomSheetModal>(null);
   const pendingMatchToastRef = useRef<ShowToastOptions | null>(null);
   const snapPoints = useMemo(() => ['82%'], []);
@@ -168,7 +171,7 @@ export function CreateMatchTabScreen() {
   }, [startsAt]);
 
   const [showPicker, setShowPicker] = useState(false);
-  /** Android: `datetime` mode is unsupported; use date then time (see datetimepicker #907). */
+  /** Android: `datetime` mode is unsupported; use date then time (see datetimepicker issue 907). */
   const [androidPickerStep, setAndroidPickerStep] = useState<'date' | 'time' | null>(null);
   const [pickerMinDate, setPickerMinDate] = useState(() => new Date());
 
@@ -749,238 +752,240 @@ export function CreateMatchTabScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  sheetBg: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  handle: {
-    backgroundColor: colors.border,
-  },
-  sheetBody: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    gap: spacing.sm,
-  },
-  title: {
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  stepsStrip: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-    paddingVertical: spacing.xs,
-    gap: spacing.xs,
-  },
-  stepItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing.xs,
-    minWidth: 0,
-  },
-  stepDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.border,
-  },
-  stepDotActive: {
-    backgroundColor: colors.accent,
-    transform: [{ scale: 1.15 }],
-  },
-  stepLabel: {
-    ...typography.micro,
-    fontSize: 10,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  stepLabelActive: {
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  label: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    color: colors.text,
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    backgroundColor: colors.background,
-  },
-  maxPlayersBlock: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    backgroundColor: colors.background,
-    ...shadows.sm,
-  },
-  maxPlayersTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  maxPlayersInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 10,
-    minWidth: 56,
-    maxWidth: 72,
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 18,
-    textAlign: 'center',
-    backgroundColor: colors.surface,
-  },
-  maxPlayersSuffix: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  maxPlayersSlider: {
-    width: '100%',
-    height: 40,
-  },
-  maxPlayersRange: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xs,
-  },
-  cta: {
-    marginTop: spacing.lg,
-  },
-  ibanBlock: {
-    gap: spacing.sm,
-  },
-  ibanLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  ibanLabelText: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  profileIbanBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentMuted,
-  },
-  profileIbanBadgeText: {
-    ...typography.micro,
-    color: colors.accent,
-  },
-  groupSelectList: {
-    width: '100%',
-    gap: spacing.sm,
-  },
-  groupSelectRow: {
-    width: '100%',
-    minHeight: 44,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  groupSelectRowActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  groupSelectRowPressed: {
-    opacity: 0.92,
-  },
-  groupSelectRowText: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  groupSelectRowTextActive: {
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  startsAtButtonInner: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  startsAtDateLine: {
-    ...typography.subtitle,
-    fontSize: 15,
-    color: colors.text,
-  },
-  startsAtTimeLine: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  paymentSegmentRow: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: spacing.xs,
-  },
-  paymentSegment: {
-    flex: 1,
-    minHeight: 44,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  paymentSegmentActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  paymentSegmentPressed: {
-    opacity: 0.92,
-  },
-  paymentSegmentText: {
-    ...typography.caption,
-    textAlign: 'center',
-    color: colors.textMuted,
-  },
-  paymentSegmentTextActive: {
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  ibanMasked: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  ibanHint: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  noteInput: {
-    minHeight: 88,
-    textAlignVertical: 'top',
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    placeholder: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    sheetBg: {
+      backgroundColor: t.colors.surface,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+    },
+    handle: {
+      backgroundColor: t.colors.border,
+    },
+    sheetBody: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.xl,
+      gap: spacing.sm,
+    },
+    title: {
+      color: t.colors.text,
+      marginBottom: spacing.sm,
+    },
+    stepsStrip: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: spacing.md,
+      paddingVertical: spacing.xs,
+      gap: spacing.xs,
+    },
+    stepItem: {
+      flex: 1,
+      alignItems: 'center',
+      gap: spacing.xs,
+      minWidth: 0,
+    },
+    stepDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: t.colors.border,
+    },
+    stepDotActive: {
+      backgroundColor: t.colors.accent,
+      transform: [{ scale: 1.15 }],
+    },
+    stepLabel: {
+      ...typography.micro,
+      fontSize: 10,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+    },
+    stepLabelActive: {
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    label: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginTop: spacing.sm,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 12,
+      color: t.colors.text,
+      fontFamily: 'Inter_400Regular',
+      fontSize: 15,
+      backgroundColor: t.colors.background,
+    },
+    maxPlayersBlock: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
+      backgroundColor: t.colors.background,
+      ...shadows.sm,
+    },
+    maxPlayersTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    maxPlayersInput: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 10,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 10,
+      minWidth: 56,
+      maxWidth: 72,
+      color: t.colors.text,
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 18,
+      textAlign: 'center',
+      backgroundColor: t.colors.surface,
+    },
+    maxPlayersSuffix: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    maxPlayersSlider: {
+      width: '100%',
+      height: 40,
+    },
+    maxPlayersRange: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.xs,
+    },
+    cta: {
+      marginTop: spacing.lg,
+    },
+    ibanBlock: {
+      gap: spacing.sm,
+    },
+    ibanLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    ibanLabelText: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    profileIbanBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.pill,
+      backgroundColor: t.colors.accentMuted,
+    },
+    profileIbanBadgeText: {
+      ...typography.micro,
+      color: t.colors.accent,
+    },
+    groupSelectList: {
+      width: '100%',
+      gap: spacing.sm,
+    },
+    groupSelectRow: {
+      width: '100%',
+      minHeight: 44,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.background,
+      justifyContent: 'center',
+      ...shadows.sm,
+    },
+    groupSelectRowActive: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    groupSelectRowPressed: {
+      opacity: 0.92,
+    },
+    groupSelectRowText: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    groupSelectRowTextActive: {
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    startsAtButtonInner: {
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    startsAtDateLine: {
+      ...typography.subtitle,
+      fontSize: 15,
+      color: t.colors.text,
+    },
+    startsAtTimeLine: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    paymentSegmentRow: {
+      flexDirection: 'row',
+      width: '100%',
+      gap: spacing.xs,
+    },
+    paymentSegment: {
+      flex: 1,
+      minHeight: 44,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: spacing.sm,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...shadows.sm,
+    },
+    paymentSegmentActive: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    paymentSegmentPressed: {
+      opacity: 0.92,
+    },
+    paymentSegmentText: {
+      ...typography.caption,
+      textAlign: 'center',
+      color: t.colors.textMuted,
+    },
+    paymentSegmentTextActive: {
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    ibanMasked: {
+      ...typography.body,
+      color: t.colors.text,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    ibanHint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    noteInput: {
+      minHeight: 88,
+      textAlignVertical: 'top',
+    },
+  }),
+);

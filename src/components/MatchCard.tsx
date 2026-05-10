@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Match, RSVPStatus } from '../types/domain';
-import { colors, shadows, spacing, typography } from '../theme';
+import { shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme, type ThemeColors } from '../theme/ThemeContext';
 import { formatMatchDateTime } from '../utils/dates';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
 import { PressableScale } from './PressableScale';
@@ -15,7 +16,7 @@ type Props = {
   onPress: () => void;
 };
 
-function rsvpBorderStyle(status: RSVPStatus) {
+function rsvpBorderStyle(status: RSVPStatus, colors: ThemeColors) {
   switch (status) {
     case 'going':
       return { borderLeftColor: colors.accent };
@@ -28,7 +29,10 @@ function rsvpBorderStyle(status: RSVPStatus) {
   }
 }
 
-function rsvpIcon(status: RSVPStatus): { name: keyof typeof Ionicons.glyphMap; color: string } {
+function rsvpIcon(
+  status: RSVPStatus,
+  colors: ThemeColors,
+): { name: keyof typeof Ionicons.glyphMap; color: string } {
   switch (status) {
     case 'going':
       return { name: 'checkmark-circle', color: colors.accent };
@@ -40,8 +44,10 @@ function rsvpIcon(status: RSVPStatus): { name: keyof typeof Ionicons.glyphMap; c
 }
 
 export function MatchCard({ match, goingCount, userRsvp, onPress }: Props) {
-  const borderExtra = userRsvp ? rsvpBorderStyle(userRsvp) : undefined;
-  const icon = userRsvp ? rsvpIcon(userRsvp) : null;
+  const { colors } = useTheme();
+  const styles = useStyles();
+  const borderExtra = userRsvp ? rsvpBorderStyle(userRsvp, colors) : undefined;
+  const icon = userRsvp ? rsvpIcon(userRsvp, colors) : null;
 
   return (
     <PressableScale
@@ -69,44 +75,46 @@ export function MatchCard({ match, goingCount, userRsvp, onPress }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    backgroundColor: colors.surfaceGlass,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderLeftWidth: 4,
-    borderLeftColor: 'transparent',
-    ...shadows.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  rsvpIconWrap: {
-    marginRight: -spacing.xs,
-    justifyContent: 'center',
-  },
-  main: {
-    flex: 1,
-  },
-  date: {
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  slot: {
-    backgroundColor: colors.accentMuted,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  slotTxt: {
-    color: colors.accent,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    wrap: {
+      backgroundColor: t.colors.surfaceGlass,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderLeftWidth: 4,
+      borderLeftColor: 'transparent',
+      ...shadows.sm,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    rsvpIconWrap: {
+      marginRight: -spacing.xs,
+      justifyContent: 'center',
+    },
+    main: {
+      flex: 1,
+    },
+    date: {
+      color: t.colors.textMuted,
+      marginTop: 4,
+    },
+    slot: {
+      backgroundColor: t.colors.accentMuted,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.colors.accent,
+    },
+    slotTxt: {
+      color: t.colors.accent,
+    },
+  }),
+);

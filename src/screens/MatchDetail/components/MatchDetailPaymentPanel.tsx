@@ -4,9 +4,9 @@ import { PillButton } from '../../../components/PillButton';
 import { PlayerAvatar } from '../../../components/PlayerAvatar';
 import { PositionBadge } from '../../../components/PositionBadge';
 import type { Attendee, Match, Player } from '../../../types/domain';
-import { colors } from '../../../theme';
+import { useTheme } from '../../../theme/ThemeContext';
 import { maskIban } from '../../../utils/iban';
-import { matchDetailStyles as styles } from '../matchDetailStyles';
+import { useMatchDetailStyles } from '../matchDetailStyles';
 
 type Props = {
   match: Match;
@@ -38,6 +38,8 @@ export function MatchDetailPaymentPanel({
   onPressEditPaid,
 }: Props) {
   const hasMatchPaymentInfo = showIbanPayment || showCashPayment || showNoteOnlyPayment;
+  const { colors } = useTheme();
+  const styles = useMatchDetailStyles();
 
   return (
     <>

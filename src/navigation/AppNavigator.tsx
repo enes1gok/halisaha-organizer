@@ -1,11 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, DarkTheme, type LinkingOptions, type NavigationState } from '@react-navigation/native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  NavigationContainer,
+  DarkTheme,
+  DefaultTheme,
+  type LinkingOptions,
+  type NavigationState,
+} from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, letterSpacing, shadows, typography } from '../theme';
+import { letterSpacing, shadows, typography } from '../theme';
+import { makeStyles, useTheme, type ThemeColors } from '../theme/ThemeContext';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { Durations, EasingPresets } from '../utils/animations';
 import { TabSceneTransitionProvider } from './TabSceneTransitionContext';
@@ -43,18 +50,6 @@ const linking: LinkingOptions<RootTabParamList> = {
   },
 };
 
-const NavTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.background,
-    card: colors.background,
-    primary: colors.accent,
-    text: colors.text,
-    border: colors.border,
-  },
-};
-
 const ACTIVE_SCALE = 1.2;
 const INACTIVE_SCALE = 1;
 
@@ -82,6 +77,7 @@ function renderIonicon(routeName: string, color: string) {
 }
 
 function AnimatedTabIcon({ routeName, focused }: AnimatedTabIconProps) {
+  const { colors } = useTheme();
   const scale = useSharedValue(focused ? ACTIVE_SCALE : INACTIVE_SCALE);
   const reduceMotion = useReduceMotion();
 
@@ -107,6 +103,8 @@ function AnimatedTabIcon({ routeName, focused }: AnimatedTabIconProps) {
 }
 
 function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
+  const { colors } = useTheme();
+  const styles = useTabBarStyles();
   const insets = useSafeAreaInsets();
   const bottomInset = TAB_BAR_FLOAT_MARGIN_BOTTOM + Math.max(insets.bottom, 8);
 
@@ -167,9 +165,27 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
   );
 }
 
+function buildNavTheme(scheme: 'light' | 'dark', colors: ThemeColors) {
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colors.background,
+      card: colors.background,
+      primary: colors.accent,
+      text: colors.text,
+      border: colors.border,
+    },
+  };
+}
+
 export function AppNavigator() {
+  const { scheme, colors } = useTheme();
   const [activeTabName, setActiveTabName] = useState<string | undefined>(undefined);
   const activeTabRef = useRef<string | undefined>(undefined);
+
+  const navTheme = useMemo(() => buildNavTheme(scheme, colors), [scheme, colors]);
 
   const onNavigationStateChange = useCallback((state: NavigationState | undefined) => {
     const name = state?.routes[state?.index ?? 0]?.name;
@@ -182,7 +198,7 @@ export function AppNavigator() {
     <NavigationContainer
       ref={navigationRef}
       linking={linking}
-      theme={NavTheme}
+      theme={navTheme}
       onStateChange={onNavigationStateChange}
     >
       <TabSceneTransitionProvider activeTabName={activeTabName}>
@@ -212,36 +228,38 @@ export function AppNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  shell: {
-    overflow: 'visible',
-    paddingTop: TAB_BAR_OVERFLOW_TOP,
-  },
-  pill: {
-    position: 'relative',
-    borderRadius: 32,
-    backgroundColor: colors.surfaceGlass,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    overflow: 'visible',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    ...shadows.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    minHeight: 50,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-  },
-  tabLabel: {
-    ...typography.micro,
-    letterSpacing: letterSpacing.normal,
-  },
-});
+const useTabBarStyles = makeStyles((t) =>
+  StyleSheet.create({
+    shell: {
+      overflow: 'visible',
+      paddingTop: TAB_BAR_OVERFLOW_TOP,
+    },
+    pill: {
+      position: 'relative',
+      borderRadius: 32,
+      backgroundColor: t.colors.surfaceGlass,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+      overflow: 'visible',
+      paddingVertical: 10,
+      paddingHorizontal: 4,
+      ...shadows.lg,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      minHeight: 50,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 4,
+      paddingVertical: 4,
+    },
+    tabLabel: {
+      ...typography.micro,
+      letterSpacing: letterSpacing.normal,
+    },
+  }),
+);

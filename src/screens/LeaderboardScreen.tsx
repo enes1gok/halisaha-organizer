@@ -18,7 +18,8 @@ import {
   TAB_BAR_LIST_PADDING_BOTTOM,
   TAB_BAR_LIST_PADDING_PINNED_EXTRA,
 } from '../navigation/tabBarLayout';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import type { GroupsStackParamList, RootTabParamList } from '../navigation/types';
 import { fetchPlayerLeaderboardStats } from '../services/supabase/leaderboard';
@@ -42,6 +43,7 @@ function Chip({
   label: string;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -54,6 +56,8 @@ function Chip({
 
 export function LeaderboardScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const route = useRoute<GroupLeaderboardRoute>();
   const groupId = route.params?.groupId;
   const players = usePlayersStore((s) => s.players);
@@ -174,7 +178,7 @@ export function LeaderboardScreen() {
       </View>
 
       <FlatList
-        style={{ flex: 1 }}
+        style={styles.flexFill}
         data={showInitialSkeleton ? [] : rest}
         keyExtractor={(item) => item.playerId}
         ListHeaderComponent={podiumHeader}
@@ -240,100 +244,105 @@ export function LeaderboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  toggleBlock: {
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  toggleHdr: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  mt: {
-    marginTop: spacing.sm,
-  },
-  rowWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  chipActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  chipTxt: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  chipTxtActive: {
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  list: {
-    padding: spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  rank: {
-    ...typography.body,
-    color: colors.textMuted,
-    width: 28,
-    fontFamily: 'Inter_700Bold',
-  },
-  name: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-  },
-  val: {
-    ...typography.subtitle,
-    color: colors.accent,
-    minWidth: 48,
-    textAlign: 'right',
-    fontFamily: 'Inter_700Bold',
-  },
-  pinned: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  pinnedLbl: {
-    ...typography.micro,
-    color: colors.accent,
-    fontFamily: 'Inter_700Bold',
-    width: 36,
-  },
-  rankSm: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    flexFill: {
+      flex: 1,
+    },
+    toggleBlock: {
+      padding: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+      gap: spacing.sm,
+    },
+    toggleHdr: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    mt: {
+      marginTop: spacing.sm,
+    },
+    rowWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.surface,
+    },
+    chipActive: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    chipTxt: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    chipTxtActive: {
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    list: {
+      padding: spacing.md,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+    },
+    rank: {
+      ...typography.body,
+      color: t.colors.textMuted,
+      width: 28,
+      fontFamily: 'Inter_700Bold',
+    },
+    name: {
+      ...typography.body,
+      color: t.colors.text,
+      flex: 1,
+    },
+    val: {
+      ...typography.subtitle,
+      color: t.colors.accent,
+      minWidth: 48,
+      textAlign: 'right',
+      fontFamily: 'Inter_700Bold',
+    },
+    pinned: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: t.colors.border,
+      backgroundColor: t.colors.surface,
+    },
+    pinnedLbl: {
+      ...typography.micro,
+      color: t.colors.accent,
+      fontFamily: 'Inter_700Bold',
+      width: 36,
+    },
+    rankSm: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+  }),
+);

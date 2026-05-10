@@ -19,11 +19,14 @@ import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { SetNewPasswordScreen } from './src/screens/SetNewPasswordScreen';
 import { openGroupDetail, openMatchDetail } from './src/navigation/navigationActions';
 import { startContextAwareNotificationSync } from './src/services/notifications';
-import { colors } from './src/theme';
+import { darkColors } from './src/theme';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { useAppStore } from './src/store';
 
 function AppShell() {
   const { configured, loading, session, needsPasswordRecovery } = useSupabaseAuth();
+  const { scheme, colors } = useTheme();
+  const statusBarStyle = scheme === 'dark' ? 'light' : 'dark';
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -52,6 +55,7 @@ function AppShell() {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
         <ActivityIndicator color={colors.accent} size="large" />
+        <StatusBar style={statusBarStyle} />
       </View>
     );
   }
@@ -60,7 +64,7 @@ function AppShell() {
     return (
       <>
         <OnboardingNavigator />
-        <StatusBar style="light" />
+        <StatusBar style={statusBarStyle} />
       </>
     );
   }
@@ -69,7 +73,7 @@ function AppShell() {
     return (
       <>
         <SetNewPasswordScreen />
-        <StatusBar style="light" />
+        <StatusBar style={statusBarStyle} />
       </>
     );
   }
@@ -77,8 +81,25 @@ function AppShell() {
   return (
     <>
       <AppNavigator />
-      <StatusBar style="light" />
+      <StatusBar style={statusBarStyle} />
     </>
+  );
+}
+
+function AppRoot() {
+  const { colors } = useTheme();
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaProvider>
+        <BottomSheetModalProvider>
+          <SupabaseAuthProvider>
+            <ToastProvider>
+              <AppShell />
+            </ToastProvider>
+          </SupabaseAuthProvider>
+        </BottomSheetModalProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -98,23 +119,15 @@ export default function App() {
 
   if (!fontsLoaded || !hydrated) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.accent} size="large" />
+      <View style={{ flex: 1, backgroundColor: darkColors.background, justifyContent: 'center' }}>
+        <ActivityIndicator color={darkColors.accent} size="large" />
       </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-      <SafeAreaProvider>
-        <BottomSheetModalProvider>
-          <SupabaseAuthProvider>
-            <ToastProvider>
-              <AppShell />
-            </ToastProvider>
-          </SupabaseAuthProvider>
-        </BottomSheetModalProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ThemeProvider>
+      <AppRoot />
+    </ThemeProvider>
   );
 }

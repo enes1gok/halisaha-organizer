@@ -24,7 +24,8 @@ import {
   SkeletonList,
 } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { countGoing } from '../utils/matchRoster';
 import { getLastFinishedMatchForPlayer } from '../utils/matchOutcome';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
@@ -44,6 +45,8 @@ type Nav = CompositeNavigationProp<
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const matches = useMatchesStore((s) => s.matches);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
@@ -157,19 +160,21 @@ export function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  list: {
-    padding: spacing.md,
-    flexGrow: 1,
-  },
-  actionStrip: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    bottom: spacing.sm,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    list: {
+      padding: spacing.md,
+      flexGrow: 1,
+    },
+    actionStrip: {
+      position: 'absolute',
+      left: spacing.md,
+      right: spacing.md,
+      bottom: spacing.sm,
+    },
+  }),
+);

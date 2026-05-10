@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { MatchHeroVenueTitle } from '../../../components/MatchHeroVenueTitle';
 import { formatMatchDateTime } from '../../../utils/dates';
 import type { Match } from '../../../types/domain';
-import { matchDetailStyles as styles } from '../matchDetailStyles';
+import { useMatchDetailStyles } from '../matchDetailStyles';
 
 type Props = {
   match: Match;
@@ -11,6 +11,7 @@ type Props = {
 };
 
 export function MatchDetailHero({ match, countdownLabel }: Props) {
+  const styles = useMatchDetailStyles();
   return (
     <View style={styles.hero}>
       <MatchHeroVenueTitle venue={match.venue} variant="detail" />

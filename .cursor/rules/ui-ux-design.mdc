@@ -6,7 +6,7 @@ alwaysApply: false
 
 # UI/UX and design hierarchy
 
-Halisaha Organizer is a **dark-only** match organizer: layout and copy should keep flows obvious (create → join → lineup → score → leaderboard).
+Halisaha Organizer ships a **dark + light themed** UI (Sistem / Açık / Karanlık tercihi `Ayarlar > Görünüm` altında). Layout and copy should keep flows obvious (create → join → lineup → score → leaderboard).
 
 ## Visual hierarchy
 
@@ -31,9 +31,16 @@ Halisaha Organizer is a **dark-only** match organizer: layout and copy should ke
 
 Import from [`../../src/theme/index.ts`](../../src/theme/index.ts) (or a local relative path from the file).
 
+## Theme awareness (light + dark)
+
+- **Yeni veya yeniden yazılan yüzeyler `useTheme()` kullanmalı.** `colors` tokenını doğrudan import etmek yalnızca dokunulmamış legacy yüzeylerde kabul edilir; dokunulan dosyalar `useTheme()` veya `makeStyles()` ile temalanmalıdır.
+- Hook ve yardımcılar [`../../src/theme/ThemeContext.tsx`](../../src/theme/ThemeContext.tsx) altında: `useTheme()`, `useThemeColors()`, `makeStyles((t) => StyleSheet.create({ ... }))`.
+- Tema tercihi `usePreferencesStore((s) => s.themePreference)` ile okunur ve `setThemePreference('system' | 'light' | 'dark')` ile değişir; UI değişiklikleri bunu otomatik yansıtır.
+- `darkColors` ve `lightColors` aynı şemaya sahip; bir token (örn. `colors.accent`) iki paletin de uygun değerine çözümlenir. Yeni renk token'ı eklerken her iki palete de değer girin.
+
 ## Styling approach
 
-- **New UI:** Build with **`StyleSheet.create`** and theme tokens — match patterns in existing components ([`Card.tsx`](../../src/components/Card.tsx), [`PillButton.tsx`](../../src/components/PillButton.tsx)).
+- **New UI:** Build with **`StyleSheet.create`** ve tema-bilinçli `makeStyles()` factory'sini tercih edin. Örüntüler için [`Card.tsx`](../../src/components/Card.tsx), [`PillButton.tsx`](../../src/components/PillButton.tsx) referans alınabilir.
 - **Consistency:** Reuse shared components before adding new primitives.
 
 ## Motion (Reanimated)

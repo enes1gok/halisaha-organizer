@@ -22,7 +22,7 @@ import {
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PressableScale } from '../components/PressableScale';
 import { RsvpGoingButton } from '../components/RsvpGoingButton';
-import { colors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { RSVPStatus } from '../types/domain';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
@@ -41,7 +41,7 @@ import { MatchDetailPaymentPanel } from './MatchDetail/components/MatchDetailPay
 import { MatchDetailRosterPanel } from './MatchDetail/components/MatchDetailRosterPanel';
 import { MatchDetailSegmentControl } from './MatchDetail/components/MatchDetailSegmentControl';
 import { MatchDetailSummaryPanel } from './MatchDetail/components/MatchDetailSummaryPanel';
-import { matchDetailStyles } from './MatchDetail/matchDetailStyles';
+import { useMatchDetailStyles } from './MatchDetail/matchDetailStyles';
 import type { MatchDetailTab } from './MatchDetail/types';
 
 type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
@@ -60,6 +60,8 @@ const REMOTE_DETAIL_REFRESH_MS = 45_000;
 export function MatchDetailScreen() {
   const route = useRoute<MatchDetailRoute>();
   const navigation = useNavigation<Nav>();
+  const { colors } = useTheme();
+  const matchDetailStyles = useMatchDetailStyles();
   const { matchId } = route.params;
 
   const userId = useAuthStore((s) => s.getCurrentUserId());

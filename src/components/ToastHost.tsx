@@ -20,7 +20,8 @@ import {
   TAB_BAR_FLOAT_MARGIN_BOTTOM,
   TAB_BAR_FLOATING_BLOCK_HEIGHT,
 } from '../navigation/tabBarLayout';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { EasingPresets } from '../utils/animations';
 
 const SLIDE = 110;
@@ -46,6 +47,8 @@ type Props = {
 export function ToastHost({ entry, onConsumed }: Props) {
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const translateY = useSharedValue(SLIDE);
   const opacity = useSharedValue(0);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,41 +182,43 @@ export function ToastHost({ entry, onConsumed }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 99999,
-    elevation: 99999,
-    justifyContent: 'flex-end',
-  },
-  wrap: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.card,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderLeftWidth: 4,
-    maxWidth: 520,
-    alignSelf: 'center',
-    width: '100%',
-    ...shadows.md,
-  },
-  title: {
-    color: colors.text,
-  },
-  body: {
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  actionHit: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.sm,
-    minHeight: 44,
-    paddingVertical: spacing.xs,
-    justifyContent: 'center',
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 99999,
+      elevation: 99999,
+      justifyContent: 'flex-end',
+    },
+    wrap: {
+      position: 'absolute',
+      left: spacing.md,
+      right: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.card,
+      backgroundColor: t.colors.surface,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderLeftWidth: 4,
+      maxWidth: 520,
+      alignSelf: 'center',
+      width: '100%',
+      ...shadows.md,
+    },
+    title: {
+      color: t.colors.text,
+    },
+    body: {
+      color: t.colors.textMuted,
+      marginTop: spacing.xs,
+    },
+    actionHit: {
+      alignSelf: 'flex-start',
+      marginTop: spacing.sm,
+      minHeight: 44,
+      paddingVertical: spacing.xs,
+      justifyContent: 'center',
+    },
+  }),
+);

@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { PlayerAvatar } from '../../../components/PlayerAvatar';
 import { PositionBadge } from '../../../components/PositionBadge';
 import type { Attendee, Match, Player } from '../../../types/domain';
-import { matchDetailStyles as styles } from '../matchDetailStyles';
+import { useMatchDetailStyles } from '../matchDetailStyles';
 
 type Props = {
   match: Match;
@@ -18,6 +18,7 @@ export function MatchDetailRosterPanel({
   motmWinnerIds,
   ratingByPid,
 }: Props) {
+  const styles = useMatchDetailStyles();
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Oyuncular</Text>

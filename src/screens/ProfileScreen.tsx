@@ -29,7 +29,8 @@ import {
   ProfileStatsHeroSkeleton,
   SkeletonText,
 } from '../components/skeleton';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import type { Position, PreferredFoot } from '../types/domain';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { uploadProfileAvatar } from '../services/supabase/avatarUpload';
@@ -73,6 +74,8 @@ function footLabel(f: PreferredFoot): string {
 
 export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
+  const { colors } = useTheme();
+  const styles = useStyles();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const player = usePlayersStore((s) => s.players.find((p) => p.id === userId));
@@ -98,7 +101,7 @@ export function ProfileScreen() {
         </Pressable>
       ),
     });
-  }, [navigation]);
+  }, [navigation, colors.text, styles.headerBtn]);
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const editBaselineRef = useRef<ProfileEditBaseline | null>(null);
@@ -399,114 +402,116 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  headerBtn: {
-    paddingHorizontal: spacing.md,
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  emptyMsg: {
-    color: colors.textMuted,
-  },
-  skeletonRecentSection: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  skeletonRecentTitle: {
-    marginBottom: spacing.sm,
-  },
-  skeletonRank: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-  },
-  skeletonGap: {
-    marginTop: spacing.sm,
-  },
-  editBtn: {
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
-  },
-  sheetBg: {
-    backgroundColor: colors.surface,
-  },
-  handle: {
-    backgroundColor: colors.border,
-  },
-  sheetBody: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-    paddingBottom: spacing.xl,
-  },
-  sheetTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  label: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: spacing.sm,
-    color: colors.text,
-    fontFamily: 'Inter_400Regular',
-  },
-  rowWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  opt: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  optOn: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  optTxt: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  optTxtOn: {
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  pickPhotoBtn: {
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-    paddingHorizontal: spacing.md,
-  },
-  pickPhotoBtnPressed: {
-    opacity: 0.85,
-  },
-  pickPhotoBtnDisabled: {
-    opacity: 0.6,
-  },
-  pickPhotoTxt: {
-    ...typography.body,
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    headerBtn: {
+      paddingHorizontal: spacing.md,
+    },
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.colors.background,
+    },
+    emptyMsg: {
+      color: t.colors.textMuted,
+    },
+    skeletonRecentSection: {
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+    },
+    skeletonRecentTitle: {
+      marginBottom: spacing.sm,
+    },
+    skeletonRank: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+    },
+    skeletonGap: {
+      marginTop: spacing.sm,
+    },
+    editBtn: {
+      marginHorizontal: spacing.md,
+      marginTop: spacing.md,
+    },
+    sheetBg: {
+      backgroundColor: t.colors.surface,
+    },
+    handle: {
+      backgroundColor: t.colors.border,
+    },
+    sheetBody: {
+      padding: spacing.lg,
+      gap: spacing.sm,
+      paddingBottom: spacing.xl,
+    },
+    sheetTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      marginBottom: spacing.sm,
+    },
+    label: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginTop: spacing.sm,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 12,
+      padding: spacing.sm,
+      color: t.colors.text,
+      fontFamily: 'Inter_400Regular',
+    },
+    rowWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    opt: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 8,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.background,
+    },
+    optOn: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    optTxt: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    optTxtOn: {
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    pickPhotoBtn: {
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+      paddingHorizontal: spacing.md,
+    },
+    pickPhotoBtnPressed: {
+      opacity: 0.85,
+    },
+    pickPhotoBtnDisabled: {
+      opacity: 0.6,
+    },
+    pickPhotoTxt: {
+      ...typography.body,
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+  }),
+);

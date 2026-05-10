@@ -3,12 +3,12 @@ import React from 'react';
 import { Switch, Text, View } from 'react-native';
 import { PillButton } from '../../../components/PillButton';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../../../navigation/types';
-import { colors } from '../../../theme';
+import { useTheme } from '../../../theme/ThemeContext';
 import type { Match, Player, SelfReportRequest } from '../../../types/domain';
 import { formatMatchDateTime } from '../../../utils/dates';
 import { hasAssignedLineup } from '../../../utils/matchRoster';
 import { isRemoteMatchId } from '../../../utils/matchId';
-import { matchDetailStyles as styles } from '../matchDetailStyles';
+import { useMatchDetailStyles } from '../matchDetailStyles';
 
 type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type Nav = NativeStackNavigationProp<MatchStacks>;
@@ -59,6 +59,8 @@ export function MatchDetailSummaryPanel({
   onSetSelfReportEnabled,
 }: Props) {
   const matchId = match.id;
+  const { colors } = useTheme();
+  const styles = useMatchDetailStyles();
 
   return (
     <>

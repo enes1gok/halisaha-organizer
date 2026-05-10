@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PillButton } from './PillButton';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 
 type Props = {
   title: string;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function EmptyState({ title, subtitle, actionLabel, onAction, actionTestID }: Props) {
+  const styles = useStyles();
   return (
     <View style={styles.wrap}>
       <View style={styles.iconWrap}>
@@ -33,38 +35,40 @@ export function EmptyState({ title, subtitle, actionLabel, onAction, actionTestI
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-  },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  icon: {
-    fontSize: 36,
-  },
-  title: {
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  sub: {
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  btn: {
-    marginTop: spacing.sm,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    wrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.xl,
+      paddingHorizontal: spacing.lg,
+    },
+    iconWrap: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: t.colors.surface,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    icon: {
+      fontSize: 36,
+    },
+    title: {
+      color: t.colors.text,
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    sub: {
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      marginBottom: spacing.md,
+    },
+    btn: {
+      marginTop: spacing.sm,
+    },
+  }),
+);

@@ -44,6 +44,13 @@ export interface AuthSlice {
   getCurrentUserId: () => string;
 }
 
+export type ThemePreference = 'system' | 'light' | 'dark';
+
+export interface PreferencesSlice {
+  themePreference: ThemePreference;
+  setThemePreference: (preference: ThemePreference) => void;
+}
+
 export interface PlayersSlice {
   players: Player[];
   getPlayer: (id: string) => Player | undefined;
@@ -128,6 +135,7 @@ export interface GroupsSlice {
 export type AppState = AuthSlice &
   PlayersSlice &
   MatchesSlice &
-  GroupsSlice & {
+  GroupsSlice &
+  PreferencesSlice & {
     resetToSeed: () => void;
   };

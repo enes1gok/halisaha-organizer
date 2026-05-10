@@ -6,7 +6,8 @@ import { MatchCardSkeleton, MyMatchesCalendarSkeleton, SkeletonList } from '../c
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { resolveMyMatchesEntryScreen } from '../navigation/myMatchesEntry';
 import type { MyMatchesStackParamList } from '../navigation/types';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 import type { Match } from '../types/domain';
 import { MyMatchesAgenda, type MyMatchesAgendaHandle } from './MyMatches/components/MyMatchesAgenda';
 import { MyMatchesCalendar } from './MyMatches/components/MyMatchesCalendar';
@@ -20,6 +21,7 @@ const PROGRAMMATIC_SCROLL_GUARD_MS = 450;
 export function MyMatchesScreen() {
   const navigation = useNavigation<Nav>();
   const data = useMyMatchesData();
+  const styles = useStyles();
   const agendaRef = useRef<MyMatchesAgendaHandle>(null);
   const suppressPrimaryVisibleSyncRef = useRef(false);
   const skipNextAgendaScrollRef = useRef(false);
@@ -136,24 +138,26 @@ export function MyMatchesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  headerStack: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  calendarWrap: {
-    paddingBottom: spacing.xs,
-  },
-  skeletonBody: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
-  },
-  skeletonGap: {
-    height: spacing.md,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    headerStack: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+    },
+    calendarWrap: {
+      paddingBottom: spacing.xs,
+    },
+    skeletonBody: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
+    },
+    skeletonGap: {
+      height: spacing.md,
+    },
+  }),
+);
