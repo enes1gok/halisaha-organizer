@@ -8,7 +8,6 @@ select
   p.photo_uri,
   p.position,
   p.preferred_foot,
-  p.updated_at,
   p.weekly_match_streak_weeks,
   p.weekly_match_last_qualifying_week_start,
   case
@@ -18,7 +17,8 @@ select
       public.week_monday_istanbul(now()) - interval '7 days'
     )::date then 0
     else p.weekly_match_streak_weeks
-  end as weekly_match_streak_effective_weeks
+  end as weekly_match_streak_effective_weeks,
+  p.updated_at
 from public.profiles p;
 
 grant select on table public.profiles_public to authenticated;
