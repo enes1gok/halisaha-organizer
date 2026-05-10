@@ -5,7 +5,7 @@ import { PillButton } from './PillButton';
 import { PlayerAvatar } from './PlayerAvatar';
 import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
 import { colors, radius, spacing, typography } from '../theme';
-import type { Match, ScoreResult } from '../types/domain';
+import type { Match, Player, ScoreResult } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
 import { showUserFacingErrorAlert } from './UserFacingErrorAlert';
 import { formatMatchDateTime } from '../utils/dates';
@@ -27,6 +27,93 @@ export type PostMatchScoreFormProps = {
   showSelfReportToggle: boolean;
   onScoreSubmitted?: () => void;
 };
+
+type QuickSegment = 'teamA' | 'teamB' | 'unassigned';
+
+function QuickSelectPlayerRow({
+  player,
+  segment,
+  goals,
+  assists,
+  bumpGoals,
+  bumpAssists,
+}: {
+  player: Player;
+  segment: QuickSegment;
+  goals: Record<string, number>;
+  assists: Record<string, number>;
+  bumpGoals: (playerId: string, delta: number) => void;
+  bumpAssists: (playerId: string, delta: number) => void;
+}) {
+  const idPrefix =
+    segment === 'teamA'
+      ? 'postmatch:teamA'
+      : segment === 'teamB'
+        ? 'postmatch:teamB'
+        : 'postmatch:unassigned';
+
+  return (
+    <View
+      style={styles.row}
+      accessibilityLabel={`${player.name}, gol ${goals[player.id] ?? 0}, asist ${assists[player.id] ?? 0}`}
+    >
+      <PlayerAvatar name={player.name} uri={player.photoUri} size={32} />
+      <Text style={styles.name} numberOfLines={1}>
+        {player.name}
+      </Text>
+      <View style={styles.statsPair}>
+        <View style={styles.statCluster}>
+          <Text style={styles.statLabel}>Gol</Text>
+          <View style={styles.stepSmall}>
+            <Pressable
+              onPress={() => bumpGoals(player.id, -1)}
+              style={styles.stepCompact}
+              testID={`${idPrefix}:player:${player.id}:goal:dec`}
+              accessibilityLabel={`${player.name}, gol azalt`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.stepTxtSmall}>−</Text>
+            </Pressable>
+            <Text style={styles.ct}>{goals[player.id] ?? 0}</Text>
+            <Pressable
+              onPress={() => bumpGoals(player.id, 1)}
+              style={styles.stepCompact}
+              testID={`${idPrefix}:player:${player.id}:goal:inc`}
+              accessibilityLabel={`${player.name}, gol artır`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.stepTxtSmall}>+</Text>
+            </Pressable>
+          </View>
+        </View>
+        <View style={styles.statCluster}>
+          <Text style={styles.statLabel}>Asist</Text>
+          <View style={styles.stepSmall}>
+            <Pressable
+              onPress={() => bumpAssists(player.id, -1)}
+              style={styles.stepCompact}
+              testID={`${idPrefix}:player:${player.id}:assist:dec`}
+              accessibilityLabel={`${player.name}, asist azalt`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.stepTxtSmall}>−</Text>
+            </Pressable>
+            <Text style={styles.ct}>{assists[player.id] ?? 0}</Text>
+            <Pressable
+              onPress={() => bumpAssists(player.id, 1)}
+              style={styles.stepCompact}
+              testID={`${idPrefix}:player:${player.id}:assist:inc`}
+              accessibilityLabel={`${player.name}, asist artır`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.stepTxtSmall}>+</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export function PostMatchScoreForm({
   match,
@@ -63,16 +150,34 @@ export function PostMatchScoreForm({
     }
   }, [match.id, match.result]);
 
-  const playersList = useMemo(() => {
-    const ids = new Set<string>();
-    match.teamAIds.forEach((id) => ids.add(id));
-    match.teamBIds.forEach((id) => ids.add(id));
-    match.attendees
-      .filter((x) => x.status === 'going')
-      .forEach((x) => ids.add(x.playerId));
-    return Array.from(ids)
-      .map((id) => getPlayer(id))
-      .filter(Boolean) as NonNullable<ReturnType<typeof getPlayer>>[];
+  const { teamAPlayers, teamBPlayers, unassignedPlayers } = useMemo(() => {
+    const teamAIds = match.teamAIds;
+    const teamBIds = match.teamBIds;
+    const inTeamA = new Set(teamAIds);
+
+    const teamAPlayers: Player[] = [];
+    for (const id of teamAIds) {
+      const p = getPlayer(id);
+      if (p) teamAPlayers.push(p);
+    }
+
+    const teamBPlayers: Player[] = [];
+    for (const id of teamBIds) {
+      if (inTeamA.has(id)) continue;
+      const p = getPlayer(id);
+      if (p) teamBPlayers.push(p);
+    }
+
+    const assignedIds = new Set<string>([...teamAIds, ...teamBIds]);
+    const unassignedPlayers: Player[] = [];
+    for (const att of match.attendees) {
+      if (att.status !== 'going') continue;
+      if (assignedIds.has(att.playerId)) continue;
+      const p = getPlayer(att.playerId);
+      if (p) unassignedPlayers.push(p);
+    }
+
+    return { teamAPlayers, teamBPlayers, unassignedPlayers };
   }, [match.teamAIds, match.teamBIds, match.attendees, getPlayer]);
 
   const { totalFromScore, totalFromScorers, goalsMatchScore } = useMemo(() => {
@@ -173,39 +278,77 @@ export function PostMatchScoreForm({
 
       {canEditScore ? (
         <>
-          <Text style={styles.section}>Gol atanlar</Text>
-          {playersList.map((p) => (
-            <View key={p.id} style={styles.row}>
-              <PlayerAvatar name={p.name} uri={p.photoUri} size={32} />
-              <Text style={styles.name}>{p.name}</Text>
-              <View style={styles.stepSmall}>
-                <Pressable onPress={() => bump(setGoals, p.id, -1)}>
-                  <Text style={styles.stepTxt}>−</Text>
-                </Pressable>
-                <Text style={styles.ct}>{goals[p.id] ?? 0}</Text>
-                <Pressable onPress={() => bump(setGoals, p.id, 1)}>
-                  <Text style={styles.stepTxt}>+</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
+          <Text style={styles.quickSectionTitle} accessibilityRole="header">
+            Hızlı Seçim
+          </Text>
+          <Text style={styles.quickHint} accessibilityRole="text">
+            Oyuncular takımlarına göre listelenir.
+          </Text>
 
-          <Text style={styles.section}>Asistler</Text>
-          {playersList.map((p) => (
-            <View key={`a-${p.id}`} style={styles.row}>
-              <PlayerAvatar name={p.name} uri={p.photoUri} size={32} />
-              <Text style={styles.name}>{p.name}</Text>
-              <View style={styles.stepSmall}>
-                <Pressable onPress={() => bump(setAssists, p.id, -1)}>
-                  <Text style={styles.stepTxt}>−</Text>
-                </Pressable>
-                <Text style={styles.ct}>{assists[p.id] ?? 0}</Text>
-                <Pressable onPress={() => bump(setAssists, p.id, 1)}>
-                  <Text style={styles.stepTxt}>+</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
+          <Text
+            style={styles.teamSectionHead}
+            accessibilityRole="header"
+            accessibilityLabel={TEAM_SIDE_LABELS.A}
+          >
+            {TEAM_SIDE_LABELS.A}
+          </Text>
+          {teamAPlayers.length === 0 ? (
+            <Text style={styles.emptyTeam}>Kadroda oyuncu yok.</Text>
+          ) : (
+            teamAPlayers.map((p) => (
+              <QuickSelectPlayerRow
+                key={p.id}
+                player={p}
+                segment="teamA"
+                goals={goals}
+                assists={assists}
+                bumpGoals={(id, d) => bump(setGoals, id, d)}
+                bumpAssists={(id, d) => bump(setAssists, id, d)}
+              />
+            ))
+          )}
+
+          <Text
+            style={styles.teamSectionHead}
+            accessibilityRole="header"
+            accessibilityLabel={TEAM_SIDE_LABELS.B}
+          >
+            {TEAM_SIDE_LABELS.B}
+          </Text>
+          {teamBPlayers.length === 0 ? (
+            <Text style={styles.emptyTeam}>Kadroda oyuncu yok.</Text>
+          ) : (
+            teamBPlayers.map((p) => (
+              <QuickSelectPlayerRow
+                key={p.id}
+                player={p}
+                segment="teamB"
+                goals={goals}
+                assists={assists}
+                bumpGoals={(id, d) => bump(setGoals, id, d)}
+                bumpAssists={(id, d) => bump(setAssists, id, d)}
+              />
+            ))
+          )}
+
+          {unassignedPlayers.length > 0 ? (
+            <>
+              <Text style={styles.teamSectionHead} accessibilityRole="header">
+                Takım atanmamış
+              </Text>
+              {unassignedPlayers.map((p) => (
+                <QuickSelectPlayerRow
+                  key={p.id}
+                  player={p}
+                  segment="unassigned"
+                  goals={goals}
+                  assists={assists}
+                  bumpGoals={(id, d) => bump(setGoals, id, d)}
+                  bumpAssists={(id, d) => bump(setAssists, id, d)}
+                />
+              ))}
+            </>
+          ) : null}
         </>
       ) : null}
 
@@ -311,7 +454,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   stepTxt: { fontSize: 22, color: colors.text, fontFamily: 'Inter_600SemiBold' },
-  section: { ...typography.subtitle, color: colors.text, marginTop: spacing.md, marginBottom: spacing.sm },
+  quickSectionTitle: {
+    ...typography.subtitle,
+    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  quickHint: { ...typography.caption, color: colors.textMuted, marginBottom: spacing.sm },
+  teamSectionHead: {
+    ...typography.subtitle,
+    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  emptyTeam: { ...typography.caption, color: colors.textMuted, paddingVertical: spacing.xs },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -320,9 +476,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  name: { ...typography.body, color: colors.text, flex: 1 },
-  stepSmall: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  ct: { ...typography.subtitle, color: colors.text, minWidth: 28, textAlign: 'center' },
+  name: { ...typography.body, color: colors.text, flex: 1, minWidth: 0 },
+  statsPair: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md, flexShrink: 0 },
+  statCluster: { alignItems: 'center', gap: spacing.xs },
+  statLabel: { ...typography.micro, color: colors.textMuted },
+  stepSmall: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  stepCompact: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepTxtSmall: { fontSize: 20, color: colors.text, fontFamily: 'Inter_600SemiBold' },
+  ct: { ...typography.subtitle, color: colors.text, minWidth: 24, textAlign: 'center' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
