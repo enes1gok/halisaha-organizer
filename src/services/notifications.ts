@@ -1,5 +1,6 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabaseClient } from '../lib/supabase';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 
@@ -42,10 +43,24 @@ type InAppDelivery = {
 
 type InAppDeliveryRow = Omit<InAppDelivery, 'match' | 'group'> & {
   match:
-    | { starts_at: string | null; venue: string | null; organizer: { display_name: string | null }[] | null }[]
+    | {
+        starts_at: string | null;
+        venue: string | null;
+        score_a: number | null;
+        score_b: number | null;
+        organizer: { display_name: string | null }[] | null;
+      }[]
     | null;
   group: { name: string | null }[] | null;
 };
+
+type InAppDeliveryCursor = {
+  lastCreatedAt: string | null;
+  idsAtLastCreatedAt: string[];
+};
+
+const IN_APP_CURSOR_STORAGE_KEY = '@halisaha/in-app-deliveries:cursor';
+const IN_APP_COLD_START_LOOKBACK_MS = 30 * 60 * 1000;
 
 function normalizeInAppDelivery(row: InAppDeliveryRow): InAppDelivery {
   const matchRow = row.match?.[0] ?? null;
@@ -179,7 +194,55 @@ async function upsertPresence(appState: AppStateStatus): Promise<void> {
   );
 }
 
-async function showPendingInAppBanners(sinceIso: string): Promise<void> {
+function fallbackInAppSinceIso(): string {
+  return new Date(Date.now() - IN_APP_COLD_START_LOOKBACK_MS).toISOString();
+}
+
+async function readInAppDeliveryCursor(): Promise<InAppDeliveryCursor> {
+  const raw = await AsyncStorage.getItem(IN_APP_CURSOR_STORAGE_KEY);
+  if (!raw) return { lastCreatedAt: null, idsAtLastCreatedAt: [] };
+  try {
+    const parsed = JSON.parse(raw) as Partial<InAppDeliveryCursor>;
+    return {
+      lastCreatedAt: typeof parsed.lastCreatedAt === 'string' ? parsed.lastCreatedAt : null,
+      idsAtLastCreatedAt: Array.isArray(parsed.idsAtLastCreatedAt)
+        ? parsed.idsAtLastCreatedAt.filter((id): id is string => typeof id === 'string')
+        : [],
+    };
+  } catch {
+    return { lastCreatedAt: null, idsAtLastCreatedAt: [] };
+  }
+}
+
+async function writeInAppDeliveryCursor(cursor: InAppDeliveryCursor): Promise<void> {
+  await AsyncStorage.setItem(IN_APP_CURSOR_STORAGE_KEY, JSON.stringify(cursor));
+}
+
+function shouldSkipDeliveryForCursor(delivery: InAppDelivery, cursor: InAppDeliveryCursor): boolean {
+  if (!cursor.lastCreatedAt) return false;
+  if (delivery.created_at < cursor.lastCreatedAt) return true;
+  if (delivery.created_at === cursor.lastCreatedAt) {
+    return cursor.idsAtLastCreatedAt.includes(delivery.id);
+  }
+  return false;
+}
+
+function advanceCursor(cursor: InAppDeliveryCursor, delivery: InAppDelivery): InAppDeliveryCursor {
+  if (!cursor.lastCreatedAt || delivery.created_at > cursor.lastCreatedAt) {
+    return { lastCreatedAt: delivery.created_at, idsAtLastCreatedAt: [delivery.id] };
+  }
+  if (delivery.created_at === cursor.lastCreatedAt && !cursor.idsAtLastCreatedAt.includes(delivery.id)) {
+    return {
+      lastCreatedAt: cursor.lastCreatedAt,
+      idsAtLastCreatedAt: [...cursor.idsAtLastCreatedAt, delivery.id],
+    };
+  }
+  return cursor;
+}
+
+export async function drainPendingInAppDeliveries(sinceIso?: string): Promise<number> {
+  let cursor = await readInAppDeliveryCursor();
+  const lowerBoundIso = sinceIso ?? cursor.lastCreatedAt ?? fallbackInAppSinceIso();
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('notification_deliveries')
@@ -189,13 +252,15 @@ async function showPendingInAppBanners(sinceIso: string): Promise<void> {
        group:groups(name)`,
     )
     .eq('status', 'in_app')
-    .gte('created_at', sinceIso)
+    .gte('created_at', lowerBoundIso)
     .order('created_at', { ascending: true })
     .limit(20);
-  if (error) return;
+  if (error) return 0;
 
   const deliveries = ((data ?? []) as InAppDeliveryRow[]).map(normalizeInAppDelivery);
+  let shown = 0;
   for (const row of deliveries) {
+    if (shouldSkipDeliveryForCursor(row, cursor)) continue;
     if (handledInAppDeliveryIds.has(row.id)) continue;
     handledInAppDeliveryIds.add(row.id);
     const { title, body } = buildInAppMessage(row);
@@ -213,11 +278,16 @@ async function showPendingInAppBanners(sinceIso: string): Promise<void> {
       },
       trigger: null,
     });
+    cursor = advanceCursor(cursor, row);
+    shown += 1;
   }
+  if (shown > 0) {
+    await writeInAppDeliveryCursor(cursor);
+  }
+  return shown;
 }
 
 export function startContextAwareNotificationSync(): () => void {
-  const startedAtIso = new Date().toISOString();
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   let bannerPollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -245,9 +315,9 @@ export function startContextAwareNotificationSync(): () => void {
 
   bannerPollTimer = setInterval(() => {
     if (AppState.currentState !== 'active') return;
-    void showPendingInAppBanners(startedAtIso);
+    void drainPendingInAppDeliveries();
   }, 15_000);
-  void showPendingInAppBanners(startedAtIso);
+  void drainPendingInAppDeliveries();
 
   return () => {
     appStateSub.remove();
