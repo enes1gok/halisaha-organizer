@@ -259,12 +259,29 @@ export function MatchRatingsScreen() {
                     </Text>
                   </View>
                   {ratingMode === 'detailed' ? (
-                    <View style={styles.stepper}>
+                    <View
+                      accessible
+                      accessibilityRole="adjustable"
+                      accessibilityLabel={`${p.name} oyuncu puanı`}
+                      accessibilityValue={{
+                        min: 0,
+                        max: 100,
+                        now: cur ?? DEFAULT_SCORE,
+                        text: `${cur ?? DEFAULT_SCORE} puan`,
+                      }}
+                      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                      onAccessibilityAction={(e) => {
+                        if (e.nativeEvent.actionName === 'increment') bump(id, SCORE_STEP);
+                        if (e.nativeEvent.actionName === 'decrement') bump(id, -SCORE_STEP);
+                      }}
+                      style={styles.stepper}
+                      testID={`ratings:score:adjustable:${id}`}
+                    >
                       <Pressable
                         onPress={() => bump(id, -SCORE_STEP)}
                         style={styles.stepBtn}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${p.name} puanını azalt`}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
                         testID={`ratings:score:dec:${id}`}
                       >
                         <Text style={styles.stepLbl}>−</Text>
@@ -275,8 +292,8 @@ export function MatchRatingsScreen() {
                       <Pressable
                         onPress={() => bump(id, SCORE_STEP)}
                         style={styles.stepBtn}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${p.name} puanını artır`}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
                         testID={`ratings:score:inc:${id}`}
                       >
                         <Text style={styles.stepLbl}>+</Text>
@@ -296,6 +313,7 @@ export function MatchRatingsScreen() {
                           accessibilityRole="button"
                           accessibilityLabel={`${p.name} için ${band.label}, ${band.score} puan`}
                           accessibilityState={{ selected: on }}
+                          accessibilityValue={{ text: `${band.label}, ${band.score} puan` }}
                           testID={`ratings:quick:band:${band.id}:${id}`}
                           hitSlop={4}
                         >

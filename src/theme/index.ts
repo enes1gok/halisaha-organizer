@@ -73,7 +73,7 @@ export const lightColors: ColorPalette = {
   glassBorder: 'rgba(20, 28, 42, 0.12)',
   glassHighlight: 'rgba(0, 0, 0, 0.04)',
   text: '#0A0A0A',
-  textMuted: '#6B7280',
+  textMuted: '#525B68',
   accent: '#00A656',
   accentMuted: 'rgba(0, 166, 86, 0.12)',
   slate: '#4B5563',

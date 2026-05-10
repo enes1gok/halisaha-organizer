@@ -9,7 +9,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
@@ -22,6 +22,23 @@ import { startContextAwareNotificationSync } from './src/services/notifications'
 import { darkColors } from './src/theme';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { useAppStore } from './src/store';
+
+/**
+ * Sistem yazı ölçeği çarpanı için global tavan. Kullanıcı erişilebilirlik amacıyla
+ * sistem yazısını büyütebilir, ancak 1.6x'in üstünde layout (özellikle 44 yükseklik
+ * altındaki kontroller ve sabit pitch slot'ları) bozulur. Bu yüzden hem `<Text>`
+ * hem `<TextInput>` için tek noktada tavan koyuyoruz; ekran/bileşen düzeyinde
+ * adaptif düzen için ayrıca `useFontScale` hook'u kullanılır.
+ */
+const FONT_SCALE_CAP = 1.6;
+const TextWithDefaults = Text as unknown as { defaultProps?: { maxFontSizeMultiplier?: number } };
+TextWithDefaults.defaultProps = TextWithDefaults.defaultProps ?? {};
+TextWithDefaults.defaultProps.maxFontSizeMultiplier = FONT_SCALE_CAP;
+const TextInputWithDefaults = TextInput as unknown as {
+  defaultProps?: { maxFontSizeMultiplier?: number };
+};
+TextInputWithDefaults.defaultProps = TextInputWithDefaults.defaultProps ?? {};
+TextInputWithDefaults.defaultProps.maxFontSizeMultiplier = FONT_SCALE_CAP;
 
 function AppShell() {
   const { configured, loading, session, needsPasswordRecovery } = useSupabaseAuth();
