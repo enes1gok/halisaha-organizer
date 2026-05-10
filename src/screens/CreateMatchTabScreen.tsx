@@ -344,6 +344,25 @@ export function CreateMatchTabScreen() {
     setMaxPlayersInputText(String(c));
   }, [maxPlayers, maxPlayersInputText]);
 
+  const handlePriceChange = useCallback((text: string) => {
+    let cleaned = text.replace(/[^\d.,]/g, '');
+    if (!cleaned) {
+      setPrice('');
+      return;
+    }
+    if (price.endsWith(' ₺')) {
+      const oldClean = price.replace(/[^\d.,]/g, '');
+      if (text.length < price.length && cleaned === oldClean) {
+        cleaned = cleaned.slice(0, -1);
+      }
+    }
+    if (!cleaned) {
+      setPrice('');
+    } else {
+      setPrice(`${cleaned} ₺`);
+    }
+  }, [price]);
+
   const onSubmit = async () => {
     if (!venue.trim()) {
       showValidationToast('Eksik bilgi', 'Saha adını girin.');
@@ -388,7 +407,8 @@ export function CreateMatchTabScreen() {
       setMaxPlayers(mp);
       setMaxPlayersInputText(String(mp));
     }
-    const priceNum = price.trim() ? parseFloat(price.replace(',', '.')) : undefined;
+    const rawPrice = price.replace(/[^\d.,]/g, '');
+    const priceNum = rawPrice ? parseFloat(rawPrice.replace(',', '.')) : undefined;
     try {
       const m = await createMatch({
         venue: venue.trim(),
@@ -809,12 +829,12 @@ export function CreateMatchTabScreen() {
           </View>
           {paymentMethod !== 'note_only' ? (
             <>
-              <Text style={styles.label}>Kişi başı ücret (₺) — isteğe bağlı</Text>
+              <Text style={styles.label}>Kişi başı ücret — isteğe bağlı</Text>
               <BottomSheetTextInput
                 value={price}
-                onChangeText={setPrice}
+                onChangeText={handlePriceChange}
                 keyboardType="decimal-pad"
-                placeholder="0"
+                placeholder="0 ₺"
                 placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />

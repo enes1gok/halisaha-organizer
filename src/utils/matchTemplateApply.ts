@@ -101,7 +101,7 @@ export function applyMatchTemplateToFormFields(
 
   const priceStr =
     template.pricePerPerson != null && template.pricePerPerson > 0
-      ? String(template.pricePerPerson).replace('.', ',')
+      ? `${String(template.pricePerPerson).replace('.', ',')} ₺`
       : '';
 
   const useProfile = template.paymentMethod === 'iban' && template.ibanUsesProfile === true;
@@ -169,7 +169,8 @@ export function buildMatchTemplateFromForm(input: BuildMatchTemplateFromFormInpu
     localTime: formatLocalTimeFromDate(input.startsAt),
   };
 
-  const priceNum = input.price.trim() ? parseFloat(input.price.replace(',', '.')) : NaN;
+  const rawPrice = input.price.replace(/[^\d.,]/g, '');
+  const priceNum = rawPrice ? parseFloat(rawPrice.replace(',', '.')) : NaN;
   const pricePerPerson =
     input.paymentMethod === 'note_only'
       ? undefined

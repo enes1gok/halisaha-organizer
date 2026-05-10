@@ -107,9 +107,28 @@ export function GroupWeeklySeriesScreen() {
     setTimePicker(parseTimeToDate(cached.localTime));
     setVenue(cached.venue);
     setMaxPlayers(String(cached.maxPlayers));
-    setPrice(cached.pricePerPerson != null ? String(cached.pricePerPerson) : '');
+    setPrice(cached.pricePerPerson != null ? `${String(cached.pricePerPerson).replace('.', ',')} ₺` : '');
     setIban(cached.iban ? formatIbanForInput(cached.iban) : '');
   }, [cached]);
+
+  const handlePriceChange = useCallback((text: string) => {
+    let cleaned = text.replace(/[^\d.,]/g, '');
+    if (!cleaned) {
+      setPrice('');
+      return;
+    }
+    if (price.endsWith(' ₺')) {
+      const oldClean = price.replace(/[^\d.,]/g, '');
+      if (text.length < price.length && cleaned === oldClean) {
+        cleaned = cleaned.slice(0, -1);
+      }
+    }
+    if (!cleaned) {
+      setPrice('');
+    } else {
+      setPrice(`${cleaned} ₺`);
+    }
+  }, [price]);
 
   const onSave = async () => {
     if (!venue.trim()) {
@@ -122,7 +141,8 @@ export function GroupWeeklySeriesScreen() {
       return;
     }
     const mp = clampEvenMatchMaxPlayers(parseInt(maxPlayers || '14', 10) || 14);
-    const priceNum = price.trim() ? parseFloat(price.replace(',', '.')) : null;
+    const rawPrice = price.replace(/[^\d.,]/g, '');
+    const priceNum = rawPrice ? parseFloat(rawPrice.replace(',', '.')) : null;
     setSaving(true);
     try {
       await upsertSeries({
@@ -245,8 +265,10 @@ export function GroupWeeklySeriesScreen() {
       <TextInput
         style={styles.input}
         value={price}
-        onChangeText={setPrice}
+        onChangeText={handlePriceChange}
         keyboardType="decimal-pad"
+        placeholder="0 ₺"
+        placeholderTextColor={colors.textMuted}
         testID="groups:weekly:price"
       />
 
