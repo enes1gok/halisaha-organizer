@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,15 +12,26 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import Animated, {
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CalendarNotificationHero,
+  IntroFinishBurst,
+  IntroProgressBar,
   StatsLeaderboardHero,
   TacticalPreviewHero,
 } from '../components/app-intro';
 import { PillButton } from '../components/PillButton';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { colors, spacing, typography } from '../theme';
+import { Durations, Springs } from '../utils/animations';
 
 export type AppIntroScreenProps = {
   onComplete: () => void | Promise<void>;
@@ -52,6 +64,8 @@ const SLIDES: Slide[] = [
   },
 ];
 
+const AnimatedFlatList = Animated.FlatList<Slide>;
+
 export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
@@ -59,8 +73,19 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
   const listRef = useRef<FlatList<Slide>>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [finishing, setFinishing] = useState(false);
+  const [burstVisible, setBurstVisible] = useState(false);
+  const celebrationPlayedRef = useRef(false);
+
+  const scrollX = useSharedValue(0);
+  const slideWidthSV = useSharedValue(windowWidth);
+  const ctaScale = useSharedValue(1);
+  const ctaOpacity = useSharedValue(1);
 
   const slideWidth = windowWidth;
+
+  useEffect(() => {
+    slideWidthSV.value = slideWidth;
+  }, [slideWidth, slideWidthSV]);
 
   const onScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -70,6 +95,12 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
     },
     [slideWidth],
   );
+
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
 
   const goNext = useCallback(() => {
     if (pageIndex >= SLIDES.length - 1) return;
@@ -87,6 +118,33 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
       setFinishing(false);
     }
   }, [finishing, onComplete]);
+
+  useEffect(() => {
+    if (pageIndex !== SLIDES.length - 1) return;
+    if (celebrationPlayedRef.current) return;
+    celebrationPlayedRef.current = true;
+
+    let burstTimer: ReturnType<typeof setTimeout> | undefined;
+
+    if (reduceMotion) {
+      ctaOpacity.value = withSequence(
+        withTiming(0.9, { duration: Durations.fast }),
+        withTiming(1, { duration: Durations.fast }),
+      );
+    } else {
+      ctaScale.value = withSequence(
+        withSpring(1.045, Springs.interactive),
+        withSpring(1, Springs.interactive),
+      );
+      setBurstVisible(true);
+      burstTimer = setTimeout(() => setBurstVisible(false), 720);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    return () => {
+      if (burstTimer) clearTimeout(burstTimer);
+    };
+  }, [pageIndex, reduceMotion]);
 
   const renderHero = useCallback(
     (key: string) => {
@@ -130,17 +188,10 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
     [slideWidth],
   );
 
-  const dots = useMemo(
-    () =>
-      SLIDES.map((s, i) => (
-        <View
-          key={s.key}
-          style={[styles.dot, i === pageIndex ? styles.dotActive : undefined]}
-          accessibilityElementsHidden
-        />
-      )),
-    [pageIndex],
-  );
+  const ctaAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: ctaOpacity.value,
+    transform: [{ scale: ctaScale.value }],
+  }));
 
   const isLast = pageIndex === SLIDES.length - 1;
 
@@ -160,7 +211,7 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
         </Pressable>
       </View>
 
-      <FlatList
+      <AnimatedFlatList
         ref={listRef}
         style={styles.list}
         contentContainerStyle={styles.listContent}
@@ -170,6 +221,8 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onMomentumScrollEnd={onScrollEnd}
         getItemLayout={getItemLayout}
         onScrollToIndexFailed={(info) => {
@@ -183,16 +236,26 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
       />
 
       <View style={styles.footer}>
-        <View style={styles.dotsRow}>{dots}</View>
+        <IntroProgressBar
+          scrollX={scrollX}
+          slideWidth={slideWidthSV}
+          slideCount={SLIDES.length}
+          pageIndex={pageIndex}
+        />
+
+        {isLast && !reduceMotion ? <IntroFinishBurst visible={burstVisible} /> : null}
+
         {isLast ? (
-          <PillButton
-            title="Başla"
-            onPress={finish}
-            loading={finishing}
-            disabled={finishing}
-            testID="onboarding:intro:finish:press"
-            accessibilityLabel="Tanıtımı bitir ve devam et"
-          />
+          <Animated.View style={ctaAnimatedStyle}>
+            <PillButton
+              title="Başla"
+              onPress={finish}
+              loading={finishing}
+              disabled={finishing}
+              testID="onboarding:intro:finish:press"
+              accessibilityLabel="Tanıtımı bitir ve devam et"
+            />
+          </Animated.View>
         ) : (
           <PillButton
             title="İleri"
@@ -264,26 +327,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   footer: {
+    position: 'relative',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     gap: spacing.lg,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.accent,
-    width: 22,
-    borderRadius: 4,
   },
   finishingOverlay: {
     ...StyleSheet.absoluteFillObject,
