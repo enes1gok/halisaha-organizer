@@ -3,6 +3,7 @@ import * as Linking from 'expo-linking';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getEmailRedirectUrl, parseAuthCallbackUrl } from '../lib/authRedirect';
 import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from '../lib/supabase';
+import { startRemoteRealtimeSync, stopRemoteRealtimeSync } from '../services/supabase/realtime';
 import { registerForPushToken } from '../services/notifications';
 import { ensureThenFetchProfile } from '../services/supabase/profiles';
 import { deactivatePushToken, upsertPushToken } from '../services/supabase/pushTokens';
@@ -164,6 +165,15 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
   }, [configured, applySession]);
 
+  useEffect(() => {
+    if (!configured || !session?.user?.id) {
+      stopRemoteRealtimeSync();
+      return;
+    }
+    startRemoteRealtimeSync(getSupabaseClient());
+    return () => stopRemoteRealtimeSync();
+  }, [configured, session?.user?.id]);
+
   const handleAuthDeepLink = useCallback(
     async (url: string | null) => {
       if (!configured || !url) return;
@@ -324,6 +334,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const signOut = useCallback(async () => {
     if (!configured) return;
+    stopRemoteRealtimeSync();
     const supabase = getSupabaseClient();
     if (activePushToken) {
       try {
