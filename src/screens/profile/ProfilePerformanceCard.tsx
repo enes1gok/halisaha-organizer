@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Card } from '../../components/Card';
 import { colors, radius, spacing, typography } from '../../theme';
 import type { Player } from '../../types/domain';
+import { ProfileSparklineSection } from './ProfilePerformanceSparkline';
 
 type Props = {
   player: Player;
@@ -11,6 +12,7 @@ type Props = {
   levelLabel: string;
   tierProgress01: number;
   compositeScore: number;
+  sparklinePoints: number[];
 };
 
 export function ProfilePerformanceCard({
@@ -20,6 +22,7 @@ export function ProfilePerformanceCard({
   levelLabel,
   tierProgress01,
   compositeScore,
+  sparklinePoints,
 }: Props) {
   const { wins, losses, draws } = player.stats;
   const ratingAvg = player.stats.ratingAverage100;
@@ -48,6 +51,8 @@ export function ProfilePerformanceCard({
         >
           <View style={[styles.progressFill, { width: `${Math.round(tierProgress01 * 100)}%` }]} />
         </View>
+
+        <ProfileSparklineSection points={sparklinePoints} />
 
         <View style={styles.metrics}>
           <MetricRow label="Galibiyet oranı" value={`${winRatePct}%`} />

@@ -7,8 +7,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Platform,
@@ -30,6 +32,7 @@ import {
 import { colors, spacing, typography } from '../theme';
 import type { Position, PreferredFoot } from '../types/domain';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
+import { uploadProfileAvatar } from '../services/supabase/avatarUpload';
 import { updateCurrentUserProfile } from '../services/supabase/profiles';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import {
@@ -43,6 +46,12 @@ import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
 import { isValidTurkishIban, normalizeIban } from '../utils/iban';
+import {
+  buildProfileEditBaseline,
+  profileEditMatchesBaseline,
+  type ProfileEditBaseline,
+} from '../utils/profileEditBaseline';
+import { matchOutcomeForPlayer, sparklineTrendScores } from '../utils/profileMatchTrend';
 import { ProfileAccountSection } from './profile/ProfileAccountSection';
 import { ProfileGlobalRankCard } from './profile/ProfileGlobalRankCard';
 import { ProfileRecentMatches, type RecentMatchRow } from './profile/ProfileRecentMatches';
@@ -92,13 +101,15 @@ export function ProfileScreen() {
   }, [navigation]);
 
   const sheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['55%'], []);
+  const editBaselineRef = useRef<ProfileEditBaseline | null>(null);
+  const snapPoints = useMemo(() => ['62%'], []);
 
   const [name, setName] = useState(player?.name ?? '');
   const [photoUri, setPhotoUri] = useState(player?.photoUri ?? '');
   const [position, setPosition] = useState<Position>(player?.position ?? 'MID');
   const [foot, setFoot] = useState<PreferredFoot>(player?.preferredFoot ?? 'both');
   const [refreshing, setRefreshing] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const { iban, syncFromStored, onChange: onIbanChange, onFocus: onIbanFocus } = useTurkishIbanField(
     player?.iban,
@@ -114,6 +125,11 @@ export function ProfileScreen() {
     [matches, player],
   );
 
+  const sparklinePoints = useMemo(
+    () => (player ? sparklineTrendScores(matches, effectiveUserId, 10) : []),
+    [effectiveUserId, matches, player],
+  );
+
   const recent: RecentMatchRow[] = useMemo(() => {
     const finished = matches
       .filter((m) => m.status === 'finished' && m.result)
@@ -122,30 +138,75 @@ export function ProfileScreen() {
 
     return finished.map((m) => {
       const r = m.result!;
-      const inA = m.teamAIds.includes(effectiveUserId);
-      const inB = m.teamBIds.includes(effectiveUserId);
       const myGoals = r.scorers.find((s) => s.playerId === effectiveUserId)?.count ?? 0;
-      let outcome: 'W' | 'L' | 'D';
-      if (r.scoreA === r.scoreB) outcome = 'D';
-      else if (inA) outcome = r.scoreA > r.scoreB ? 'W' : 'L';
-      else if (inB) outcome = r.scoreB > r.scoreA ? 'W' : 'L';
-      else outcome = 'D';
+      const outcome = matchOutcomeForPlayer(m, effectiveUserId) ?? 'D';
       return { m, outcome, myGoals };
     });
   }, [effectiveUserId, matches]);
 
   const openEdit = () => {
+    if (!player) return;
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setName(player?.name ?? '');
-    setPhotoUri(player?.photoUri ?? '');
-    setPosition(player?.position ?? 'MID');
-    setFoot(player?.preferredFoot ?? 'both');
-    syncFromStored(player?.iban);
+    setName(player.name);
+    setPhotoUri(player.photoUri ?? '');
+    setPosition(player.position);
+    setFoot(player.preferredFoot);
+    syncFromStored(player.iban);
+    editBaselineRef.current = buildProfileEditBaseline({
+      name: player.name,
+      photoUri: player.photoUri,
+      position: player.position,
+      preferredFoot: player.preferredFoot,
+      ibanStored: player.iban,
+    });
     sheetRef.current?.present();
+  };
+
+  const pickAvatarFromLibrary = async () => {
+    if (!player) return;
+    if (!configured || session?.user?.id !== player.id) {
+      Alert.alert('Giriş gerekli', 'Profil fotoğrafı yüklemek için oturum açmalısınız.');
+      return;
+    }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('İzin gerekli', 'Galeriden fotoğraf seçmek için erişim izni verin.');
+      return;
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.9,
+    });
+    if (picked.canceled || !picked.assets[0]?.uri) return;
+    setAvatarUploading(true);
+    try {
+      const url = await uploadProfileAvatar(picked.assets[0].uri);
+      setPhotoUri(url);
+    } catch {
+      Alert.alert('Yükleme', 'Fotoğraf yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.');
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const save = async () => {
     if (!player) return;
+    const baseline = editBaselineRef.current;
+    if (
+      baseline &&
+      profileEditMatchesBaseline(baseline, {
+        name,
+        photoUriInput: photoUri,
+        position,
+        preferredFoot: foot,
+        ibanInput: iban,
+      })
+    ) {
+      sheetRef.current?.dismiss();
+      return;
+    }
     const ibanNorm = normalizeIban(iban);
     if (ibanNorm.length > 0 && !isValidTurkishIban(ibanNorm)) {
       Alert.alert(
@@ -226,7 +287,7 @@ export function ProfileScreen() {
   if (!player) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: colors.textMuted }}>Oyuncu bulunamadı</Text>
+        <Text style={styles.emptyMsg}>Oyuncu bulunamadı</Text>
       </View>
     );
   }
@@ -244,6 +305,7 @@ export function ProfileScreen() {
         levelLabel={level}
         tierProgress01={tierProgress01}
         compositeScore={compositeScore}
+        sparklinePoints={sparklinePoints}
       />
 
       <ProfileGlobalRankCard userId={player.id} remoteUserId={remoteUserId} refreshKey={rankRefreshKey} />
@@ -276,7 +338,26 @@ export function ProfileScreen() {
             style={styles.input}
             placeholderTextColor={colors.textMuted}
           />
-          <Text style={styles.label}>Fotoğraf URL</Text>
+          <Text style={styles.label}>Fotoğraf</Text>
+          <Pressable
+            onPress={pickAvatarFromLibrary}
+            disabled={avatarUploading}
+            style={({ pressed }) => [
+              styles.pickPhotoBtn,
+              pressed && styles.pickPhotoBtnPressed,
+              avatarUploading && styles.pickPhotoBtnDisabled,
+            ]}
+            testID="profile:avatar-pick:press"
+            accessibilityRole="button"
+            accessibilityLabel="Galeriden fotoğraf seç"
+          >
+            {avatarUploading ? (
+              <ActivityIndicator color={colors.accent} />
+            ) : (
+              <Text style={styles.pickPhotoTxt}>Galeriden seç</Text>
+            )}
+          </Pressable>
+          <Text style={styles.label}>Fotoğraf URL (isteğe bağlı)</Text>
           <BottomSheetTextInput
             value={photoUri}
             onChangeText={setPhotoUri}
@@ -331,6 +412,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
+  },
+  emptyMsg: {
+    color: colors.textMuted,
   },
   skeletonRecentSection: {
     paddingHorizontal: spacing.md,
@@ -401,6 +485,27 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   optTxtOn: {
+    color: colors.accent,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  pickPhotoBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentMuted,
+    paddingHorizontal: spacing.md,
+  },
+  pickPhotoBtnPressed: {
+    opacity: 0.85,
+  },
+  pickPhotoBtnDisabled: {
+    opacity: 0.6,
+  },
+  pickPhotoTxt: {
+    ...typography.body,
     color: colors.accent,
     fontFamily: 'Inter_600SemiBold',
   },

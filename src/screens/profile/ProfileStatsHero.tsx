@@ -11,6 +11,7 @@ type Props = {
   levelLabel: string;
   tierProgress01: number;
   compositeScore: number;
+  sparklinePoints: number[];
 };
 
 export function ProfileStatsHero({
@@ -20,6 +21,7 @@ export function ProfileStatsHero({
   levelLabel,
   tierProgress01,
   compositeScore,
+  sparklinePoints,
 }: Props) {
   return (
     <>
@@ -36,6 +38,7 @@ export function ProfileStatsHero({
         levelLabel={levelLabel}
         tierProgress01={tierProgress01}
         compositeScore={compositeScore}
+        sparklinePoints={sparklinePoints}
       />
     </>
   );
