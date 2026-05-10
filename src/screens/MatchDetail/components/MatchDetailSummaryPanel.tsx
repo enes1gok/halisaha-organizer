@@ -188,14 +188,21 @@ export function MatchDetailSummaryPanel({
               />
             ) : null}
           </View>
-          <View style={[styles.rowBetween, styles.mt]}>
-            <Text style={styles.body}>Oyuncular kendi bildirsin</Text>
-            <Switch
-              value={match.selfReportEnabled}
-              onValueChange={(v) => onSetSelfReportEnabled(v)}
-              trackColor={{ false: colors.border, true: colors.accentMuted }}
-              thumbColor={match.selfReportEnabled ? colors.accent : colors.textMuted}
-            />
+          <View style={styles.mt}>
+            <View style={styles.rowBetween}>
+              <View style={styles.flex}>
+                <Text style={styles.body}>Oyuncular kendi bildirsin</Text>
+                <Text style={styles.muted}>
+                  Açıkken oyuncular maç sırasında kendi gol ve asistlerini bildirebilir; organizatör veya karşı takım onaylar.
+                </Text>
+              </View>
+              <Switch
+                value={match.selfReportEnabled}
+                onValueChange={(v) => onSetSelfReportEnabled(v)}
+                trackColor={{ false: colors.border, true: colors.accentMuted }}
+                thumbColor={match.selfReportEnabled ? colors.accent : colors.textMuted}
+              />
+            </View>
           </View>
         </View>
       ) : null}
