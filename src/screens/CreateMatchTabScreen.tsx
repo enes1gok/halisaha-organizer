@@ -206,7 +206,7 @@ export function CreateMatchTabScreen() {
     showToast,
   ]);
 
-  const { startsAtDateLine, startsAtTimeLine, startsAtAccessibilityLabel } = useMemo(() => {
+  const { startsAtDateLine, startsAtTimeLine } = useMemo(() => {
     const dateLine = startsAt.toLocaleDateString('tr-TR', {
       day: '2-digit',
       month: '2-digit',
@@ -216,18 +216,13 @@ export function CreateMatchTabScreen() {
       hour: '2-digit',
       minute: '2-digit',
     });
-    const a11y = startsAt.toLocaleString('tr-TR', {
-      dateStyle: 'long',
-      timeStyle: 'short',
-    });
     return {
       startsAtDateLine: dateLine,
       startsAtTimeLine: timeLine,
-      startsAtAccessibilityLabel: a11y,
     };
   }, [startsAt]);
 
-  const [showPicker, setShowPicker] = useState(false);
+  const [iosPickerMode, setIosPickerMode] = useState<'date' | 'time' | null>(null);
   /** Android: `datetime` mode is unsupported; use date then time (see datetimepicker issue 907). */
   const [androidPickerStep, setAndroidPickerStep] = useState<'date' | 'time' | null>(null);
   const [pickerMinDate, setPickerMinDate] = useState(() => new Date());
@@ -248,7 +243,7 @@ export function CreateMatchTabScreen() {
         );
         return normalizeStartsAtFromPicker(merged);
       });
-      setAndroidPickerStep('time');
+      setAndroidPickerStep(null);
     }
   };
 
@@ -609,34 +604,64 @@ export function CreateMatchTabScreen() {
           />
           </View>
           <View onLayout={setStepAnchorY(2)}>
-          <Text style={styles.label}>Tarih ve saat</Text>
-          <PillButton
-            variant="ghost"
-            testID="match:create:starts-at"
-            accessibilityLabel={startsAtAccessibilityLabel}
-            onPress={() => {
-              setPickerMinDate(new Date());
-              if (Platform.OS === 'android') {
-                setAndroidPickerStep('date');
-              } else {
-                setShowPicker(true);
-              }
-            }}
-          >
-            <View style={styles.startsAtButtonInner}>
-              <Text style={styles.startsAtDateLine}>{startsAtDateLine}</Text>
-              <Text style={styles.startsAtTimeLine}>{startsAtTimeLine}</Text>
+          <View style={styles.startsAtButtonsRow}>
+            <View style={styles.startsAtSegmentColumn}>
+              <Text style={styles.label}>Tarih</Text>
+              <PillButton
+                variant="ghost"
+                style={styles.startsAtSegmentButton}
+                testID="match:create:starts-at-date"
+                accessibilityLabel={`Tarih: ${startsAtDateLine}`}
+                onPress={() => {
+                  setPickerMinDate(new Date());
+                  if (Platform.OS === 'android') {
+                    setAndroidPickerStep('date');
+                  } else {
+                    setIosPickerMode('date');
+                  }
+                }}
+              >
+                <Text style={styles.startsAtDateLine}>{startsAtDateLine}</Text>
+              </PillButton>
             </View>
-          </PillButton>
-          {Platform.OS === 'ios' && showPicker ? (
+            <View style={styles.startsAtSegmentColumn}>
+              <Text style={styles.label}>Saat</Text>
+              <PillButton
+                variant="ghost"
+                style={styles.startsAtSegmentButton}
+                testID="match:create:starts-at-time"
+                accessibilityLabel={`Saat: ${startsAtTimeLine}`}
+                onPress={() => {
+                  setPickerMinDate(new Date());
+                  if (Platform.OS === 'android') {
+                    setAndroidPickerStep('time');
+                  } else {
+                    setIosPickerMode('time');
+                  }
+                }}
+              >
+                <Text style={styles.startsAtTimeLine}>{startsAtTimeLine}</Text>
+              </PillButton>
+            </View>
+          </View>
+          {Platform.OS === 'ios' && iosPickerMode === 'date' ? (
             <DateTimePicker
               value={startsAt}
-              mode="datetime"
+              mode="date"
               display="spinner"
-              minuteInterval={30}
               minimumDate={pickerMinDate}
               onChange={(_, d) => {
-                setShowPicker(Platform.OS === 'ios');
+                if (d) setStartsAt(normalizeStartsAtFromPicker(d));
+              }}
+            />
+          ) : null}
+          {Platform.OS === 'ios' && iosPickerMode === 'time' ? (
+            <DateTimePicker
+              value={startsAt}
+              mode="time"
+              display="spinner"
+              minuteInterval={30}
+              onChange={(_, d) => {
                 if (d) setStartsAt(normalizeStartsAtFromPicker(d));
               }}
             />
@@ -1231,18 +1256,29 @@ const useStyles = makeStyles((t) =>
       color: t.colors.accent,
       fontFamily: 'Inter_600SemiBold',
     },
-    startsAtButtonInner: {
-      alignItems: 'center',
+    startsAtButtonsRow: {
+      flexDirection: 'row',
+      width: '100%',
+      gap: spacing.sm,
+    },
+    startsAtSegmentColumn: {
+      flex: 1,
+      minWidth: 0,
       gap: spacing.xs,
+    },
+    startsAtSegmentButton: {
+      width: '100%',
     },
     startsAtDateLine: {
       ...typography.subtitle,
       fontSize: 15,
       color: t.colors.text,
+      textAlign: 'center',
     },
     startsAtTimeLine: {
       ...typography.caption,
       color: t.colors.textMuted,
+      textAlign: 'center',
     },
     paymentSegmentRow: {
       flexDirection: 'row',
