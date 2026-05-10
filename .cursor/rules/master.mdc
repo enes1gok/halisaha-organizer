@@ -27,6 +27,7 @@ alwaysApply: true
 | Supabase error mapping, `ERR_*` tokens, `mapSupabaseError`, RPC `raise_app_error`, error logging | `error-handling-governance.mdc` |
 | Push queue / `notification_deliveries`, notification Edge Functions, enqueue/drain RPCs, notification pgTAP | `notification-governance.mdc` |
 | Taktik tahta / Kadro Kur: pitch koordinatları, drop zone ölçümü, swap, haptics, reduce-motion | `tactical-board-governance.mdc` |
+| Oturum öncesi App Intro, OnboardingNavigator, AuthWelcome, tanıtım görselleri | `onboarding-governance.mdc` |
 
 Rules apply when matching files are open (`globs`) or when the task clearly fits the column.
 
