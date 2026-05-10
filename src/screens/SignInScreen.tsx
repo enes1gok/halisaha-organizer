@@ -26,7 +26,8 @@ export function SignInScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<SignInRoute>();
   const insets = useSafeAreaInsets();
-  const { signInWithEmail, resendSignupConfirmationEmail } = useSupabaseAuth();
+  const { signInWithEmail, resendSignupConfirmationEmail, requestPasswordResetEmail } =
+    useSupabaseAuth();
 
   const [email, setEmail] = useState(() => route.params?.prefilledEmail?.trim() ?? '');
   const [password, setPassword] = useState('');
@@ -82,6 +83,25 @@ export function SignInScreen() {
     Alert.alert('Giriş', error.message);
   };
 
+  const handleForgotPassword = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      Alert.alert('Şifre sıfırlama', 'Önce e-posta adresinizi girin.');
+      return;
+    }
+    setBusy(true);
+    const { error } = await requestPasswordResetEmail(trimmed);
+    setBusy(false);
+    if (error) {
+      Alert.alert('Şifre sıfırlama', error.message);
+      return;
+    }
+    Alert.alert(
+      'Şifre sıfırlama',
+      'Bağlantı e-postayla gönderildi. Gelen kutunuzu kontrol edin.',
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -104,7 +124,20 @@ export function SignInScreen() {
             busy={busy}
             emailTestID="onboarding:signin:email:input"
             passwordTestID="onboarding:signin:password:input"
+            passwordVisibilityTestID="onboarding:password-visibility:signin"
           />
+
+          <View style={styles.forgotPasswordRow}>
+            <Pressable
+              onPress={() => void handleForgotPassword()}
+              disabled={busy}
+              accessibilityRole="link"
+              accessibilityLabel="Şifremi unuttum"
+              testID="onboarding:signin:forgot-password:press"
+            >
+              <Text style={styles.footerLinkAccent}>Şifremi unuttum</Text>
+            </Pressable>
+          </View>
 
           <View style={styles.actions}>
             <PillButton

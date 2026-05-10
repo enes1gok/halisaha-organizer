@@ -20,6 +20,8 @@ export type SupabaseAuthContextValue = {
   configured: boolean;
   loading: boolean;
   session: Session | null;
+  /** Şifre sıfırlama bağlantısından sonra yeni şifre ekranı gösterilir */
+  needsPasswordRecovery: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (
     email: string,
@@ -30,6 +32,8 @@ export type SupabaseAuthContextValue = {
   refreshRemoteProfile: () => Promise<void>;
   refreshAuthSession: () => Promise<void>;
   resendSignupConfirmationEmail: (emailOverride?: string) => Promise<{ error: Error | null }>;
+  requestPasswordResetEmail: (email: string) => Promise<{ error: Error | null }>;
+  completePasswordRecovery: (newPassword: string) => Promise<{ error: Error | null }>;
 };
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextValue | null>(null);
@@ -56,6 +60,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const syncPlayerFromRemoteProfile = usePlayersStore((s) => s.syncPlayerFromRemoteProfile);
   const hydrateRemoteGroups = useGroupsStore((s) => s.hydrateRemoteGroups);
   const [activePushToken, setActivePushToken] = useState<string | null>(null);
+  const [needsPasswordRecovery, setNeedsPasswordRecovery] = useState(false);
   const lastHandledAuthUrlRef = useRef<string | null>(null);
 
   const pushProfileToStore = useCallback(
@@ -145,7 +150,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, next) => {
+    } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setNeedsPasswordRecovery(true);
+      }
       void applySession(next);
     });
 
@@ -252,6 +260,33 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     [configured],
   );
 
+  const requestPasswordResetEmail = useCallback(
+    async (email: string) => {
+      if (!configured) return { error: new Error('Supabase yapılandırılmadı') };
+      const trimmed = email.trim();
+      if (!trimmed) return { error: new Error('E-posta gerekli') };
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: getEmailRedirectUrl(),
+      });
+      return { error: error ? new Error(error.message) : null };
+    },
+    [configured],
+  );
+
+  const completePasswordRecovery = useCallback(
+    async (newPassword: string) => {
+      if (!configured) return { error: new Error('Supabase yapılandırılmadı') };
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (!error) {
+        setNeedsPasswordRecovery(false);
+      }
+      return { error: error ? new Error(error.message) : null };
+    },
+    [configured],
+  );
+
   const signUpWithEmail = useCallback(
     async (email: string, password: string, displayName: string): Promise<SignUpResult> => {
       if (!configured) return { error: new Error('Supabase yapılandırılmadı') };
@@ -292,6 +327,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     setRemoteUserId(null);
     setSession(null);
     setActivePushToken(null);
+    setNeedsPasswordRecovery(false);
     useAppStore.setState((state) => ({
       matches: state.matches.filter((m) => !isRemoteMatchId(m.id)),
       groups: [],
@@ -304,23 +340,29 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       configured,
       loading,
       session,
+      needsPasswordRecovery,
       signInWithEmail,
       signUpWithEmail,
       signOut,
       refreshRemoteProfile,
       refreshAuthSession,
       resendSignupConfirmationEmail,
+      requestPasswordResetEmail,
+      completePasswordRecovery,
     }),
     [
       configured,
       loading,
       session,
+      needsPasswordRecovery,
       signInWithEmail,
       signUpWithEmail,
       signOut,
       refreshRemoteProfile,
       refreshAuthSession,
       resendSignupConfirmationEmail,
+      requestPasswordResetEmail,
+      completePasswordRecovery,
     ],
   );
 

@@ -16,13 +16,14 @@ import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAut
 import { ToastProvider } from './src/context/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
+import { SetNewPasswordScreen } from './src/screens/SetNewPasswordScreen';
 import { openGroupDetail, openMatchDetail } from './src/navigation/navigationActions';
 import { startContextAwareNotificationSync } from './src/services/notifications';
 import { colors } from './src/theme';
 import { useAppStore } from './src/store';
 
 function AppShell() {
-  const { configured, loading, session } = useSupabaseAuth();
+  const { configured, loading, session, needsPasswordRecovery } = useSupabaseAuth();
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -42,10 +43,10 @@ function AppShell() {
   }, []);
 
   useEffect(() => {
-    if (!configured || !session) return;
+    if (!configured || !session || needsPasswordRecovery) return;
     const stopSync = startContextAwareNotificationSync();
     return () => stopSync();
-  }, [configured, session]);
+  }, [configured, session, needsPasswordRecovery]);
 
   if (configured && loading) {
     return (
@@ -59,6 +60,15 @@ function AppShell() {
     return (
       <>
         <OnboardingNavigator />
+        <StatusBar style="light" />
+      </>
+    );
+  }
+
+  if (configured && session && needsPasswordRecovery) {
+    return (
+      <>
+        <SetNewPasswordScreen />
         <StatusBar style="light" />
       </>
     );

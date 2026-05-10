@@ -25,26 +25,23 @@ export function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const { signUpWithEmail } = useSupabaseAuth();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
   const handleSignUp = async () => {
-    const fn = firstName.trim();
-    const ln = lastName.trim();
-    if (!fn || !ln) {
-      Alert.alert('Kayıt', 'Lütfen isim ve soyisim girin.');
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+      Alert.alert('Kayıt', 'Lütfen görünen adınızı girin.');
       return;
     }
     if (!email.trim() || !password) {
       Alert.alert('Kayıt', 'Lütfen e-posta ve şifre girin.');
       return;
     }
-    const displayName = `${fn} ${ln}`;
     setBusy(true);
-    const { error, sessionCreated } = await signUpWithEmail(email, password, displayName);
+    const { error, sessionCreated } = await signUpWithEmail(email, password, trimmedName);
     setBusy(false);
     if (error) {
       Alert.alert('Kayıt', error.message);
@@ -69,29 +66,17 @@ export function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
-          <Text style={[styles.label, { marginTop: 0 }]}>İsim</Text>
+          <Text style={[styles.label, { marginTop: 0 }]}>Görünen ad</Text>
           <TextInput
             style={styles.input}
-            placeholder="Adınız"
+            placeholder="Ad Soyad veya kullanıcı adı"
             placeholderTextColor={colors.textMuted}
             autoCapitalize="words"
-            value={firstName}
-            onChangeText={setFirstName}
+            value={displayName}
+            onChangeText={setDisplayName}
             editable={!busy}
-            testID="onboarding:signup:firstname:input"
-            accessibilityLabel="İsim"
-          />
-          <Text style={styles.label}>Soyisim</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Soyadınız"
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="words"
-            value={lastName}
-            onChangeText={setLastName}
-            editable={!busy}
-            testID="onboarding:signup:lastname:input"
-            accessibilityLabel="Soyisim"
+            testID="onboarding:signup:displayname:input"
+            accessibilityLabel="Görünen ad"
           />
           <EmailPasswordFields
             email={email}
@@ -101,6 +86,7 @@ export function SignUpScreen() {
             busy={busy}
             emailTestID="onboarding:signup:email:input"
             passwordTestID="onboarding:signup:password:input"
+            passwordVisibilityTestID="onboarding:password-visibility:signup"
           />
 
           <View style={styles.actions}>

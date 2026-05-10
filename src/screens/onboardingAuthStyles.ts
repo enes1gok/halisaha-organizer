@@ -62,6 +62,30 @@ export const onboardingAuthStyles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     backgroundColor: colors.background,
   },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.background,
+    paddingLeft: spacing.sm,
+    paddingRight: spacing.xs,
+  },
+  passwordInputFlex: {
+    flex: 1,
+    paddingVertical: spacing.sm + 2,
+    color: colors.text,
+    fontFamily: 'Inter_400Regular',
+    minHeight: 44,
+  },
+  passwordToggle: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   actions: {
     gap: spacing.sm,
     marginTop: spacing.md,
@@ -87,5 +111,9 @@ export const onboardingAuthStyles = StyleSheet.create({
   footerLinkAccent: {
     color: colors.accent,
     fontFamily: 'Inter_600SemiBold',
+  },
+  forgotPasswordRow: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.xs,
   },
 });

@@ -1,5 +1,6 @@
-import React from 'react';
-import { Text, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { colors } from '../theme';
 import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
 
@@ -11,6 +12,8 @@ type Props = {
   busy: boolean;
   emailTestID: string;
   passwordTestID: string;
+  /** Defaults to onboarding:password-visibility:toggle */
+  passwordVisibilityTestID?: string;
 };
 
 export function EmailPasswordFields({
@@ -21,7 +24,10 @@ export function EmailPasswordFields({
   busy,
   emailTestID,
   passwordTestID,
+  passwordVisibilityTestID = 'onboarding:password-visibility:toggle',
 }: Props) {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
   return (
     <>
       <Text style={styles.label}>E-posta</Text>
@@ -40,17 +46,35 @@ export function EmailPasswordFields({
       />
 
       <Text style={styles.label}>Şifre</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="••••••••"
-        placeholderTextColor={colors.textMuted}
-        secureTextEntry
-        value={password}
-        onChangeText={onPasswordChange}
-        editable={!busy}
-        testID={passwordTestID}
-        accessibilityLabel="Şifre"
-      />
+      <View style={styles.passwordRow}>
+        <TextInput
+          style={styles.passwordInputFlex}
+          placeholder="••••••••"
+          placeholderTextColor={colors.textMuted}
+          secureTextEntry={!passwordVisible}
+          value={password}
+          onChangeText={onPasswordChange}
+          editable={!busy}
+          testID={passwordTestID}
+          accessibilityLabel="Şifre"
+        />
+        <Pressable
+          style={styles.passwordToggle}
+          onPress={() => setPasswordVisible((v) => !v)}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel={passwordVisible ? 'Şifreyi gizle' : 'Şifreyi göster'}
+          accessibilityState={{ selected: passwordVisible }}
+          testID={passwordVisibilityTestID}
+          hitSlop={4}
+        >
+          <Ionicons
+            name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+            size={22}
+            color={colors.textMuted}
+          />
+        </Pressable>
+      </View>
     </>
   );
 }
