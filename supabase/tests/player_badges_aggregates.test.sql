@@ -46,6 +46,9 @@ select lives_ok(
   'submit_match_result updates badge aggregates'
 );
 
+-- player_rating_aggregates: RLS without client SELECT — read as privileged session (see rls_rating_aggregates.test.sql).
+select tests.reset_session();
+
 select is(
   (select career_goals from public.player_rating_aggregates where player_id = tests.uuid_participant()),
   2,
