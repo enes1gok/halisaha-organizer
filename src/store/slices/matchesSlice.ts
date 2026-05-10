@@ -202,17 +202,37 @@ function respondLocalSelfReport(
   requestId: string,
   approve: boolean,
 ) {
-  set((state) => ({
-    matches: state.matches.map((m) => {
+  set((state) => {
+    const matches = state.matches.map((m) => {
       if (m.id !== matchId) return m;
-      return {
-        ...m,
-        selfReports: m.selfReports.map((r) =>
-          r.id === requestId ? { ...r, status: approve ? ('approved' as const) : ('rejected' as const) } : r,
-        ),
-      };
-    }),
-  }));
+      const selfReports = m.selfReports.map((r) =>
+        r.id === requestId ? { ...r, status: approve ? ('approved' as const) : ('rejected' as const) } : r,
+      );
+      const reqRow = selfReports.find((r) => r.id === requestId);
+      let next: Match = { ...m, selfReports };
+      if (approve && reqRow?.status === 'approved' && m.status === 'finished' && m.result) {
+        if (reqRow.type === 'goal') {
+          next = {
+            ...next,
+            result: {
+              ...m.result,
+              scorers: mergeStatLines(m.result.scorers, reqRow.playerId, 1),
+            },
+          };
+        } else {
+          next = {
+            ...next,
+            result: {
+              ...m.result,
+              assists: mergeStatLines(m.result.assists, reqRow.playerId, 1),
+            },
+          };
+        }
+      }
+      return next;
+    });
+    return { matches, players: withSyncedStats(state.players, matches) };
+  });
 }
 
 function setLocalMatchTeams(

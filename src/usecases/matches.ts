@@ -21,8 +21,9 @@ import {
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import type { Match, MatchStatus, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
+import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import type { CreateMatchInput } from '../store/types';
-import { AppError } from '../services/supabase/errors';
+import { AppError, createAuthRequiredError, createNotFoundError } from '../services/supabase/errors';
 import { rethrowUseCaseError } from './errors';
 
 type MatchesDeps = {
@@ -194,7 +195,27 @@ export async function respondSelfReportUseCase(
   requestId: string,
   approve: boolean,
 ): Promise<void> {
-  if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
+  const match = deps.getLocalMatch(matchId);
+  const req = match?.selfReports.find((r) => r.id === requestId);
+  if (!match || !req) {
+    throw createNotFoundError('respondSelfReport', 'Bildirim bulunamadı.');
+  }
+
+  const viewerId = deps.getRemoteUserId();
+  if (!viewerId) {
+    throw createAuthRequiredError('respondSelfReport');
+  }
+
+  if (!canRespondToSelfReportRequest(match, req.playerId, viewerId)) {
+    throw new AppError({
+      code: 'FORBIDDEN',
+      operation: 'respondSelfReport',
+      message: 'Bu bildirimi onaylayamazsınız.',
+      retryable: false,
+    });
+  }
+
+  if (isRemoteMatchId(matchId)) {
     await updateSelfReportStatusRemote(requestId, approve ? 'approved' : 'rejected');
     const graph = await fetchMatchGraph(matchId);
     deps.mergeRemoteGraph(graph);

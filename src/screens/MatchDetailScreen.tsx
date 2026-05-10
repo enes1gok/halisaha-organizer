@@ -42,6 +42,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { sortAttendeesWithPlayers } from '../store/helpers';
 import { isRemoteMatchId } from '../utils/matchId';
+import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 
 type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type MatchDetailRoute =
@@ -298,7 +299,13 @@ export function MatchDetailScreen() {
   const showCashPayment = match.paymentMethod === 'cash';
   const showNoteOnlyPayment = match.paymentMethod === 'note_only';
 
-  const pending = match.selfReports.filter((r) => r.status === 'pending');
+  const actionablePending = useMemo(() => {
+    if (!userId) return [];
+    return match.selfReports.filter(
+      (r) =>
+        r.status === 'pending' && canRespondToSelfReportRequest(match, r.playerId, userId),
+    );
+  }, [match, userId]);
 
   return (
     <ScrollView
@@ -482,15 +489,20 @@ export function MatchDetailScreen() {
         </View>
       ) : null}
 
-      {isOrganizer && pending.length > 0 ? (
+      {actionablePending.length > 0 ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bekleyen bildirimler</Text>
-          {pending.map((r) => {
+          <Text style={styles.sectionTitle}>Taslak bildirimler</Text>
+          <Text style={[styles.muted, styles.peerHint]}>
+            Onaylanınca gol ve asist istatistiklere işlenir. Organizatör veya karşı takımdan biri onaylayabilir
+            (akran onayı).
+          </Text>
+          {actionablePending.map((r) => {
             const p = getPlayer(r.playerId);
             return (
               <View key={r.id} style={styles.pendingRow}>
                 <Text style={styles.body}>
                   {p?.name} — {r.type === 'goal' ? 'Gol' : 'Asist'}
+                  <Text style={styles.draftTag}> · Taslak</Text>
                 </Text>
                 <View style={styles.row}>
                   <PillButton
@@ -778,6 +790,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   micro: {
+    ...typography.micro,
+    color: colors.textMuted,
+  },
+  peerHint: {
+    marginBottom: spacing.sm,
+  },
+  draftTag: {
     ...typography.micro,
     color: colors.textMuted,
   },
