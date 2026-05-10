@@ -1,12 +1,12 @@
 import type { Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { getEmailRedirectUrl, parseAuthCallbackUrl } from '../lib/authRedirect';
 import { getSupabaseClient, isSupabaseConfigured, resetSupabaseClient } from '../lib/supabase';
 import { registerForPushToken } from '../services/notifications';
 import { ensureThenFetchProfile } from '../services/supabase/profiles';
 import { deactivatePushToken, upsertPushToken } from '../services/supabase/pushTokens';
+import { useToast } from './ToastContext';
 import { useAppStore, useAuthStore, useGroupsStore, usePlayersStore } from '../store';
 import { isRemoteMatchId } from '../utils/matchId';
 
@@ -53,6 +53,7 @@ function turkishAuthCallbackErrorMessage(error_code?: string, error_description?
 }
 
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
+  const { showToast } = useToast();
   const configured = isSupabaseConfigured();
   const [loading, setLoading] = useState(configured);
   const [session, setSession] = useState<Session | null>(null);
@@ -174,17 +175,22 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       const supabase = getSupabaseClient();
 
       if (parsed.kind === 'error') {
-        Alert.alert(
-          'Doğrulama',
-          turkishAuthCallbackErrorMessage(parsed.error_code, parsed.error_description),
-        );
+        showToast({
+          title: 'Doğrulama',
+          message: turkishAuthCallbackErrorMessage(parsed.error_code, parsed.error_description),
+          variant: 'error',
+        });
         return;
       }
 
       if (parsed.kind === 'pkce') {
         const { error } = await supabase.auth.exchangeCodeForSession(parsed.code);
         if (error) {
-          Alert.alert('Doğrulama', error.message);
+          showToast({
+            title: 'Doğrulama',
+            message: error.message,
+            variant: 'error',
+          });
         }
         return;
       }
@@ -194,10 +200,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         refresh_token: parsed.refresh_token,
       });
       if (error) {
-        Alert.alert('Oturum', error.message);
+        showToast({
+          title: 'Oturum',
+          message: error.message,
+          variant: 'error',
+        });
       }
     },
-    [configured],
+    [configured, showToast],
   );
 
   useEffect(() => {

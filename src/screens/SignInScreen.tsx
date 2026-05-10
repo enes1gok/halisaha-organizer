@@ -15,6 +15,7 @@ import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import type { OnboardingStackParamList } from '../navigation/types';
 import { spacing } from '../theme';
+import { useUserFeedback } from '../utils/userFeedback';
 import { isEmailNotConfirmedSignInError } from '../utils/emailVerification';
 import { EmailPasswordFields } from './EmailPasswordFields';
 import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
@@ -28,6 +29,7 @@ export function SignInScreen() {
   const insets = useSafeAreaInsets();
   const { signInWithEmail, resendSignupConfirmationEmail, requestPasswordResetEmail } =
     useSupabaseAuth();
+  const { showValidationToast, showToast } = useUserFeedback();
 
   const [email, setEmail] = useState(() => route.params?.prefilledEmail?.trim() ?? '');
   const [password, setPassword] = useState('');
@@ -40,7 +42,7 @@ export function SignInScreen() {
 
   const handleSignIn = async () => {
     if (!email.trim() || !password) {
-      Alert.alert('Giriş', 'Lütfen e-posta ve şifre girin.');
+      showValidationToast('Giriş', 'Lütfen e-posta ve şifre girin.');
       return;
     }
     setBusy(true);
@@ -65,12 +67,12 @@ export function SignInScreen() {
               void (async () => {
                 const { error: resendErr } = await resendSignupConfirmationEmail(trimmed);
                 if (resendErr) {
-                  Alert.alert('E-posta', resendErr.message);
+                  showToast({ title: 'E-posta', message: resendErr.message, variant: 'error' });
                 } else {
-                  Alert.alert(
-                    'E-posta',
-                    'Doğrulama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.',
-                  );
+                  showToast({
+                    title: 'E-posta',
+                    message: 'Doğrulama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.',
+                  });
                 }
               })();
             },
@@ -80,26 +82,26 @@ export function SignInScreen() {
       return;
     }
 
-    Alert.alert('Giriş', error.message);
+    showToast({ title: 'Giriş', message: error.message, variant: 'error' });
   };
 
   const handleForgotPassword = async () => {
     const trimmed = email.trim();
     if (!trimmed) {
-      Alert.alert('Şifre sıfırlama', 'Önce e-posta adresinizi girin.');
+      showValidationToast('Şifre sıfırlama', 'Önce e-posta adresinizi girin.');
       return;
     }
     setBusy(true);
     const { error } = await requestPasswordResetEmail(trimmed);
     setBusy(false);
     if (error) {
-      Alert.alert('Şifre sıfırlama', error.message);
+      showToast({ title: 'Şifre sıfırlama', message: error.message, variant: 'error' });
       return;
     }
-    Alert.alert(
-      'Şifre sıfırlama',
-      'Bağlantı e-postayla gönderildi. Gelen kutunuzu kontrol edin.',
-    );
+    showToast({
+      title: 'Şifre sıfırlama',
+      message: 'Bağlantı e-postayla gönderildi. Gelen kutunuzu kontrol edin.',
+    });
   };
 
   return (

@@ -1,15 +1,7 @@
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { EmptyState } from '../components/EmptyState';
 import { LeaderboardPodium } from '../components/LeaderboardPodium';
 import { PlayerAvatar } from '../components/PlayerAvatar';
@@ -23,7 +15,7 @@ import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import type { GroupsStackParamList, RootTabParamList } from '../navigation/types';
 import { fetchPlayerLeaderboardStats } from '../services/supabase/leaderboard';
-import { toUserMessage } from '../services/supabase/errors';
+import { useUserFeedback } from '../utils/userFeedback';
 import {
   buildLeaderboard,
   metricLabel,
@@ -65,6 +57,7 @@ export function LeaderboardScreen() {
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
+  const { showApiErrorToast } = useUserFeedback();
 
   const [metric, setMetric] = useState<LeaderMetric>('goals');
   const [tf, setTf] = useState<Timeframe>('all');
@@ -105,7 +98,11 @@ export function LeaderboardScreen() {
       .catch((error) => {
         if (cancelled) return;
         setRemoteRows(null);
-        Alert.alert('Hata', toUserMessage(error, 'Liderlik verileri alınamadı.'));
+        showApiErrorToast(error, {
+          uiOperation: 'LeaderboardScreen:fetchStats',
+          fallbackMessage: 'Liderlik verileri alınamadı.',
+          mapOperation: 'fetchPlayerLeaderboardStats',
+        });
       })
       .finally(() => {
         if (cancelled) return;
@@ -114,7 +111,7 @@ export function LeaderboardScreen() {
     return () => {
       cancelled = true;
     };
-  }, [groupId, metric, remoteUserId, tf]);
+  }, [groupId, metric, remoteUserId, tf, showApiErrorToast]);
 
   const localRows = useMemo(
     () => buildLeaderboard(players, matches, metric, tf, new Date(), groupId),

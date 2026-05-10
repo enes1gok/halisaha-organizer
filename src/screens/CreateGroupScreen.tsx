@@ -1,13 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
-import { useToast } from '../context/ToastContext';
 import { useGroupsStore } from '../store';
-import { shouldRetry, toUserMessage } from '../services/supabase/errors';
+import { shouldRetry } from '../services/supabase/errors';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'CreateGroup'>;
 
@@ -16,7 +16,7 @@ const GROUP_NAME_MAX = 80;
 
 export function CreateGroupScreen() {
   const navigation = useNavigation<Nav>();
-  const { showToast } = useToast();
+  const { showToast, showValidationToast, showApiErrorToast } = useUserFeedback();
   const createGroup = useGroupsStore((s) => s.createGroup);
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -24,11 +24,11 @@ export function CreateGroupScreen() {
   const runCreate = useCallback(async () => {
     const trimmed = name.trim();
     if (trimmed.length < GROUP_NAME_MIN) {
-      Alert.alert('Eksik bilgi', `Grup adı en az ${GROUP_NAME_MIN} karakter olmalı.`);
+      showValidationToast('Eksik bilgi', `Grup adı en az ${GROUP_NAME_MIN} karakter olmalı.`);
       return;
     }
     if (trimmed.length > GROUP_NAME_MAX) {
-      Alert.alert('Eksik bilgi', `Grup adı en fazla ${GROUP_NAME_MAX} karakter olabilir.`);
+      showValidationToast('Eksik bilgi', `Grup adı en fazla ${GROUP_NAME_MAX} karakter olabilir.`);
       return;
     }
 
@@ -50,20 +50,18 @@ export function CreateGroupScreen() {
       }
       navigation.replace('GroupDetail', { groupId: group.id });
     } catch (e) {
-      const msg = toUserMessage(e, 'Grup oluşturulamadı.');
       const retryable = shouldRetry(e);
-      Alert.alert('Grup oluşturulamadı', msg, [
-        ...(retryable
-          ? [
-              { text: 'İptal', style: 'cancel' as const },
-              { text: 'Tekrar dene', onPress: () => void runCreate() },
-            ]
-          : [{ text: 'Tamam', style: 'cancel' as const }]),
-      ]);
+      showApiErrorToast(e, {
+        uiOperation: 'CreateGroupScreen:createGroup',
+        fallbackMessage: 'Grup oluşturulamadı.',
+        mapOperation: 'createGroupRemote',
+        toastTitle: 'Grup oluşturulamadı',
+        ...(retryable ? { retry: { onPress: () => void runCreate() } } : {}),
+      });
     } finally {
       setSubmitting(false);
     }
-  }, [createGroup, name, navigation, showToast]);
+  }, [createGroup, name, navigation, showApiErrorToast, showToast, showValidationToast]);
 
   return (
     <View style={styles.screen}>

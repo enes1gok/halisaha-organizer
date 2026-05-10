@@ -1,18 +1,18 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
-import { toUserMessage } from '../services/supabase/errors';
 import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
 import { colors, radius, shadows, spacing, typography } from '../theme';
 import { nearestQuickBandId, QUICK_RATING_BANDS } from '../utils/matchPeerRatingQuickBands';
 import { getMatchContribution, sortPeersByMatchContribution } from '../utils/matchPlayerContribution';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type RatingsRoute =
@@ -31,6 +31,7 @@ export function MatchRatingsScreen() {
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
   const userId = useAuthStore((s) => s.getCurrentUserId());
+  const { showValidationToast, showApiErrorToast } = useUserFeedback();
 
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const { match, submitMatchRatings } = useMatchesStore(
@@ -96,7 +97,11 @@ export function MatchRatingsScreen() {
         setMotmId(motm && motmChoices.some((c) => c.id === motm) ? motm : null);
       } catch (e) {
         if (!cancel) {
-          Alert.alert('Hata', toUserMessage(e, 'Veriler yüklenemedi.'));
+          showApiErrorToast(e, {
+            uiOperation: 'MatchRatingsScreen:loadExisting',
+            fallbackMessage: 'Veriler yüklenemedi.',
+            mapOperation: 'fetchMyPeerRatingsForMatch',
+          });
         }
       } finally {
         if (!cancel) setLoaded(true);
@@ -105,7 +110,7 @@ export function MatchRatingsScreen() {
     return () => {
       cancel = true;
     };
-  }, [match, userId, rateablePeers, motmChoices]);
+  }, [match, userId, rateablePeers, motmChoices, showApiErrorToast]);
 
   const bump = useCallback((playerId: string, delta: number) => {
     setScores((prev) => {
@@ -125,11 +130,11 @@ export function MatchRatingsScreen() {
   const onSave = async () => {
     if (!match) return;
     if (!motmId) {
-      Alert.alert('Eksik', 'Maçın adamını seçin.');
+      showValidationToast('Eksik', 'Maçın adamını seçin.');
       return;
     }
     if (!motmChoices.some((c) => c.id === motmId)) {
-      Alert.alert('Geçersiz', 'Maçın adamını yeniden seçin.');
+      showValidationToast('Geçersiz', 'Maçın adamını yeniden seçin.');
       return;
     }
     const payload = rateablePeers.map(({ id }) => ({
@@ -141,7 +146,11 @@ export function MatchRatingsScreen() {
       await submitMatchRatings(match.id, payload, motmId);
       navigation.navigate('MatchSummary', { matchId: match.id });
     } catch (e) {
-      Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.'));
+      showApiErrorToast(e, {
+        uiOperation: 'MatchRatingsScreen:submit',
+        fallbackMessage: 'Kaydedilemedi.',
+        mapOperation: 'submitMatchRatingsBundleRemote',
+      });
     } finally {
       setSaving(false);
     }

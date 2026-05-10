@@ -14,9 +14,8 @@ import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
-import { toUserMessage } from '../services/supabase/errors';
-import { showUserFacingErrorAlert } from '../components/UserFacingErrorAlert';
 import { colors, letterSpacing, radius, spacing, typography } from '../theme';
+import { useUserFeedback } from '../utils/userFeedback';
 import { countGoing } from '../utils/matchRoster';
 import { isRemoteUuid } from '../utils/matchId';
 
@@ -36,6 +35,7 @@ export function GroupDetailScreen() {
   const matches = useMatchesStore((s) => s.matches);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const { configured, loading } = useSupabaseAuth();
+  const { showUserFacingError, showApiErrorToast } = useUserFeedback();
 
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const group = groups.find((item) => item.id === groupId);
@@ -104,7 +104,11 @@ export function GroupDetailScreen() {
                 await leaveGroup(groupId);
                 navigation.navigate('GroupsMain');
               } catch (e) {
-                Alert.alert('Hata', toUserMessage(e, 'Gruptan ayrılınamadı.'));
+                showApiErrorToast(e, {
+                  uiOperation: 'groups:detail:leave',
+                  fallbackMessage: 'Gruptan ayrılılamadı.',
+                  mapOperation: 'leaveGroupRemote',
+                });
               } finally {
                 setLeaving(false);
               }
@@ -113,7 +117,7 @@ export function GroupDetailScreen() {
         },
       ],
     );
-  }, [groupId, leaveGroup, navigation]);
+  }, [groupId, leaveGroup, navigation, showApiErrorToast]);
 
   const onPressDeleteGroup = useCallback(() => {
     Alert.alert(
@@ -136,7 +140,7 @@ export function GroupDetailScreen() {
                 } catch {
                   /* listeyi yenileyemediysek yine de kullanıcıya ilk hatayı göster */
                 }
-                showUserFacingErrorAlert(e, {
+                showUserFacingError(e, {
                   uiOperation: 'groups:detail:delete',
                   fallbackMessage: 'Grup kaldırılamadı.',
                   mapOperation: 'deleteGroupRemote',
@@ -149,7 +153,7 @@ export function GroupDetailScreen() {
         },
       ],
     );
-  }, [groupId, deleteGroup, hydrateRemoteGroups, navigation]);
+  }, [groupId, deleteGroup, hydrateRemoteGroups, navigation, showUserFacingError]);
 
   if (showInitialSkeleton) {
     return (

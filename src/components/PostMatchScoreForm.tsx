@@ -7,7 +7,7 @@ import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
 import { colors, radius, spacing, typography } from '../theme';
 import type { Match, Player, ScoreResult } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
-import { showUserFacingErrorAlert } from './UserFacingErrorAlert';
+import { useUserFeedback } from '../utils/userFeedback';
 import { formatMatchDateTime } from '../utils/dates';
 import {
   scoreAndStatLinesConsistent,
@@ -160,6 +160,7 @@ export function PostMatchScoreForm({
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const submitScore = useMatchesStore((s) => s.submitScore);
   const setSelfReportEnabled = useMatchesStore((s) => s.setSelfReportEnabled);
+  const { showUserFacingError } = useUserFeedback();
 
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
@@ -263,7 +264,7 @@ export function PostMatchScoreForm({
       setConfirmOpen(false);
       onScoreSubmitted?.();
     } catch (e) {
-      showUserFacingErrorAlert(e, {
+      showUserFacingError(e, {
         uiOperation: 'PostMatchScoreForm.applySubmit',
         fallbackMessage: 'Skor kaydedilemedi.',
         mapOperation: 'submitMatchResultRpc',
@@ -413,7 +414,7 @@ export function PostMatchScoreForm({
             value={match.selfReportEnabled}
             onValueChange={(v) =>
               void setSelfReportEnabled(match.id, v).catch((err) =>
-                showUserFacingErrorAlert(err, {
+                showUserFacingError(err, {
                   uiOperation: 'PostMatchScoreForm.selfReportToggle',
                   fallbackMessage: 'Kaydedilemedi.',
                   mapOperation: 'updateMatchOrganizerFieldsRemote',

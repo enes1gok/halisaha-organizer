@@ -28,7 +28,6 @@ import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
 import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
-import { toUserMessage } from '../services/supabase/errors';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { useShallow } from 'zustand/react/shallow';
@@ -36,6 +35,7 @@ import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { sortAttendeesWithPlayers } from '../store/helpers';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
+import { useUserFeedback } from '../utils/userFeedback';
 import { MatchDetailHero } from './MatchDetail/components/MatchDetailHero';
 import { MatchDetailPaymentPanel } from './MatchDetail/components/MatchDetailPaymentPanel';
 import { MatchDetailRosterPanel } from './MatchDetail/components/MatchDetailRosterPanel';
@@ -64,6 +64,7 @@ export function MatchDetailScreen() {
   const matchDetailStyles = useMatchDetailStyles();
   const { matchId } = route.params;
 
+  const { showApiErrorToast } = useUserFeedback();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const {
@@ -227,12 +228,16 @@ export function MatchDetailScreen() {
           style: 'destructive',
           onPress: () =>
             void unlockLineup(match.id).catch((err) =>
-              Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+              showApiErrorToast(err, {
+                uiOperation: 'MatchDetail:unlockLineup',
+                fallbackMessage: 'Kaydedilemedi.',
+                mapOperation: 'updateMatchOrganizerFieldsRemote',
+              }),
             ),
         },
       ],
     );
-  }, [match, unlockLineup]);
+  }, [match, unlockLineup, showApiErrorToast]);
 
   const openCancelConfirm = useCallback(() => {
     setCancelConfirmVisible(true);
@@ -250,11 +255,15 @@ export function MatchDetailScreen() {
       await cancelMatch(match.id);
       setCancelConfirmVisible(false);
     } catch (err) {
-      Alert.alert('Hata', toUserMessage(err, 'Maç iptal edilemedi.'));
+      showApiErrorToast(err, {
+        uiOperation: 'MatchDetail:cancelMatch',
+        fallbackMessage: 'Maç iptal edilemedi.',
+        mapOperation: 'cancelMatch',
+      });
     } finally {
       setCancelling(false);
     }
-  }, [match, cancelMatch, cancelling]);
+  }, [match, cancelMatch, cancelling, showApiErrorToast]);
 
   const openRsvp = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -268,7 +277,11 @@ export function MatchDetailScreen() {
       await setRSVP(match.id, userId, status);
       rsvpRef.current?.dismiss();
     } catch (e) {
-      Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.'));
+      showApiErrorToast(e, {
+        uiOperation: 'MatchDetail:setRSVP',
+        fallbackMessage: 'Kaydedilemedi.',
+        mapOperation: 'updateMatchAttendeeRemote',
+      });
     }
   };
 
@@ -285,9 +298,13 @@ export function MatchDetailScreen() {
     const { playerId, nextPaid } = paidConfirm;
     setPaidConfirm(null);
     void setPaid(match.id, playerId, nextPaid, userId).catch((err) =>
-      Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+      showApiErrorToast(err, {
+        uiOperation: 'MatchDetail:setPaid',
+        fallbackMessage: 'Kaydedilemedi.',
+        mapOperation: 'updateMatchAttendeeRemote',
+      }),
     );
-  }, [paidConfirm, match, userId, setPaid]);
+  }, [paidConfirm, match, userId, setPaid, showApiErrorToast]);
 
   const renderBackdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
@@ -304,7 +321,11 @@ export function MatchDetailScreen() {
         void loadMatchRatingSummary(matchId);
       }
     } catch (e) {
-      Alert.alert('Hata', toUserMessage(e, 'Yenilenemedi.'));
+      showApiErrorToast(e, {
+        uiOperation: 'MatchDetail:refreshRemoteMatch',
+        fallbackMessage: 'Yenilenemedi.',
+        mapOperation: 'fetchMatchGraph',
+      });
     } finally {
       setRefreshing(false);
     }
@@ -363,14 +384,22 @@ export function MatchDetailScreen() {
             getPlayer={getPlayer}
             onRespondSelfReport={(reportId, approved) =>
               void respondSelfReport(match.id, reportId, approved).catch((err) =>
-                Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+                showApiErrorToast(err, {
+                  uiOperation: 'MatchDetail:respondSelfReport',
+                  fallbackMessage: 'Kaydedilemedi.',
+                  mapOperation: 'updateSelfReportStatusRemote',
+                }),
               )
             }
             openRsvp={openRsvp}
             onAddSelfReport={(kind) => {
               if (!userId) return;
               void addSelfReport(match.id, userId, kind).catch((err) =>
-                Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+                showApiErrorToast(err, {
+                  uiOperation: 'MatchDetail:addSelfReport',
+                  fallbackMessage: 'Kaydedilemedi.',
+                  mapOperation: 'insertSelfReportRemote',
+                }),
               );
             }}
             pastScheduledEnd={pastScheduledEnd}
@@ -379,7 +408,11 @@ export function MatchDetailScreen() {
             openCancelConfirm={openCancelConfirm}
             onSetSelfReportEnabled={(v) =>
               void setSelfReportEnabled(match.id, v).catch((err) =>
-                Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+                showApiErrorToast(err, {
+                  uiOperation: 'MatchDetail:setSelfReportEnabled',
+                  fallbackMessage: 'Kaydedilemedi.',
+                  mapOperation: 'updateMatchOrganizerFieldsRemote',
+                }),
               )
             }
           />
@@ -425,7 +458,13 @@ export function MatchDetailScreen() {
             key={rsvpGoingKey}
             onCommit={() => setRSVP(match.id, userId, 'going')}
             onSuccess={() => rsvpRef.current?.dismiss()}
-            onError={(e) => Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.'))}
+            onError={(e) =>
+              showApiErrorToast(e, {
+                uiOperation: 'MatchDetail:rsvpGoing',
+                fallbackMessage: 'Kaydedilemedi.',
+                mapOperation: 'updateMatchAttendeeRemote',
+              })
+            }
             testID="match:rsvp-going:press"
           />
           <PressableScale

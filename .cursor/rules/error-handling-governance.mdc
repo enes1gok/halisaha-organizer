@@ -23,7 +23,8 @@ globs:
 ## Logging / UI
 
 - Use **`reportError`** from `src/services/logging/reportError.ts` for centralized dev logging; extend later for Sentry etc. without duplicating PII.
-- User-visible dialogs for high-impact flows may use **`showUserFacingErrorAlert`** so users can open **Teknik detay** and copy **`formatTechnicalErrorSummary`**.
+- **In-app feedback:** Prefer **`useUserFeedback()`** / **`showApiErrorToast`**, **`showValidationToast`**, and **`showUserFacingError`** ([`src/utils/userFeedback.ts`](../../src/utils/userFeedback.ts)) so messages appear in **`ToastHost`** instead of blocking **`Alert.alert`**. Reserve **`Alert.alert`** for destructive confirmations (silme, iptal, gruptan ayrılma, vb.) or flows that require multiple explicit branches (ör. e-posta doğrulanmadı diyalogu).
+- **`showUserFacingError`** (exported from [`src/components/UserFacingErrorAlert.tsx`](../../src/components/UserFacingErrorAlert.tsx)) surfaces **`formatTechnicalErrorSummary`** via toast action **Teknik detay** (kopyalama ikinci sistem diyalogunda).
 
 ## Related
 

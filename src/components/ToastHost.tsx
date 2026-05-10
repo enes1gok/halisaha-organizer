@@ -30,7 +30,9 @@ const EXIT_MS = 220;
 
 function defaultDuration(opts: ShowToastOptions): number {
   if (opts.durationMs != null) return opts.durationMs;
-  return opts.variant === 'warning' ? 5500 : 3800;
+  const v = opts.variant ?? 'success';
+  if (v === 'warning' || v === 'error') return 5500;
+  return 3800;
 }
 
 type ToastEntry = {
@@ -149,7 +151,14 @@ export function ToastHost({ entry, onConsumed }: Props) {
 
   const { payload } = entry;
   const variant: ToastVariant = payload.variant ?? 'success';
-  const accent = variant === 'warning' ? colors.indigo : colors.accent;
+  const accent =
+    variant === 'warning'
+      ? colors.indigo
+      : variant === 'error'
+        ? colors.danger
+        : variant === 'info'
+          ? colors.slate
+          : colors.accent;
 
   return (
     <View style={styles.overlay} pointerEvents="box-none" testID="toast:host">

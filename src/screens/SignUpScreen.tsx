@@ -1,20 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import type { OnboardingStackParamList } from '../navigation/types';
 import { colors, spacing } from '../theme';
+import { useUserFeedback } from '../utils/userFeedback';
 import { EmailPasswordFields } from './EmailPasswordFields';
 import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
 
@@ -24,6 +17,7 @@ export function SignUpScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { signUpWithEmail } = useSupabaseAuth();
+  const { showValidationToast, showToast } = useUserFeedback();
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,18 +27,18 @@ export function SignUpScreen() {
   const handleSignUp = async () => {
     const trimmedName = displayName.trim();
     if (!trimmedName) {
-      Alert.alert('Kayıt', 'Lütfen görünen adınızı girin.');
+      showValidationToast('Kayıt', 'Lütfen görünen adınızı girin.');
       return;
     }
     if (!email.trim() || !password) {
-      Alert.alert('Kayıt', 'Lütfen e-posta ve şifre girin.');
+      showValidationToast('Kayıt', 'Lütfen e-posta ve şifre girin.');
       return;
     }
     setBusy(true);
     const { error, sessionCreated } = await signUpWithEmail(email, password, trimmedName);
     setBusy(false);
     if (error) {
-      Alert.alert('Kayıt', error.message);
+      showToast({ title: 'Kayıt', message: error.message, variant: 'error' });
     } else if (sessionCreated) {
       // Oturum onAuthStateChange ile gelir; ek uyarı kullanıcıyı gereksiz yere durdurmasın.
     } else {

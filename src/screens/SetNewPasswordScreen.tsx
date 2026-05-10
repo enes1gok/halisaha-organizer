@@ -1,24 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { colors, spacing, typography } from '../theme';
 import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { useUserFeedback } from '../utils/userFeedback';
 
 export function SetNewPasswordScreen() {
   const insets = useSafeAreaInsets();
   const { completePasswordRecovery, signOut } = useSupabaseAuth();
+  const { showValidationToast, showToast } = useUserFeedback();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -30,18 +23,18 @@ export function SetNewPasswordScreen() {
     const p = password.trim();
     const c = confirm.trim();
     if (!p || !c) {
-      Alert.alert('Şifre', 'Lütfen yeni şifrenizi iki kez girin.');
+      showValidationToast('Şifre', 'Lütfen yeni şifrenizi iki kez girin.');
       return;
     }
     if (p !== c) {
-      Alert.alert('Şifre', 'Şifreler eşleşmiyor.');
+      showValidationToast('Şifre', 'Şifreler eşleşmiyor.');
       return;
     }
     setBusy(true);
     const { error } = await completePasswordRecovery(p);
     setBusy(false);
     if (error) {
-      Alert.alert('Şifre', error.message);
+      showToast({ title: 'Şifre', message: error.message, variant: 'error' });
     }
   };
 

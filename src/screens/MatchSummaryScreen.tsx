@@ -2,7 +2,7 @@ import * as Sharing from 'expo-sharing';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { MatchFinishedResultCard } from '../components/MatchFinishedResultCard';
 import { PillButton } from '../components/PillButton';
@@ -15,6 +15,7 @@ import { formatMatchDateTime } from '../utils/dates';
 import { isRemoteMatchId } from '../utils/matchId';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type R =
@@ -27,6 +28,7 @@ export function MatchSummaryScreen() {
   const route = useRoute<R>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
+  const { showToast } = useUserFeedback();
 
   const cardRef = useRef<View>(null);
   const [shareBusy, setShareBusy] = useState(false);
@@ -68,7 +70,7 @@ export function MatchSummaryScreen() {
       try {
         await Share.share({ message: shareSummaryText });
       } catch {
-        Alert.alert('Hata', 'Paylaşılamadı.');
+        showToast({ title: 'Hata', message: 'Paylaşılamadı.', variant: 'error' });
       }
       return;
     }
@@ -92,12 +94,12 @@ export function MatchSummaryScreen() {
       try {
         await Share.share({ message: shareSummaryText });
       } catch {
-        Alert.alert('Hata', 'Paylaşılamadı.');
+        showToast({ title: 'Hata', message: 'Paylaşılamadı.', variant: 'error' });
       }
     } finally {
       setShareBusy(false);
     }
-  }, [match, shareSummaryText]);
+  }, [match, shareSummaryText, showToast]);
 
   if (!match) {
     return (

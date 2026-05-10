@@ -6,7 +6,6 @@ import * as Notifications from 'expo-notifications';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -28,6 +27,7 @@ import {
 } from '../types/notificationPreferences';
 import { openAppSystemSettings } from '../utils/openAppSystemSettings';
 import { formatDateToQuietHour, parseQuietHourToDate } from '../utils/quietHourTime';
+import { useUserFeedback } from '../utils/userFeedback';
 
 function toJsonRecord(p: NotificationPreferences): Record<string, unknown> {
   return {
@@ -66,6 +66,7 @@ type QuietField = 'start' | 'end';
 
 export function NotificationSettingsScreen() {
   const { configured, session } = useSupabaseAuth();
+  const { showValidationToast, showApiErrorToast } = useUserFeedback();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences>(defaultNotificationPreferences);
@@ -93,11 +94,15 @@ export function NotificationSettingsScreen() {
       setEndInput(n.quiet_hours.end);
     } catch (e) {
       console.warn('NotificationSettings load failed', e);
-      Alert.alert('Yüklenemedi', 'Bildirim tercihleri alınamadı. Lütfen tekrar deneyin.');
+      showApiErrorToast(e, {
+        uiOperation: 'NotificationSettings:refresh',
+        fallbackMessage: 'Bildirim tercihleri alınamadı. Lütfen tekrar deneyin.',
+        mapOperation: 'fetchProfileById',
+      });
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [configured, session]);
+  }, [configured, session, showApiErrorToast]);
 
   const skipLoadSpinnerRef = useRef(false);
   useFocusEffect(
@@ -118,13 +123,17 @@ export function NotificationSettingsScreen() {
         setEndInput(next.quiet_hours.end);
       } catch (e) {
         console.warn('notification_preferences save failed', e);
-        Alert.alert('Kaydedilemedi', 'Tercihler sunucuya yazılamadı. Bağlantınızı kontrol edin.');
+        showApiErrorToast(e, {
+          uiOperation: 'NotificationSettings:persist',
+          fallbackMessage: 'Tercihler sunucuya yazılamadı. Bağlantınızı kontrol edin.',
+          mapOperation: 'updateCurrentUserProfile',
+        });
         await refresh(true);
       } finally {
         setSaving(false);
       }
     },
-    [configured, session, refresh],
+    [configured, session, refresh, showApiErrorToast],
   );
 
   const applyPickedTime = useCallback(
@@ -134,7 +143,7 @@ export function NotificationSettingsScreen() {
       const start = field === 'start' ? hhmm : p.quiet_hours.start;
       const end = field === 'end' ? hhmm : p.quiet_hours.end;
       if (!isValidQuietHourTime(start) || !isValidQuietHourTime(end)) {
-        Alert.alert('Geçersiz saat', 'Saat seçilemedi. Lütfen tekrar deneyin.');
+        showValidationToast('Geçersiz saat', 'Saat seçilemedi. Lütfen tekrar deneyin.');
         return;
       }
       if (start === p.quiet_hours.start && end === p.quiet_hours.end) return;
@@ -145,7 +154,7 @@ export function NotificationSettingsScreen() {
         quiet_hours: { ...p.quiet_hours, start, end },
       });
     },
-    [persist],
+    [persist, showValidationToast],
   );
 
   const iosQuietDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

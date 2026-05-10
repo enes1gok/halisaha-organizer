@@ -3,7 +3,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   LayoutAnimation,
   Linking,
   Platform,
@@ -28,6 +27,7 @@ import { makeStyles } from '../theme/ThemeContext';
 import { selectionTick } from '../utils/haptics';
 import { getAppVersionLabel, getAppVersionDetailLines } from '../utils/appMeta';
 import { isEmailVerified } from '../utils/emailVerification';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = StackNavigationProp<ProfileStackParamList, 'Settings'>;
 
@@ -126,6 +126,7 @@ export function SettingsScreen() {
     refreshAuthSession,
     resendSignupConfirmationEmail,
   } = useSupabaseAuth();
+  const { showToast, showValidationToast } = useUserFeedback();
   const deleteAccountUrl = readDeleteAccountUrl();
   const [resendBusy, setResendBusy] = useState(false);
 
@@ -142,7 +143,7 @@ export function SettingsScreen() {
 
   const openDeleteAccountUrl = useCallback(async () => {
     if (!deleteAccountUrl) {
-      Alert.alert(
+      showValidationToast(
         'Hesap Silme',
         'Hesap silme baglantisi su an tanimli degil. Lutfen privacy@halisaha.app adresine e-posta gonderin.',
       );
@@ -151,7 +152,7 @@ export function SettingsScreen() {
 
     const canOpen = await Linking.canOpenURL(deleteAccountUrl);
     if (!canOpen) {
-      Alert.alert(
+      showValidationToast(
         'Hesap Silme',
         'Baglanti acilamadi. Lutfen privacy@halisaha.app adresine e-posta gonderin.',
       );
@@ -159,7 +160,7 @@ export function SettingsScreen() {
     }
 
     await Linking.openURL(deleteAccountUrl);
-  }, [deleteAccountUrl]);
+  }, [deleteAccountUrl, showValidationToast]);
 
   const openSystemSettings = useCallback(() => {
     void Linking.openSettings();
@@ -201,9 +202,12 @@ export function SettingsScreen() {
                   const { error } = await resendSignupConfirmationEmail();
                   setResendBusy(false);
                   if (error) {
-                    Alert.alert('E-posta', error.message);
+                    showToast({ title: 'E-posta', message: error.message, variant: 'error' });
                   } else {
-                    Alert.alert('E-posta', 'Doğrulama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.');
+                    showToast({
+                      title: 'E-posta',
+                      message: 'Doğrulama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.',
+                    });
                   }
                 }}
                 testID="profile:settings:email-resend:press"

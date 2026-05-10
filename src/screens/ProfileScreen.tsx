@@ -11,7 +11,6 @@ import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -47,6 +46,7 @@ import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
 import { isValidTurkishIban, normalizeIban } from '../utils/iban';
+import { useUserFeedback } from '../utils/userFeedback';
 import {
   buildProfileEditBaseline,
   profileEditMatchesBaseline,
@@ -83,6 +83,7 @@ export function ProfileScreen() {
   const updateProfile = usePlayersStore((s) => s.updatePlayerProfile);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const { configured, session, refreshRemoteProfile, refreshAuthSession } = useSupabaseAuth();
+  const { showValidationToast, showToast } = useUserFeedback();
 
   const [rankRefreshKey, setRankRefreshKey] = useState(0);
 
@@ -168,12 +169,12 @@ export function ProfileScreen() {
   const pickAvatarFromLibrary = async () => {
     if (!player) return;
     if (!configured || session?.user?.id !== player.id) {
-      Alert.alert('Giriş gerekli', 'Profil fotoğrafı yüklemek için oturum açmalısınız.');
+      showValidationToast('Giriş gerekli', 'Profil fotoğrafı yüklemek için oturum açmalısınız.');
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('İzin gerekli', 'Galeriden fotoğraf seçmek için erişim izni verin.');
+      showValidationToast('İzin gerekli', 'Galeriden fotoğraf seçmek için erişim izni verin.');
       return;
     }
     const picked = await ImagePicker.launchImageLibraryAsync({
@@ -188,7 +189,11 @@ export function ProfileScreen() {
       const url = await uploadProfileAvatar(picked.assets[0].uri);
       setPhotoUri(url);
     } catch {
-      Alert.alert('Yükleme', 'Fotoğraf yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.');
+      showToast({
+        title: 'Yükleme',
+        message: 'Fotoğraf yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.',
+        variant: 'error',
+      });
     } finally {
       setAvatarUploading(false);
     }
@@ -212,7 +217,7 @@ export function ProfileScreen() {
     }
     const ibanNorm = normalizeIban(iban);
     if (ibanNorm.length > 0 && !isValidTurkishIban(ibanNorm)) {
-      Alert.alert(
+      showValidationToast(
         'Geçersiz IBAN',
         'Türkiye IBAN’ı TR ile başlamalı, toplam 26 karakter olmalı ve kontrol basamağı doğru olmalı.',
       );
@@ -236,7 +241,12 @@ export function ProfileScreen() {
           iban: ibanNorm || null,
         });
       } catch {
-        Alert.alert('Sunucu', 'Profil sunucuya yazılamadı; yerel kayıt güncellendi.');
+        showToast({
+          title: 'Sunucu',
+          message: 'Profil sunucuya yazılamadı; yerel kayıt güncellendi.',
+          variant: 'warning',
+          durationMs: 5500,
+        });
       }
     }
   };

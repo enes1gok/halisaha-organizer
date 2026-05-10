@@ -1,42 +1,51 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { colors, spacing, typography } from '../theme';
 import { useMatchesStore } from '../store';
 import { isAppError } from '../services/supabase/errors';
-import { showUserFacingErrorAlert } from '../components/UserFacingErrorAlert';
 import type { HomeStackParamList } from '../navigation/types';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'JoinMatch'>;
 
 export function JoinMatchScreen() {
   const navigation = useNavigation<Nav>();
   const joinMatchByJoinCode = useMatchesStore((s) => s.joinMatchByJoinCode);
+  const { showValidationToast, showToast, showUserFacingError } = useUserFeedback();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
 
   const onSubmit = useCallback(async () => {
     const trimmed = code.trim();
     if (!trimmed) {
-      Alert.alert('Eksik bilgi', 'Katılım kodunu girin.');
+      showValidationToast('Eksik bilgi', 'Katılım kodunu girin.');
       return;
     }
     setBusy(true);
     try {
       const m = await joinMatchByJoinCode(trimmed);
       if (!m) {
-        Alert.alert('Bulunamadı', 'Bu koda ait yaklaşan bir maç yok.');
+        showToast({
+          title: 'Bulunamadı',
+          message: 'Bu koda ait yaklaşan bir maç yok.',
+          variant: 'warning',
+        });
         return;
       }
       navigation.replace('MatchDetail', { matchId: m.id });
     } catch (e) {
       if (isAppError(e) && e.code === 'NOT_FOUND') {
-        Alert.alert('Bulunamadı', 'Bu koda ait yaklaşan bir maç bulunamadı.');
+        showToast({
+          title: 'Bulunamadı',
+          message: 'Bu koda ait yaklaşan bir maç bulunamadı.',
+          variant: 'warning',
+        });
         return;
       }
-      showUserFacingErrorAlert(e, {
+      showUserFacingError(e, {
         uiOperation: 'JoinMatchScreen.submit',
         fallbackMessage: 'Katılım başarısız.',
         mapOperation: 'joinMatchByJoinCode',
@@ -44,7 +53,7 @@ export function JoinMatchScreen() {
     } finally {
       setBusy(false);
     }
-  }, [code, joinMatchByJoinCode, navigation]);
+  }, [code, joinMatchByJoinCode, navigation, showToast, showUserFacingError, showValidationToast]);
 
   return (
     <KeyboardAvoidingView

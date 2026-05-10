@@ -3,7 +3,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import {
-  Alert,
   LayoutAnimation,
   LayoutChangeEvent,
   Platform,
@@ -55,6 +54,7 @@ import { hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Route =
   | RouteProp<HomeStackParamList, 'LineupBuilder'>
@@ -246,6 +246,7 @@ export function LineupBuilderScreen() {
   const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
 
   const reduceMotion = useReduceMotion();
+  const { showApiErrorToast, showValidationToast, showToast } = useUserFeedback();
 
   const zoneA = useRef<View>(null);
   const zoneB = useRef<View>(null);
@@ -355,9 +356,13 @@ export function LineupBuilderScreen() {
     setTeamAIds(synced.A);
     setTeamBIds(synced.B);
     void setMatchTeams(match.id, synced.A, synced.B).catch((err) =>
-      Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+      showApiErrorToast(err, {
+        uiOperation: 'LineupBuilder:syncGoing',
+        fallbackMessage: 'Kadro kaydedilemedi.',
+        mapOperation: 'replaceMatchTeamPlayersRemote',
+      }),
     );
-  }, [match, goingPlayers, teamAIds, teamBIds, setMatchTeams, formationMode]);
+  }, [match, goingPlayers, teamAIds, teamBIds, setMatchTeams, formationMode, showApiErrorToast]);
 
   useEffect(() => {
     if (!match || !formationMode || formationsForCount.length === 0) return;
@@ -396,7 +401,11 @@ export function LineupBuilderScreen() {
     if (lastPersistKey.current === fk) return;
     lastPersistKey.current = fk;
     void setMatchTeams(match.id, a, b, resolvedFormationId ?? undefined).catch((err) =>
-      Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+      showApiErrorToast(err, {
+        uiOperation: 'LineupBuilder:persistFormation',
+        fallbackMessage: 'Kadro kaydedilemedi.',
+        mapOperation: 'replaceMatchTeamPlayersRemote',
+      }),
     );
   }, [
     match,
@@ -406,6 +415,7 @@ export function LineupBuilderScreen() {
     slotsB,
     resolvedFormationId,
     setMatchTeams,
+    showApiErrorToast,
   ]);
 
   const handleDropClassic = (playerId: string, absX: number, absY: number) => {
@@ -427,7 +437,11 @@ export function LineupBuilderScreen() {
     setTeamBIds(nextB);
     if (match) {
       void setMatchTeams(match.id, nextA, nextB).catch((err) =>
-        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+        showApiErrorToast(err, {
+          uiOperation: 'LineupBuilder:dropClassic',
+          fallbackMessage: 'Kadro kaydedilemedi.',
+          mapOperation: 'replaceMatchTeamPlayersRemote',
+        }),
       );
     }
     setTimeout(measure, 50);
@@ -520,14 +534,24 @@ export function LineupBuilderScreen() {
         compactSlots(na),
         compactSlots(nb),
         resolvedFormationId ?? undefined,
-      ).catch((err) => Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'));
+      ).catch((err) =>
+        showApiErrorToast(err, {
+          uiOperation: 'LineupBuilder:balanceFormation',
+          fallbackMessage: 'Kadro kaydedilemedi.',
+          mapOperation: 'replaceMatchTeamPlayersRemote',
+        }),
+      );
       return;
     }
     const { A, B } = autoBalance(goingPlayers);
     setTeamAIds(A);
     setTeamBIds(B);
     void setMatchTeams(match.id, A, B).catch((err) =>
-      Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+      showApiErrorToast(err, {
+        uiOperation: 'LineupBuilder:balanceClassic',
+        fallbackMessage: 'Kadro kaydedilemedi.',
+        mapOperation: 'replaceMatchTeamPlayersRemote',
+      }),
     );
     setTimeout(measure, 50);
   };
@@ -550,7 +574,11 @@ export function LineupBuilderScreen() {
           compactSlots(slotsB),
           id,
         ).catch((err) =>
-          Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+          showApiErrorToast(err, {
+            uiOperation: 'LineupBuilder:pickFormationSameSize',
+            fallbackMessage: 'Kadro kaydedilemedi.',
+            mapOperation: 'replaceMatchTeamPlayersRemote',
+          }),
         );
       }
       return;
@@ -560,7 +588,11 @@ export function LineupBuilderScreen() {
     setLineupPhase('beyaz');
     if (match) {
       void setMatchTeams(match.id, [], [], id).catch((err) =>
-        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.'),
+        showApiErrorToast(err, {
+          uiOperation: 'LineupBuilder:pickFormationReset',
+          fallbackMessage: 'Kadro kaydedilemedi.',
+          mapOperation: 'replaceMatchTeamPlayersRemote',
+        }),
       );
     }
   };
@@ -573,7 +605,11 @@ export function LineupBuilderScreen() {
     if (!match) return;
     if (formationMode && selectedFormation) {
       if (!lineupDimensionsReady) {
-        Alert.alert('Bekleyin', 'Kadro düzeni hazırlanıyor.');
+        showToast({
+          title: 'Bekleyin',
+          message: 'Kadro düzeni hazırlanıyor.',
+          variant: 'info',
+        });
         return;
       }
       const incomplete =
@@ -581,7 +617,7 @@ export function LineupBuilderScreen() {
         (strictFormationFill &&
           (slotsA.some((s) => s == null) || slotsB.some((s) => s == null)));
       if (incomplete) {
-        Alert.alert(
+        showValidationToast(
           'Eksik yerleştirme',
           strictFormationFill
             ? 'Şablona göre tüm slotları doldurun; bekleyen oyuncu kalmamalı.'
@@ -597,14 +633,22 @@ export function LineupBuilderScreen() {
           resolvedFormationId ?? undefined,
         );
       } catch (err) {
-        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.');
+        showApiErrorToast(err, {
+          uiOperation: 'LineupBuilder:saveAndExitFormation',
+          fallbackMessage: 'Kadro kaydedilemedi.',
+          mapOperation: 'replaceMatchTeamPlayersRemote',
+        });
         return;
       }
     } else {
       try {
         await setMatchTeams(match.id, teamAIds, teamBIds);
       } catch (err) {
-        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.');
+        showApiErrorToast(err, {
+          uiOperation: 'LineupBuilder:saveAndExitClassic',
+          fallbackMessage: 'Kadro kaydedilemedi.',
+          mapOperation: 'replaceMatchTeamPlayersRemote',
+        });
         return;
       }
     }
@@ -623,6 +667,9 @@ export function LineupBuilderScreen() {
     teamAIds,
     teamBIds,
     navigation,
+    showToast,
+    showValidationToast,
+    showApiErrorToast,
   ]);
 
   const publishLineup = useCallback(async () => {
@@ -636,7 +683,7 @@ export function LineupBuilderScreen() {
         (strictFormationFill &&
           (slotsA.some((s) => s == null) || slotsB.some((s) => s == null)));
       if (incomplete) {
-        Alert.alert(
+        showValidationToast(
           'Eksik yerleştirme',
           strictFormationFill
             ? 'Şablona göre tüm slotları doldurun; bekleyen oyuncu kalmamalı.'
@@ -652,14 +699,22 @@ export function LineupBuilderScreen() {
           resolvedFormationId ?? undefined,
         );
       } catch (err) {
-        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.');
+        showApiErrorToast(err, {
+          uiOperation: 'LineupBuilder:publishFormation',
+          fallbackMessage: 'Kadro kaydedilemedi.',
+          mapOperation: 'replaceMatchTeamPlayersRemote',
+        });
         return;
       }
     } else {
       try {
         await setMatchTeams(match.id, teamAIds, teamBIds);
       } catch (err) {
-        Alert.alert('Hata', err instanceof Error ? err.message : 'Kadro kaydedilemedi.');
+        showApiErrorToast(err, {
+          uiOperation: 'LineupBuilder:publishClassic',
+          fallbackMessage: 'Kadro kaydedilemedi.',
+          mapOperation: 'replaceMatchTeamPlayersRemote',
+        });
         return;
       }
     }
@@ -667,7 +722,11 @@ export function LineupBuilderScreen() {
     try {
       await lockLineup(match.id);
     } catch (err) {
-      Alert.alert('Hata', err instanceof Error ? err.message : 'Kilitlenemedi.');
+      showApiErrorToast(err, {
+        uiOperation: 'LineupBuilder:lockLineup',
+        fallbackMessage: 'Kilitlenemedi.',
+        mapOperation: 'updateMatchOrganizerFieldsRemote',
+      });
       return;
     }
     navigation.goBack();
@@ -686,6 +745,8 @@ export function LineupBuilderScreen() {
     teamAIds,
     teamBIds,
     navigation,
+    showValidationToast,
+    showApiErrorToast,
   ]);
 
   if (!match) {

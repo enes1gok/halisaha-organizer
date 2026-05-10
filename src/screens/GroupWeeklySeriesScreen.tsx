@@ -1,20 +1,10 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import type { GroupsStackParamList } from '../navigation/types';
-import { toUserMessage } from '../services/supabase/errors';
+import { useUserFeedback } from '../utils/userFeedback';
 import { useAuthStore, useGroupsStore } from '../store';
 import { colors, radius, spacing, typography } from '../theme';
 import {
@@ -62,6 +52,7 @@ export function GroupWeeklySeriesScreen() {
   const fetchSeries = useGroupsStore((s) => s.fetchGroupWeeklySeries);
   const upsertSeries = useGroupsStore((s) => s.upsertGroupWeeklySeries);
   const cached = useGroupsStore((s) => s.weeklySeriesByGroupId[groupId]);
+  const { showValidationToast, showToast, showApiErrorToast } = useUserFeedback();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -82,11 +73,15 @@ export function GroupWeeklySeriesScreen() {
     try {
       await fetchSeries(groupId);
     } catch (e) {
-      Alert.alert('Hata', toUserMessage(e));
+      showApiErrorToast(e, {
+        uiOperation: 'GroupWeeklySeriesScreen:load',
+        fallbackMessage: 'Haftalık seri yüklenemedi.',
+        mapOperation: 'fetchGroupWeeklySeries',
+      });
     } finally {
       setLoading(false);
     }
-  }, [fetchSeries, groupId]);
+  }, [fetchSeries, groupId, showApiErrorToast]);
 
   useEffect(() => {
     void load();
@@ -117,12 +112,12 @@ export function GroupWeeklySeriesScreen() {
 
   const onSave = async () => {
     if (!venue.trim()) {
-      Alert.alert('Eksik bilgi', 'Saha adını girin.');
+      showValidationToast('Eksik bilgi', 'Saha adını girin.');
       return;
     }
     const ibanNorm = normalizeIban(iban);
     if (ibanNorm.length > 0 && !isValidTurkishIban(ibanNorm)) {
-      Alert.alert('Geçersiz IBAN', 'IBAN formatını kontrol edin.');
+      showValidationToast('Geçersiz IBAN', 'IBAN formatını kontrol edin.');
       return;
     }
     const mp = Math.min(22, Math.max(4, parseInt(maxPlayers || '14', 10) || 14));
@@ -140,9 +135,17 @@ export function GroupWeeklySeriesScreen() {
         iban: ibanNorm.length > 0 ? ibanNorm : null,
         defaultOrganizerId: userId,
       });
-      Alert.alert('Kaydedildi', 'Haftalık tekrar ayarları güncellendi.');
+      showToast({
+        title: 'Kaydedildi',
+        message: 'Haftalık tekrar ayarları güncellendi.',
+      });
     } catch (e) {
-      Alert.alert('Kayıt başarısız', toUserMessage(e));
+      showApiErrorToast(e, {
+        uiOperation: 'GroupWeeklySeriesScreen:save',
+        fallbackMessage: 'Kayıt başarısız.',
+        mapOperation: 'upsertGroupWeeklySeriesRemote',
+        toastTitle: 'Kayıt başarısız',
+      });
     } finally {
       setSaving(false);
     }

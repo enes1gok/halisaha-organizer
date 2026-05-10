@@ -92,11 +92,11 @@ function AppRoot() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <BottomSheetModalProvider>
-          <SupabaseAuthProvider>
-            <ToastProvider>
+          <ToastProvider>
+            <SupabaseAuthProvider>
               <AppShell />
-            </ToastProvider>
-          </SupabaseAuthProvider>
+            </SupabaseAuthProvider>
+          </ToastProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

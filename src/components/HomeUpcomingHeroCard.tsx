@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import React, { useCallback } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PressableScale } from './PressableScale';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
@@ -8,6 +8,7 @@ import type { Match, Player } from '../types/domain';
 import { formatMatchDateTimeWithWeekday } from '../utils/dates';
 import { maskIban } from '../utils/iban';
 import { countGoalkeepersAmongGoing, rosterMissingSlots } from '../utils/matchRoster';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Props = {
   match: Match | null;
@@ -25,6 +26,7 @@ export function HomeUpcomingHeroCard({
   getPlayer,
   onOpenDetail,
 }: Props) {
+  const { showValidationToast } = useUserFeedback();
   const { label: ibanBtnLabel, runCopy: runIbanCopy, isCopied: ibanCopied } = useClipboardCopyFeedback({
     idleLabel: 'Kopyala',
   });
@@ -42,7 +44,7 @@ export function HomeUpcomingHeroCard({
   const onPressCopyIbanAccountName = useCallback(() => {
     const name = (match?.ibanAccountName ?? '').trim();
     if (!name) {
-      Alert.alert('Kopyalanamadı', 'Alıcı adı bulunamadı.');
+      showValidationToast('Kopyalanamadı', 'Alıcı adı bulunamadı.');
       return;
     }
     runNameCopy(async () => {

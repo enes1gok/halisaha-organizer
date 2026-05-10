@@ -1,22 +1,14 @@
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import type { OnboardingStackParamList } from '../navigation/types';
 import { colors, spacing, typography } from '../theme';
 import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = StackNavigationProp<OnboardingStackParamList, 'VerifyEmail'>;
 type VerifyRoute = RouteProp<OnboardingStackParamList, 'VerifyEmail'>;
@@ -28,6 +20,7 @@ export function VerifyEmailScreen() {
   const route = useRoute<VerifyRoute>();
   const insets = useSafeAreaInsets();
   const { resendSignupConfirmationEmail } = useSupabaseAuth();
+  const { showToast } = useUserFeedback();
   const email = route.params.email;
 
   const [resendBusy, setResendBusy] = useState(false);
@@ -51,11 +44,14 @@ export function VerifyEmailScreen() {
     const { error } = await resendSignupConfirmationEmail(email);
     setResendBusy(false);
     if (error) {
-      Alert.alert('E-posta', error.message);
+      showToast({ title: 'E-posta', message: error.message, variant: 'error' });
       return;
     }
     startCooldown();
-    Alert.alert('E-posta', 'Doğrulama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.');
+    showToast({
+      title: 'E-posta',
+      message: 'Doğrulama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.',
+    });
   };
 
   const openMailApp = async () => {

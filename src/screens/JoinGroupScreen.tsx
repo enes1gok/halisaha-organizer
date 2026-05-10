@@ -1,33 +1,43 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { useGroupsStore } from '../store';
 import { colors, spacing, typography } from '../theme';
 import type { GroupsStackParamList } from '../navigation/types';
+import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'JoinGroup'>;
 
 export function JoinGroupScreen() {
   const navigation = useNavigation<Nav>();
   const joinGroup = useGroupsStore((s) => s.joinGroup);
+  const { showValidationToast, showToast, showApiErrorToast } = useUserFeedback();
   const [code, setCode] = useState('');
 
   const onJoin = async () => {
     if (!code.trim()) {
-      Alert.alert('Eksik bilgi', 'Katilim kodunu gir.');
+      showValidationToast('Eksik bilgi', 'Katilim kodunu gir.');
       return;
     }
     try {
       const group = await joinGroup(code);
       if (!group) {
-        Alert.alert('Grup bulunamadi', 'Kodla eslesen aktif bir grup bulunamadi.');
+        showToast({
+          title: 'Grup bulunamadi',
+          message: 'Kodla eslesen aktif bir grup bulunamadi.',
+          variant: 'warning',
+        });
         return;
       }
       navigation.replace('GroupDetail', { groupId: group.id });
     } catch (error) {
-      Alert.alert('Hata', error instanceof Error ? error.message : 'Gruba katilinamadi.');
+      showApiErrorToast(error, {
+        uiOperation: 'JoinGroupScreen:join',
+        fallbackMessage: 'Gruba katilinamadi.',
+        mapOperation: 'joinGroupRemote',
+      });
     }
   };
 

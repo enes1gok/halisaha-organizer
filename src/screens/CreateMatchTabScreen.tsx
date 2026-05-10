@@ -12,21 +12,13 @@ import Slider from '@react-native-community/slider';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import {
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
-import { useToast } from '../context/ToastContext';
 import type { ShowToastOptions } from '../context/toastTypes';
 import { radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
-import { toUserMessage } from '../services/supabase/errors';
+import { useUserFeedback } from '../utils/userFeedback';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import type { MatchPaymentMethod } from '../types/domain';
 import {
@@ -101,7 +93,7 @@ function normalizeStartsAtFromPicker(d: Date): Date {
 
 export function CreateMatchTabScreen() {
   const navigation = useNavigation();
-  const { showToast } = useToast();
+  const { showToast, showValidationToast, showApiErrorToast } = useUserFeedback();
   const { colors } = useTheme();
   const styles = useStyles();
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -286,17 +278,17 @@ export function CreateMatchTabScreen() {
 
   const onSubmit = async () => {
     if (!venue.trim()) {
-      Alert.alert('Eksik bilgi', 'Saha adını girin.');
+      showValidationToast('Eksik bilgi', 'Saha adını girin.');
       return;
     }
     if (!paymentMethod) {
-      Alert.alert('Eksik bilgi', 'Lütfen ödeme yöntemini seçin.');
+      showValidationToast('Eksik bilgi', 'Lütfen ödeme yöntemini seçin.');
       return;
     }
     const ibanNormForMatch =
       paymentMethod === 'iban' ? (!overrideIban && hasValidProfileIban ? profileNorm : normalizeIban(iban)) : '';
     if (paymentMethod === 'iban' && (ibanNormForMatch.length === 0 || !isValidTurkishIban(ibanNormForMatch))) {
-      Alert.alert(
+      showValidationToast(
         'Geçersiz IBAN',
         'Türkiye IBAN’ı TR ile başlamalı, toplam 26 karakter olmalı ve kontrol basamağı doğru olmalı. Örn: TR33 0006 1005 1978 6457 8413 26',
       );
@@ -305,20 +297,20 @@ export function CreateMatchTabScreen() {
     const ibanAccountNameNorm =
       paymentMethod === 'iban' ? ibanAccountName.trim().toLocaleUpperCase('tr-TR') : '';
     if (paymentMethod === 'iban' && ibanAccountNameNorm.length === 0) {
-      Alert.alert('Eksik bilgi', 'IBAN alıcı ad soyad bilgisini girin.');
+      showValidationToast('Eksik bilgi', 'IBAN alıcı ad soyad bilgisini girin.');
       return;
     }
     const paymentNoteNorm = paymentMethod === 'note_only' ? paymentNote.trim() : '';
     if (paymentMethod === 'note_only' && paymentNoteNorm.length === 0) {
-      Alert.alert('Eksik bilgi', 'Sadece not ekle seçeneğinde ödeme notu zorunludur.');
+      showValidationToast('Eksik bilgi', 'Sadece not ekle seçeneğinde ödeme notu zorunludur.');
       return;
     }
     if (paymentMethod === 'note_only' && paymentNoteNorm.length > 120) {
-      Alert.alert('Geçersiz not', 'Ödeme notu en fazla 120 karakter olabilir.');
+      showValidationToast('Geçersiz not', 'Ödeme notu en fazla 120 karakter olabilir.');
       return;
     }
     if (startsAt.getTime() < Date.now()) {
-      Alert.alert('Geçersiz tarih', 'Maç başlangıcı geçmişte olamaz.');
+      showValidationToast('Geçersiz tarih', 'Maç başlangıcı geçmişte olamaz.');
       return;
     }
     const trimmedPlayers = maxPlayersInputText.trim();
@@ -360,7 +352,11 @@ export function CreateMatchTabScreen() {
       setOverrideIban(!hasValidProfileIban);
       sheetRef.current?.dismiss();
     } catch (e) {
-      Alert.alert('Hata', toUserMessage(e, 'Maç oluşturulamadı.'));
+      showApiErrorToast(e, {
+        uiOperation: 'CreateMatchTabScreen:createMatch',
+        fallbackMessage: 'Maç oluşturulamadı.',
+        mapOperation: 'insertMatchWithOrganizerAttendee.create_match_rpc',
+      });
     }
   };
 
