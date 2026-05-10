@@ -4,11 +4,12 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { PillButton } from './PillButton';
 import { PlayerAvatar } from './PlayerAvatar';
 import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
-import { colors, spacing, typography } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 import type { Match, ScoreResult } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
 import { showUserFacingErrorAlert } from './UserFacingErrorAlert';
 import { formatMatchDateTime } from '../utils/dates';
+import { goalsTotalMatchesScore, totalGoalsFromStatMap } from '../utils/postMatchScoreValidation';
 
 export function toScoreLines(map: Record<string, number>): { playerId: string; count: number }[] {
   return Object.entries(map)
@@ -73,6 +74,16 @@ export function PostMatchScoreForm({
       .map((id) => getPlayer(id))
       .filter(Boolean) as NonNullable<ReturnType<typeof getPlayer>>[];
   }, [match.teamAIds, match.teamBIds, match.attendees, getPlayer]);
+
+  const { totalFromScore, totalFromScorers, goalsMatchScore } = useMemo(() => {
+    const totalFromScore = scoreA + scoreB;
+    const totalFromScorers = totalGoalsFromStatMap(goals);
+    return {
+      totalFromScore,
+      totalFromScorers,
+      goalsMatchScore: goalsTotalMatchesScore(scoreA, scoreB, goals),
+    };
+  }, [scoreA, scoreB, goals]);
 
   const bump = (
     setter: React.Dispatch<React.SetStateAction<Record<string, number>>>,
@@ -219,7 +230,36 @@ export function PostMatchScoreForm({
       ) : null}
 
       {canEditScore ? (
-        <PillButton title="Sonucu gönder" onPress={() => setConfirmOpen(true)} testID="postmatch:score:submit" />
+        <View
+          style={[styles.validationBox, goalsMatchScore ? styles.validationBoxOk : styles.validationBoxErr]}
+          {...(!goalsMatchScore ? { accessibilityRole: 'alert' as const } : {})}
+          accessibilityLabel={
+            goalsMatchScore
+              ? `Doğrulama: Maç skoru ${totalFromScore} gol, gol listesi ${totalFromScorers} gol, uyumlu.`
+              : `Uyarı: Girilen gol sayısı maç skoruyla eşleşmiyor. Maç skoru ${totalFromScore} gol, gol listesi ${totalFromScorers} gol.`
+          }
+          testID="postmatch:validation:summary"
+        >
+          <Text style={styles.validationTitle}>Doğrulama özeti</Text>
+          <Text style={styles.validationCounts}>
+            Maç skoru: {totalFromScore} gol · Gol listesi: {totalFromScorers} gol
+          </Text>
+          {goalsMatchScore ? (
+            <Text style={styles.validationOk}>Skor ile gol listesi uyumlu.</Text>
+          ) : (
+            <Text style={styles.validationWarn}>Girilen gol sayısı maç skoruyla eşleşmiyor.</Text>
+          )}
+        </View>
+      ) : null}
+
+      {canEditScore ? (
+        <PillButton
+          title="Sonucu gönder"
+          onPress={() => setConfirmOpen(true)}
+          disabled={!goalsMatchScore}
+          testID="postmatch:score:submit"
+          accessibilityState={{ disabled: !goalsMatchScore }}
+        />
       ) : null}
 
       <ConfirmationModal
@@ -291,4 +331,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   toggleLabel: { ...typography.body, color: colors.text, flex: 1, marginRight: spacing.md },
+  validationBox: {
+    padding: spacing.md,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    gap: spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  validationBoxOk: {
+    borderColor: colors.border,
+  },
+  validationBoxErr: {
+    borderColor: colors.danger,
+  },
+  validationTitle: { ...typography.subtitle, color: colors.text },
+  validationCounts: { ...typography.body, color: colors.textMuted },
+  validationOk: { ...typography.caption, color: colors.textMuted },
+  validationWarn: { ...typography.caption, color: colors.danger, fontFamily: 'Inter_600SemiBold' },
 });
