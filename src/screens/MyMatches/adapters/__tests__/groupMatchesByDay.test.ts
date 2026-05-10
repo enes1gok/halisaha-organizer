@@ -2,6 +2,7 @@ import type { Match } from '../../../../types/domain';
 import {
   buildAgendaSections,
   buildMonthMatrix,
+  countMatchesBySegment,
   describeDayForA11y,
   filterMatchesBySegment,
   formatDayHeader,
@@ -51,6 +52,28 @@ describe('groupMatchesByDay', () => {
     const invalid = mkMatch('bad', 'not-a-date');
     const result = groupMatchesByDay([valid, invalid]);
     expect(Array.from(result.keys())).toEqual(['2026-05-10']);
+  });
+});
+
+describe('countMatchesBySegment', () => {
+  const past = mkMatch('p', new Date(2026, 4, 1, 18, 0, 0).toISOString());
+  const todayMatch = mkMatch('t', new Date(2026, 4, 10, 21, 0, 0).toISOString());
+  const future = mkMatch('f', new Date(2026, 4, 20, 18, 0, 0).toISOString());
+
+  it('returns totals per segment for the match pool', () => {
+    expect(countMatchesBySegment([past, todayMatch, future], today)).toEqual({
+      upcoming: 2,
+      past: 1,
+      all: 3,
+    });
+  });
+
+  it('matches empty pool', () => {
+    expect(countMatchesBySegment([], today)).toEqual({
+      upcoming: 0,
+      past: 0,
+      all: 0,
+    });
   });
 });
 

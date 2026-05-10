@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
 import {
   RefreshControl,
   SectionList,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ViewToken,
 } from 'react-native';
 import { EmptyState } from '../../../components/EmptyState';
 import { MatchCard } from '../../../components/MatchCard';
@@ -28,9 +29,18 @@ type Props = {
   onRefresh: () => Promise<void> | void;
   userId: string;
   selectedDateKey: string | null;
+  /** When true, ignore viewability updates (calendar-driven agenda scroll in progress). */
+  suppressPrimaryVisibleSyncRef?: React.MutableRefObject<boolean>;
+  onPrimaryVisibleDateKeyChange?: (dateKey: string) => void;
   ListHeaderComponent?: React.ReactElement | null;
   onPressMatch: (match: Match) => void;
   emptyAction: EmptyAction;
+};
+
+const VIEWABILITY_CONFIG = {
+  itemVisiblePercentThreshold: 15,
+  minimumViewTime: 80,
+  waitForInteraction: true,
 };
 
 export type MyMatchesAgendaHandle = {
@@ -60,6 +70,8 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
     onRefresh,
     userId,
     selectedDateKey,
+    suppressPrimaryVisibleSyncRef,
+    onPrimaryVisibleDateKeyChange,
     ListHeaderComponent,
     onPressMatch,
     emptyAction,
@@ -93,6 +105,36 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
       },
     }),
     [indexByKey],
+  );
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (suppressPrimaryVisibleSyncRef?.current) return;
+      if (!onPrimaryVisibleDateKeyChange || sections.length === 0) return;
+
+      let bestIdx = Number.POSITIVE_INFINITY;
+      let bestKey: string | null = null;
+
+      for (const v of viewableItems) {
+        if (!v.isViewable || v.section == null) continue;
+        const sec = v.section as AgendaSection;
+        const dateKey = sec.dateKey;
+        const idx = sections.findIndex((s) => s.dateKey === dateKey);
+        if (idx >= 0 && idx < bestIdx) {
+          bestIdx = idx;
+          bestKey = dateKey;
+        }
+      }
+
+      if (bestKey == null || bestKey === selectedDateKey) return;
+      onPrimaryVisibleDateKeyChange(bestKey);
+    },
+    [
+      onPrimaryVisibleDateKeyChange,
+      sections,
+      selectedDateKey,
+      suppressPrimaryVisibleSyncRef,
+    ],
   );
 
   const empty = EMPTY_COPY[segment];
@@ -146,6 +188,8 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
       onScrollToIndexFailed={() => {
         // fall back silently
       }}
+      viewabilityConfig={VIEWABILITY_CONFIG}
+      onViewableItemsChanged={onViewableItemsChanged}
     />
   );
 });

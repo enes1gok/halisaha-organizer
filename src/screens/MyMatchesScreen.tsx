@@ -15,16 +15,40 @@ import { useMyMatchesData } from './MyMatches/hooks/useMyMatchesData';
 
 type Nav = NativeStackNavigationProp<MyMatchesStackParamList, 'MyMatchesMain'>;
 
+const PROGRAMMATIC_SCROLL_GUARD_MS = 450;
+
 export function MyMatchesScreen() {
   const navigation = useNavigation<Nav>();
   const data = useMyMatchesData();
   const agendaRef = useRef<MyMatchesAgendaHandle>(null);
+  const suppressPrimaryVisibleSyncRef = useRef(false);
+  const skipNextAgendaScrollRef = useRef(false);
 
   useEffect(() => {
-    if (data.selectedDateKey) {
-      agendaRef.current?.scrollToDateKey(data.selectedDateKey);
+    if (!data.selectedDateKey) return;
+    if (skipNextAgendaScrollRef.current) {
+      skipNextAgendaScrollRef.current = false;
+      return;
     }
+    suppressPrimaryVisibleSyncRef.current = true;
+    agendaRef.current?.scrollToDateKey(data.selectedDateKey);
+    const t = setTimeout(() => {
+      suppressPrimaryVisibleSyncRef.current = false;
+    }, PROGRAMMATIC_SCROLL_GUARD_MS);
+    return () => {
+      clearTimeout(t);
+      suppressPrimaryVisibleSyncRef.current = false;
+    };
   }, [data.selectedDateKey, data.sections]);
+
+  const handlePrimaryVisibleDateKeyChange = useCallback(
+    (dateKey: string) => {
+      if (dateKey === data.selectedDateKey) return;
+      skipNextAgendaScrollRef.current = true;
+      data.setSelectedDateKey(dateKey);
+    },
+    [data.selectedDateKey, data.setSelectedDateKey],
+  );
 
   const handlePressMatch = useCallback(
     (match: Match) => {
@@ -49,7 +73,11 @@ export function MyMatchesScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.headerStack}>
-          <MyMatchesSegmentControl value={data.segment} onChange={data.setSegment} />
+          <MyMatchesSegmentControl
+            value={data.segment}
+            onChange={data.setSegment}
+            counts={data.segmentCounts}
+          />
         </View>
         <View style={styles.skeletonBody}>
           <MyMatchesCalendarSkeleton />
@@ -84,7 +112,11 @@ export function MyMatchesScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.headerStack}>
-        <MyMatchesSegmentControl value={data.segment} onChange={data.setSegment} />
+        <MyMatchesSegmentControl
+          value={data.segment}
+          onChange={data.setSegment}
+          counts={data.segmentCounts}
+        />
       </View>
       <MyMatchesAgenda
         ref={agendaRef}
@@ -94,6 +126,8 @@ export function MyMatchesScreen() {
         onRefresh={data.refresh}
         userId={data.userId}
         selectedDateKey={data.selectedDateKey}
+        suppressPrimaryVisibleSyncRef={suppressPrimaryVisibleSyncRef}
+        onPrimaryVisibleDateKeyChange={handlePrimaryVisibleDateKeyChange}
         ListHeaderComponent={listHeader}
         onPressMatch={handlePressMatch}
         emptyAction={emptyAction}

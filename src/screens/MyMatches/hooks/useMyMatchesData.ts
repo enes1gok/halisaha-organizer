@@ -6,11 +6,13 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useSupabaseAuth } from '../../../context/SupabaseAuthContext';
 import {
   buildAgendaSections,
+  countMatchesBySegment,
   dayKeyOf,
   filterMatchesBySegment,
   groupMatchesByDay,
   shiftMonth,
   type AgendaSection,
+  type SegmentCounts,
   type SegmentValue,
 } from '../adapters/groupMatchesByDay';
 
@@ -25,6 +27,7 @@ export type UseMyMatchesData = {
   resetToToday: () => void;
   today: Date;
   dotsByDay: Map<string, number>;
+  segmentCounts: SegmentCounts;
   sections: AgendaSection[];
   hasAnyMatches: boolean;
   ratingsSubmission: Record<string, true | undefined>;
@@ -88,6 +91,8 @@ export function useMyMatchesData(): UseMyMatchesData {
     return counts;
   }, [filtered]);
 
+  const segmentCounts = useMemo(() => countMatchesBySegment(mine, today), [mine, today]);
+
   const sections = useMemo(
     () => buildAgendaSections(mine, segment, today),
     [mine, segment, today],
@@ -133,6 +138,7 @@ export function useMyMatchesData(): UseMyMatchesData {
     resetToToday,
     today,
     dotsByDay,
+    segmentCounts,
     sections,
     hasAnyMatches: mine.length > 0,
     ratingsSubmission: slice.ratingsSubmission,

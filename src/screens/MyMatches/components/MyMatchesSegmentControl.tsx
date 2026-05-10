@@ -2,24 +2,32 @@ import React, { useCallback } from 'react';
 import { Platform, Pressable, StyleSheet, Text, UIManager, View, LayoutAnimation } from 'react-native';
 import { colors, letterSpacing, radius, shadows, spacing, typography } from '../../../theme';
 import { selectionTick } from '../../../utils/haptics';
-import type { SegmentValue } from '../adapters/groupMatchesByDay';
+import type { SegmentCounts, SegmentValue } from '../adapters/groupMatchesByDay';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const OPTIONS: ReadonlyArray<{ value: SegmentValue; label: string; testId: string }> = [
-  { value: 'upcoming', label: 'Yaklaşan', testId: 'myMatches:segment:upcoming' },
-  { value: 'past', label: 'Geçmiş', testId: 'myMatches:segment:past' },
-  { value: 'all', label: 'Tümü', testId: 'myMatches:segment:all' },
+const BASE_OPTIONS: ReadonlyArray<{
+  value: SegmentValue;
+  label: string;
+  testId: string;
+  countKey: keyof SegmentCounts;
+}> = [
+  { value: 'upcoming', label: 'Yaklaşan', testId: 'myMatches:segment:upcoming', countKey: 'upcoming' },
+  { value: 'past', label: 'Geçmiş', testId: 'myMatches:segment:past', countKey: 'past' },
+  { value: 'all', label: 'Tümü', testId: 'myMatches:segment:all', countKey: 'all' },
 ];
+
+const DEFAULT_COUNTS: SegmentCounts = { upcoming: 0, past: 0, all: 0 };
 
 type Props = {
   value: SegmentValue;
   onChange: (next: SegmentValue) => void;
+  counts?: SegmentCounts;
 };
 
-export function MyMatchesSegmentControl({ value, onChange }: Props) {
+export function MyMatchesSegmentControl({ value, onChange, counts = DEFAULT_COUNTS }: Props) {
   const handlePress = useCallback(
     (next: SegmentValue) => {
       if (next === value) return;
@@ -32,14 +40,18 @@ export function MyMatchesSegmentControl({ value, onChange }: Props) {
 
   return (
     <View style={styles.shell} accessibilityRole="tablist">
-      {OPTIONS.map((option) => {
+      {BASE_OPTIONS.map((option) => {
         const active = option.value === value;
+        const n = counts[option.countKey];
+        const accessibilityLabel =
+          n === 1 ? `${option.label}, 1 maç` : `${option.label}, ${n} maç`;
+        const shortLabel = `${option.label} (${n})`;
         return (
           <Pressable
             key={option.value}
             onPress={() => handlePress(option.value)}
             accessibilityRole="tab"
-            accessibilityLabel={option.label}
+            accessibilityLabel={accessibilityLabel}
             accessibilityState={{ selected: active }}
             testID={option.testId}
             hitSlop={4}
@@ -55,8 +67,10 @@ export function MyMatchesSegmentControl({ value, onChange }: Props) {
                 active ? styles.labelActive : styles.labelInactive,
               ]}
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
             >
-              {option.label}
+              {shortLabel}
             </Text>
           </Pressable>
         );

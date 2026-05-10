@@ -13,6 +13,12 @@ import type { Match } from '../../../types/domain';
 
 export type SegmentValue = 'upcoming' | 'past' | 'all';
 
+export type SegmentCounts = {
+  upcoming: number;
+  past: number;
+  all: number;
+};
+
 export type AgendaSection = {
   /** Display title for the section header (e.g. "Bugün, 10 Mayıs"). */
   title: string;
@@ -74,6 +80,15 @@ export function filterMatchesBySegment(
     if (segment === 'upcoming') return t >= todayStart;
     return t < todayStart;
   });
+}
+
+/** Total match counts per segment for the same pool used by Maçlarım (e.g. `mine`). */
+export function countMatchesBySegment(matches: readonly Match[], today: Date): SegmentCounts {
+  return {
+    upcoming: filterMatchesBySegment(matches, 'upcoming', today).length,
+    past: filterMatchesBySegment(matches, 'past', today).length,
+    all: matches.length,
+  };
 }
 
 /** Turkish day header copy: "Bugün, 10 Mayıs" / "Yarın, 11 Mayıs" / "Cumartesi, 15 Mayıs". */
