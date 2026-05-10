@@ -1,7 +1,9 @@
 /**
  * In-memory counters for match-graph RPC paths. Used for ops visibility and
- * high-fallback-rate alerts (console — hook to external telemetry later).
+ * high-fallback-rate alerts; metrics go through reportDiagnosticMetric.
  */
+
+import { reportDiagnosticMetric } from '../logging/reportError';
 
 /** Minimum completed operations before emitting a ratio alert (reduces boot noise). */
 export const MATCH_GRAPH_ALERT_MIN_TOTAL_SAMPLES = 15;
@@ -64,13 +66,14 @@ function maybeEmitMatchGraphListFallbackAlert(): void {
   if (total < MATCH_GRAPH_ALERT_MIN_TOTAL_SAMPLES) return;
   const ratio = listRpcFallbackCount / total;
   if (ratio <= MATCH_GRAPH_LIST_FALLBACK_RATIO_ALERT) return;
-  console.error('[matchGraph][ALERT] list_visible_match_graphs_for_user fallback ratio high', {
+  const payload = {
     ratio: Number(ratio.toFixed(4)),
     threshold: MATCH_GRAPH_LIST_FALLBACK_RATIO_ALERT,
     successCount: listRpcSuccessCount,
     fallbackCount: listRpcFallbackCount,
     hint: 'Verify migration deploy, grants, and Supabase logs for list_visible_match_graphs_for_user.',
-  });
+  };
+  reportDiagnosticMetric('matchGraph.listRpc.highFallbackRatio', payload);
 }
 
 function maybeEmitMatchGraphDetailFallbackAlert(): void {
@@ -78,11 +81,12 @@ function maybeEmitMatchGraphDetailFallbackAlert(): void {
   if (total < MATCH_GRAPH_ALERT_MIN_TOTAL_SAMPLES) return;
   const ratio = detailRpcFallbackCount / total;
   if (ratio <= MATCH_GRAPH_DETAIL_FALLBACK_RATIO_ALERT) return;
-  console.error('[matchGraph][ALERT] get_match_graph_for_user fallback ratio high', {
+  const payload = {
     ratio: Number(ratio.toFixed(4)),
     threshold: MATCH_GRAPH_DETAIL_FALLBACK_RATIO_ALERT,
     successCount: detailRpcSuccessCount,
     fallbackCount: detailRpcFallbackCount,
     hint: 'Verify migration deploy and RPC errors; legacy path uses multiple round-trips per match.',
-  });
+  };
+  reportDiagnosticMetric('matchGraph.detailRpc.highFallbackRatio', payload);
 }

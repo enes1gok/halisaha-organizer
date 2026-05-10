@@ -27,6 +27,19 @@ describeIntegration('RPC match graph', () => {
     expect(ids).toContain(match.id);
   });
 
+  it('list_visible_match_graphs_for_user respects p_limit', async () => {
+    const org = await createAuthedUser('list_graph_limit');
+    const joinCode = `LIM${Date.now().toString(36).toUpperCase().slice(-6)}`;
+    await insertMatchAsOrganizer(org.client, joinCode);
+    await insertMatchAsOrganizer(org.client, `${joinCode}B`);
+
+    const { data, error } = await org.client.rpc('list_visible_match_graphs_for_user', {
+      p_limit: 1,
+    });
+    expect(error).toBeNull();
+    expect((data ?? []).length).toBe(1);
+  });
+
   it('list_match_graphs_for_match_ids returns rows for visible matches', async () => {
     const org = await createAuthedUser('batch_graph_org');
     const joinCode = `BGRAPH${Date.now().toString(36).toUpperCase().slice(-6)}`;

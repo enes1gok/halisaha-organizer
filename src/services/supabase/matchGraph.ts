@@ -9,6 +9,7 @@ import type {
   SelfReportRequestRow,
 } from './types';
 import { fetchMatchesForCurrentUser } from './matches';
+import { reportDiagnosticMetric } from '../logging/reportError';
 import {
   recordDetailMatchGraphRpcFallback,
   recordDetailMatchGraphRpcSuccess,
@@ -107,10 +108,14 @@ export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayloa
     const payload = rpcRowToPayload(row);
     detailRpcSuccessLogCounter += 1;
     if (detailRpcSuccessLogCounter === 1 || detailRpcSuccessLogCounter % 10 === 0) {
-      console.info('[matchGraph] detail rpc fetch completed', {
-        successCount: detailRpcSuccessLogCounter,
-        durationMs: Date.now() - startedAt,
-      });
+      reportDiagnosticMetric(
+        'matchGraph.detailRpc.success',
+        {
+          successCount: detailRpcSuccessLogCounter,
+          durationMs: Date.now() - startedAt,
+        },
+        true,
+      );
     }
     return payload;
   }
@@ -250,11 +255,15 @@ export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
   const graphs = rows.map((row) => rpcRowToPayload(row));
   listRpcSuccessLogCounter += 1;
   if (listRpcSuccessLogCounter === 1 || listRpcSuccessLogCounter % 10 === 0) {
-    console.info('[matchGraph] rpc fetch completed', {
-      successCount: listRpcSuccessLogCounter,
-      matchCount: graphs.length,
-      durationMs: Date.now() - startedAt,
-    });
+    reportDiagnosticMetric(
+      'matchGraph.listRpc.success',
+      {
+        successCount: listRpcSuccessLogCounter,
+        matchCount: graphs.length,
+        durationMs: Date.now() - startedAt,
+      },
+      true,
+    );
   }
   return graphs;
 }

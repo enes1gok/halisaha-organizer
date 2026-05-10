@@ -37,3 +37,16 @@ export function reportError(input: ReportErrorInput): void {
     console.warn('[reportError]', payload);
   }
 }
+
+/**
+ * Histogram-style metrics / breadcrumbs without treating input as an error.
+ * Set `devOnly` for noisy samples; omit or false so ops alerts still surface in production logs.
+ */
+export function reportDiagnosticMetric(
+  event: string,
+  payload: Record<string, unknown>,
+  devOnly = false,
+): void {
+  if (devOnly && !__DEV__) return;
+  console.warn(`[diagnostic] ${event}`, payload);
+}
