@@ -11,6 +11,7 @@ export type NotificationPreferences = {
     group_match_payment_reminder: boolean;
     group_match_post_match_rating_reminder: boolean;
     group_match_match_result: boolean;
+    group_match_streak_at_risk: boolean;
   };
   quiet_hours: {
     enabled: boolean;
@@ -32,6 +33,7 @@ export function defaultNotificationPreferences(): NotificationPreferences {
       group_match_payment_reminder: true,
       group_match_post_match_rating_reminder: true,
       group_match_match_result: true,
+      group_match_streak_at_risk: true,
     },
     quiet_hours: {
       enabled: false,
@@ -92,6 +94,10 @@ export function normalizeNotificationPreferences(raw: unknown): NotificationPref
         typeof typesIn.group_match_match_result === 'boolean'
           ? typesIn.group_match_match_result
           : base.types.group_match_match_result,
+      group_match_streak_at_risk:
+        typeof typesIn.group_match_streak_at_risk === 'boolean'
+          ? typesIn.group_match_streak_at_risk
+          : base.types.group_match_streak_at_risk,
     },
     quiet_hours: {
       enabled:

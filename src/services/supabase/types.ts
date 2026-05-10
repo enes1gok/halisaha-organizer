@@ -26,6 +26,8 @@ export interface ProfileRow {
   iban: string | null;
   /** JSON preferences; use `normalizeNotificationPreferences` at UI boundary. */
   notification_preferences?: unknown;
+  weekly_match_streak_weeks?: number;
+  weekly_match_last_qualifying_week_start?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +38,9 @@ export interface PublicProfileRow {
   photo_uri: string | null;
   position: PlayerPositionRow;
   preferred_foot: PreferredFootRow;
+  weekly_match_streak_weeks?: number;
+  weekly_match_last_qualifying_week_start?: string | null;
+  weekly_match_streak_effective_weeks?: number;
 }
 
 export interface MatchRow {

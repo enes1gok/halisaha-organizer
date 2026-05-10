@@ -16,7 +16,9 @@ export async function fetchProfilesByIds(ids: string[]): Promise<PublicProfileRo
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('profiles_public')
-    .select('id,display_name,photo_uri,position,preferred_foot')
+    .select(
+      'id,display_name,photo_uri,position,preferred_foot,weekly_match_streak_effective_weeks,weekly_match_streak_weeks,weekly_match_last_qualifying_week_start',
+    )
     .in('id', uniq);
   if (error) throw mapSupabaseError(error, 'fetchProfilesByIds');
   return (data ?? []) as PublicProfileRow[];

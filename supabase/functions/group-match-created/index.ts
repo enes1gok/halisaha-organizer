@@ -19,13 +19,14 @@ type DeliveryType =
   | 'venue_change'
   | 'lineup_published'
   | 'post_match_rating_reminder'
-  | 'match_result';
+  | 'match_result'
+  | 'streak_at_risk';
 
 type ClaimedDeliveryRow = {
   delivery_id: string;
   delivery_token: string;
-  match_id: string;
-  group_id: string;
+  match_id: string | null;
+  group_id: string | null;
   recipient_id: string;
   delivery_type: DeliveryType;
   reminder_date: string | null;
@@ -40,8 +41,8 @@ type ClaimedDeliveryRow = {
 type ClaimedDelivery = {
   id: string;
   token: string;
-  match_id: string;
-  group_id: string;
+  match_id: string | null;
+  group_id: string | null;
   recipient_id: string;
   type: DeliveryType;
   reminder_date: string | null;
@@ -64,6 +65,7 @@ type NotificationPreferences = {
     group_match_lineup_published?: boolean;
     group_match_post_match_rating_reminder?: boolean;
     group_match_match_result?: boolean;
+    group_match_streak_at_risk?: boolean;
   };
   quiet_hours?: {
     enabled?: boolean;
@@ -108,6 +110,7 @@ const PREF_KEY_BY_DELIVERY_TYPE: Record<
   lineup_published: 'group_match_lineup_published',
   post_match_rating_reminder: 'group_match_post_match_rating_reminder',
   match_result: 'group_match_match_result',
+  streak_at_risk: 'group_match_streak_at_risk',
 };
 
 /** Mirrors SQL `notification_delivery_allowed` + optional quiet-hours block at send time. */
@@ -289,6 +292,12 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
       body: `Maç Sonucu: ${sa}–${sb}`,
     };
   }
+  if (delivery.type === 'streak_at_risk') {
+    return {
+      title: 'Haftalık serin tehlikede',
+      body: 'Bu hafta grubunda planlı maç yok — seriyi korumak için bir maç ayarla.',
+    };
+  }
   return {
     title: 'Yeni grup maçı',
     body: `${groupName} grubunda yeni maç açıldı`,
@@ -373,11 +382,12 @@ async function processClaimed(
 
   try {
     const { title, body } = buildMessage(delivery);
+    const target = delivery.type === 'streak_at_risk' ? 'profile' : 'matchDetail';
     await sendExpoPush(delivery.token, title, body, {
-      matchId: delivery.match_id,
-      groupId: delivery.group_id,
+      ...(delivery.match_id ? { matchId: delivery.match_id } : {}),
+      ...(delivery.group_id ? { groupId: delivery.group_id } : {}),
       type: delivery.type,
-      target: 'matchDetail',
+      target,
     });
     await markSent(delivery.id);
     return 'sent';

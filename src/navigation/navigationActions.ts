@@ -18,3 +18,10 @@ export function openGroupDetail(groupId: string) {
     params: { groupId },
   });
 }
+
+export function openProfileMain() {
+  if (!navigationRef.isReady()) return;
+  navigationRef.navigate('ProfileTab', {
+    screen: 'ProfileMain',
+  });
+}

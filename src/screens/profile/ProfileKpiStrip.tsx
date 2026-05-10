@@ -7,10 +7,17 @@ type Props = {
   matchesPlayed: number;
   goals: number;
   assists: number;
+  /** Sunucudan haftalık maç serisi; null ise gösterilmez (çevrimdışı / senkron yok). */
+  weeklyMatchStreakEffective?: number | null;
 };
 
-export function ProfileKpiStrip({ matchesPlayed, goals, assists }: Props) {
-  const summary = `${matchesPlayed} maç, ${goals} gol, ${assists} asist`;
+export function ProfileKpiStrip({
+  matchesPlayed,
+  goals,
+  assists,
+  weeklyMatchStreakEffective,
+}: Props) {
+  const summary = `${matchesPlayed} maç, ${goals} gol, ${assists} asist${weeklyMatchStreakEffective != null ? `, ${weeklyMatchStreakEffective} haftalık seri` : ''}`;
   const { isHuge } = useFontScale();
 
   return (
@@ -25,6 +32,16 @@ export function ProfileKpiStrip({ matchesPlayed, goals, assists }: Props) {
         <KpiCell value={goals} label="Gol" stacked={isHuge} />
         <View style={isHuge ? styles.dividerHorizontal : styles.divider} />
         <KpiCell value={assists} label="Asist" stacked={isHuge} />
+        {weeklyMatchStreakEffective != null && (
+          <>
+            <View style={isHuge ? styles.dividerHorizontal : styles.divider} />
+            <KpiCell
+              value={weeklyMatchStreakEffective}
+              label="Hafta serisi"
+              stacked={isHuge}
+            />
+          </>
+        )}
       </View>
     </View>
   );

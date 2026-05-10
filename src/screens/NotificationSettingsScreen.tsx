@@ -41,6 +41,7 @@ function toJsonRecord(p: NotificationPreferences): Record<string, unknown> {
       group_match_payment_reminder: p.types.group_match_payment_reminder,
       group_match_post_match_rating_reminder: p.types.group_match_post_match_rating_reminder,
       group_match_match_result: p.types.group_match_match_result,
+      group_match_streak_at_risk: p.types.group_match_streak_at_risk,
     },
     quiet_hours: {
       enabled: p.quiet_hours.enabled,
@@ -277,6 +278,16 @@ export function NotificationSettingsScreen() {
     [prefs, persist],
   );
 
+  const onToggleStreakAtRisk = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_streak_at_risk: v },
+      });
+    },
+    [prefs, persist],
+  );
+
   const onToggleQuiet = useCallback(
     (v: boolean) => {
       void persist({
@@ -314,7 +325,7 @@ export function NotificationSettingsScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <SettingsSectionSkeleton rows={2} />
         <SettingsSectionSkeleton rows={1} />
-        <SettingsSectionSkeleton rows={6} />
+        <SettingsSectionSkeleton rows={7} />
         <SettingsSectionSkeleton rows={2} />
       </ScrollView>
     );
@@ -488,6 +499,23 @@ export function NotificationSettingsScreen() {
             thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_match_result ? colors.accent : colors.textMuted) : undefined}
             testID="settings:notifications:type-match-result:switch"
             accessibilityLabel="Maç sonucu bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Haftalık seri hatırlatıcısı</Text>
+            <Text style={styles.caption}>
+              Haftada planlı maç yokken seriyi kaybetmemek için Çarşamba hatırlatması
+            </Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_streak_at_risk}
+            onValueChange={onToggleStreakAtRisk}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_streak_at_risk ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-streak-at-risk:switch"
+            accessibilityLabel="Haftalık seri hatırlatıcı bildirimleri"
           />
         </View>
       </View>

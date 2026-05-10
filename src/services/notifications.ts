@@ -21,12 +21,13 @@ type DeliveryType =
   | 'venue_change'
   | 'lineup_published'
   | 'post_match_rating_reminder'
-  | 'match_result';
+  | 'match_result'
+  | 'streak_at_risk';
 
 type InAppDelivery = {
   id: string;
-  match_id: string;
-  group_id: string;
+  match_id: string | null;
+  group_id: string | null;
   type: DeliveryType;
   created_at: string;
   match: {
@@ -148,6 +149,12 @@ function buildInAppMessage(delivery: InAppDelivery): { title: string; body: stri
       body: `Maç Sonucu: ${sa}–${sb}`,
     };
   }
+  if (delivery.type === 'streak_at_risk') {
+    return {
+      title: 'Haftalık serin tehlikede',
+      body: 'Bu hafta grubunda planlı maç yok — seriyi korumak için bir maç ayarla.',
+    };
+  }
   return {
     title: 'Yeni grup maçı',
     body: `${groupName} grubunda yeni maç açıldı`,
@@ -192,15 +199,16 @@ async function showPendingInAppBanners(sinceIso: string): Promise<void> {
     if (handledInAppDeliveryIds.has(row.id)) continue;
     handledInAppDeliveryIds.add(row.id);
     const { title, body } = buildInAppMessage(row);
+    const target = row.type === 'streak_at_risk' ? 'profile' : 'matchDetail';
     await Notifications.scheduleNotificationAsync({
       content: {
         title,
         body,
         data: {
-          matchId: row.match_id,
-          groupId: row.group_id,
+          ...(row.match_id ? { matchId: row.match_id } : {}),
+          ...(row.group_id ? { groupId: row.group_id } : {}),
           type: row.type,
-          target: 'matchDetail',
+          target,
         },
       },
       trigger: null,

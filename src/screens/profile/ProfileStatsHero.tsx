@@ -14,6 +14,7 @@ type Props = {
   compositeScore: number;
   sparklinePoints: number[];
   badgeTiles?: BadgeTileVm[];
+  weeklyMatchStreakEffective?: number | null;
 };
 
 export function ProfileStatsHero({
@@ -25,6 +26,7 @@ export function ProfileStatsHero({
   compositeScore,
   sparklinePoints,
   badgeTiles,
+  weeklyMatchStreakEffective,
 }: Props) {
   return (
     <>
@@ -33,6 +35,7 @@ export function ProfileStatsHero({
         matchesPlayed={player.stats.matchesPlayed}
         goals={player.stats.goals}
         assists={player.stats.assists}
+        weeklyMatchStreakEffective={weeklyMatchStreakEffective}
       />
       <ProfilePerformanceCard
         player={player}

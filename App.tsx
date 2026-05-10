@@ -17,7 +17,7 @@ import { ToastProvider } from './src/context/ToastContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { SetNewPasswordScreen } from './src/screens/SetNewPasswordScreen';
-import { openGroupDetail, openMatchDetail } from './src/navigation/navigationActions';
+import { openGroupDetail, openMatchDetail, openProfileMain } from './src/navigation/navigationActions';
 import { startContextAwareNotificationSync } from './src/services/notifications';
 import { darkColors } from './src/theme';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
@@ -50,7 +50,12 @@ function AppShell() {
       const data = response.notification.request.content.data as {
         matchId?: string;
         groupId?: string;
+        target?: string;
       };
+      if (data.target === 'profile') {
+        openProfileMain();
+        return;
+      }
       if (data.matchId) {
         openMatchDetail(data.matchId);
         return;

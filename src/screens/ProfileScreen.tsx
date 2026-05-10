@@ -118,6 +118,7 @@ export function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [badgeTiles, setBadgeTiles] = useState<BadgeTileVm[]>([]);
+  const [weeklyMatchStreakEffective, setWeeklyMatchStreakEffective] = useState<number | null>(null);
 
   const { iban, syncFromStored, onChange: onIbanChange, onFocus: onIbanFocus } = useTurkishIbanField(
     player?.iban,
@@ -160,6 +161,32 @@ export function ProfileScreen() {
   useEffect(() => {
     void loadBadgeTiles();
   }, [loadBadgeTiles]);
+
+  const loadWeeklyMatchStreak = useCallback(async () => {
+    if (!configured || !session?.user?.id || session.user.id !== userId) {
+      setWeeklyMatchStreakEffective(null);
+      return;
+    }
+    try {
+      const { data, error } = await getSupabaseClient()
+        .from('profiles_public')
+        .select('weekly_match_streak_effective_weeks')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) throw error;
+      setWeeklyMatchStreakEffective(
+        typeof data?.weekly_match_streak_effective_weeks === 'number'
+          ? data.weekly_match_streak_effective_weeks
+          : 0,
+      );
+    } catch {
+      setWeeklyMatchStreakEffective(null);
+    }
+  }, [configured, session, userId]);
+
+  useEffect(() => {
+    void loadWeeklyMatchStreak();
+  }, [loadWeeklyMatchStreak]);
 
   const recent: RecentMatchRow[] = useMemo(() => {
     const finished = matches
@@ -292,6 +319,7 @@ export function ProfileScreen() {
         await refreshAuthSession();
         await refreshRemoteProfile();
         await hydrateRemoteMatches();
+        await loadWeeklyMatchStreak();
       }
       await loadBadgeTiles();
       setRankRefreshKey((k) => k + 1);
@@ -348,6 +376,9 @@ export function ProfileScreen() {
         tierProgress01={tierProgress01}
         compositeScore={compositeScore}
         sparklinePoints={sparklinePoints}
+        weeklyMatchStreakEffective={
+          configured && session?.user?.id === player.id ? weeklyMatchStreakEffective : null
+        }
       />
 
       <ProfileGlobalRankCard userId={player.id} remoteUserId={remoteUserId} refreshKey={rankRefreshKey} />
