@@ -9,7 +9,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, Text, TextInput, View, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
@@ -18,7 +18,9 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { SetNewPasswordScreen } from './src/screens/SetNewPasswordScreen';
 import { openGroupDetail, openMatchDetail, openProfileMain } from './src/navigation/navigationActions';
-import { startContextAwareNotificationSync } from './src/services/notifications';
+import { drainPendingInAppDeliveries, startContextAwareNotificationSync } from './src/services/notifications';
+import { registerBackgroundSyncTask, unregisterBackgroundSyncTask } from './src/services/sync/backgroundTask';
+import { runRemoteCatchUp } from './src/services/sync/remoteCatchUp';
 import { darkColors } from './src/theme';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { useAppStore } from './src/store';
@@ -69,8 +71,41 @@ function AppShell() {
 
   useEffect(() => {
     if (!configured || !session || needsPasswordRecovery) return;
+    let previousAppState: AppStateStatus = AppState.currentState;
     const stopSync = startContextAwareNotificationSync();
-    return () => stopSync();
+    const runForegroundSync = async () => {
+      try {
+        await runRemoteCatchUp({ reason: 'foreground' });
+      } catch (error) {
+        console.warn('Foreground veri senkronu başarısız', error);
+      }
+      try {
+        await drainPendingInAppDeliveries();
+      } catch (error) {
+        console.warn('In-app bildirim yakalama başarısız', error);
+      }
+    };
+
+    void registerBackgroundSyncTask().catch((error) => {
+      console.warn('Arka plan senkron görevi kaydedilemedi', error);
+    });
+    void runForegroundSync();
+
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      const wasBackground = previousAppState === 'background' || previousAppState === 'inactive';
+      previousAppState = nextState;
+      if (nextState === 'active' && wasBackground) {
+        void runForegroundSync();
+      }
+    });
+
+    return () => {
+      appStateSub.remove();
+      stopSync();
+      void unregisterBackgroundSyncTask().catch((error) => {
+        console.warn('Arka plan senkron görevi kapatılamadı', error);
+      });
+    };
   }, [configured, session, needsPasswordRecovery]);
 
   if (configured && loading) {

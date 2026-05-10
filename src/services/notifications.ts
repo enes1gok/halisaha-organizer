@@ -349,3 +349,12 @@ export async function registerForPushToken(): Promise<string | null> {
   const token = await Notifications.getExpoPushTokenAsync();
   return token.data ?? null;
 }
+
+export const notificationInternals = {
+  IN_APP_CURSOR_STORAGE_KEY,
+  readInAppDeliveryCursor,
+  writeInAppDeliveryCursor,
+  shouldSkipDeliveryForCursor,
+  advanceCursor,
+  fallbackInAppSinceIso,
+};

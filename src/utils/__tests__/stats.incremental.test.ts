@@ -28,6 +28,7 @@ function finishedMatch(
     venue: 'X',
     organizerId: teamAIds[0] ?? 'o',
     maxPlayers: 14,
+    paymentMethod: 'cash',
     joinCode: 'ABC',
     attendees: [],
     teamAIds,
