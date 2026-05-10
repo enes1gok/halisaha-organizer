@@ -1,8 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { PillButton } from './PillButton';
 import { spacing, typography } from '../theme';
 import { makeStyles } from '../theme/ThemeContext';
+import { EmptyStateHero } from './emptyIllustrations/EmptyStateHero';
+import type { EmptyStateVariant } from './emptyIllustrations/types';
+import { PillButton } from './PillButton';
 
 type Props = {
   title: string;
@@ -10,15 +12,25 @@ type Props = {
   actionLabel?: string;
   onAction?: () => void;
   actionTestID?: string;
+  /** Boş durum görseli; varsayılan genel maç / futbol sembolü */
+  variant?: EmptyStateVariant;
+  /** Görsel daire için test kimliği */
+  heroTestID?: string;
 };
 
-export function EmptyState({ title, subtitle, actionLabel, onAction, actionTestID }: Props) {
+export function EmptyState({
+  title,
+  subtitle,
+  actionLabel,
+  onAction,
+  actionTestID,
+  variant = 'matches',
+  heroTestID,
+}: Props) {
   const styles = useStyles();
   return (
     <View style={styles.wrap}>
-      <View style={styles.iconWrap}>
-        <Text style={styles.icon}>⚽</Text>
-      </View>
+      <EmptyStateHero variant={variant} testID={heroTestID ?? 'emptyState:hero'} />
       <Text style={[typography.subtitle, styles.title]}>{title}</Text>
       {subtitle ? (
         <Text style={[typography.body, styles.sub]}>{subtitle}</Text>
@@ -42,20 +54,6 @@ const useStyles = makeStyles((t) =>
       justifyContent: 'center',
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.lg,
-    },
-    iconWrap: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: t.colors.surface,
-      borderWidth: 1,
-      borderColor: t.colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: spacing.md,
-    },
-    icon: {
-      fontSize: 36,
     },
     title: {
       color: t.colors.text,

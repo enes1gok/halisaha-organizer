@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/Card';
+import { EmptyStateHero } from '../components/emptyIllustrations';
 import { PillButton } from '../components/PillButton';
 import { GroupCardSkeleton, SkeletonList } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
@@ -111,6 +112,7 @@ export function GroupsScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.centeredEmpty}>
+          <EmptyStateHero variant="groups" testID="groups:empty:hero" />
           <Card style={styles.ctaBlockCard}>
             <PillButton
               title="Grup Oluştur"

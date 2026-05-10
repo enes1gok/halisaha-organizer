@@ -9,6 +9,7 @@ import {
   type ViewToken,
 } from 'react-native';
 import { EmptyState } from '../../../components/EmptyState';
+import type { EmptyStateVariant } from '../../../components/emptyIllustrations/types';
 import { MatchCard } from '../../../components/MatchCard';
 import { MatchCardListRow } from '../../../components/MatchCardListRow';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../../../navigation/tabBarLayout';
@@ -45,6 +46,12 @@ const VIEWABILITY_CONFIG = {
 
 export type MyMatchesAgendaHandle = {
   scrollToDateKey: (dateKey: string) => void;
+};
+
+const SEGMENT_TO_EMPTY_VARIANT: Record<SegmentValue, EmptyStateVariant> = {
+  upcoming: 'matches_upcoming',
+  past: 'matches_past',
+  all: 'matches',
 };
 
 const EMPTY_COPY: Record<SegmentValue, { title: string; subtitle: string }> = {
@@ -179,10 +186,12 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
       }}
       ListEmptyComponent={
         <EmptyState
+          variant={SEGMENT_TO_EMPTY_VARIANT[segment]}
           title={empty.title}
           subtitle={empty.subtitle}
           actionLabel={emptyAction?.label}
           onAction={emptyAction?.onPress}
+          heroTestID="myMatches:agenda:empty:hero"
         />
       }
       onScrollToIndexFailed={() => {

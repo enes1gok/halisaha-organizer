@@ -206,11 +206,13 @@ export function LeaderboardScreen() {
             <SkeletonList count={8} renderItem={() => <LeaderboardRowSkeleton />} />
           ) : top.length === 0 ? (
             <EmptyState
+              variant="stats"
               title="Sıralama için veri yok"
               subtitle="İlk maçını oyna ve sıralamaya gir!"
               actionLabel="Maç oluştur"
               onAction={openCreateMatch}
               actionTestID="leaderboard:empty:create-match:press"
+              heroTestID="leaderboard:empty:hero"
             />
           ) : null
         }

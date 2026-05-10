@@ -1,6 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import React, { useCallback } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { EmptyStateHero } from './emptyIllustrations';
 import { PressableScale } from './PressableScale';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
@@ -60,6 +61,7 @@ export function HomeUpcomingHeroCard({
       <View style={styles.outer}>
         <View style={styles.card}>
           <View style={styles.emptyInner}>
+            <EmptyStateHero variant="matches_upcoming" testID="home:upcoming:empty:hero" />
             <Text style={[typography.body, styles.tabTitle]}>Önümüzdeki maç</Text>
             <Text style={[typography.subtitle, styles.placeholderBody, styles.placeholderTitle]}>
               Yaklaşan maç yok
