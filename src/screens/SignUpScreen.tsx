@@ -6,14 +6,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import type { OnboardingStackParamList } from '../navigation/types';
-import { colors, spacing } from '../theme';
+import { spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useUserFeedback } from '../utils/userFeedback';
 import { EmailPasswordFields } from './EmailPasswordFields';
-import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 
 type Nav = StackNavigationProp<OnboardingStackParamList, 'SignUp'>;
 
 export function SignUpScreen() {
+  const styles = useOnboardingAuthStyles();
+  const { colors } = useTheme();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { signUpWithEmail } = useSupabaseAuth();

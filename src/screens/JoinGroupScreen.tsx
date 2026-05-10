@@ -4,13 +4,16 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { useGroupsStore } from '../store';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'JoinGroup'>;
 
 export function JoinGroupScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const navigation = useNavigation<Nav>();
   const joinGroup = useGroupsStore((s) => s.joinGroup);
   const { showValidationToast, showToast, showApiErrorToast } = useUserFeedback();
@@ -59,16 +62,23 @@ export function JoinGroupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background, padding: spacing.md, gap: spacing.sm },
-  label: { ...typography.caption, color: colors.textMuted },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    label: { ...typography.caption, color: t.colors.textMuted },
+    input: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 12,
+      backgroundColor: t.colors.surface,
+      color: t.colors.text,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+  }),
+);

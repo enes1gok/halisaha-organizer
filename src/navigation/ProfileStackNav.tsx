@@ -1,6 +1,7 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useReduceMotion } from '../hooks/useReduceMotion';
+import { useThemeColors } from '../theme/ThemeContext';
 import { LicensesScreen } from '../screens/LicensesScreen';
 import { NotificationSettingsScreen } from '../screens/NotificationSettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
@@ -14,8 +15,13 @@ const Stack = createStackNavigator<ProfileStackParamList>();
 
 export function ProfileStackNav() {
   const reduceMotion = useReduceMotion();
+  const colors = useThemeColors();
+  const screenOptions = useMemo(
+    () => getDefaultStackScreenOptions(reduceMotion, colors),
+    [colors, reduceMotion],
+  );
   return (
-    <Stack.Navigator screenOptions={getDefaultStackScreenOptions(reduceMotion)}>
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'İstatistiklerim' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
       <Stack.Screen

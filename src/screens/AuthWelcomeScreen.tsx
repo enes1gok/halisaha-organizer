@@ -8,11 +8,12 @@ import { PillButton } from '../components/PillButton';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import type { OnboardingStackParamList } from '../navigation/types';
 import { spacing } from '../theme';
-import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 
 type Nav = StackNavigationProp<OnboardingStackParamList, 'AuthWelcome'>;
 
 export function AuthWelcomeScreen() {
+  const styles = useOnboardingAuthStyles();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();

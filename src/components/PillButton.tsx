@@ -58,7 +58,7 @@ export function PillButton({
       : variant === 'secondary'
         ? colors.indigo
         : variant === 'accent'
-          ? colors.background
+          ? colors.textOnAccent
           : variant === 'danger'
             ? colors.text
             : colors.text;

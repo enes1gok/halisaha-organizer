@@ -9,7 +9,15 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, Text, TextInput, View, type AppStateStatus } from 'react-native';
+import {
+  ActivityIndicator,
+  Appearance,
+  AppState,
+  Text,
+  TextInput,
+  View,
+  type AppStateStatus,
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
@@ -21,7 +29,7 @@ import { openGroupDetail, openMatchDetail, openProfileMain } from './src/navigat
 import { drainPendingInAppDeliveries, startContextAwareNotificationSync } from './src/services/notifications';
 import { registerBackgroundSyncTask, unregisterBackgroundSyncTask } from './src/services/sync/backgroundTask';
 import { runRemoteCatchUp } from './src/services/sync/remoteCatchUp';
-import { darkColors } from './src/theme';
+import { palettes } from './src/theme';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { useAppStore } from './src/store';
 
@@ -41,6 +49,11 @@ const TextInputWithDefaults = TextInput as unknown as {
 };
 TextInputWithDefaults.defaultProps = TextInputWithDefaults.defaultProps ?? {};
 TextInputWithDefaults.defaultProps.maxFontSizeMultiplier = FONT_SCALE_CAP;
+
+function bootstrapPalette() {
+  const scheme = Appearance.getColorScheme() === 'light' ? 'light' : 'dark';
+  return palettes[scheme];
+}
 
 function AppShell() {
   const { configured, loading, session, needsPasswordRecovery } = useSupabaseAuth();
@@ -175,9 +188,10 @@ export default function App() {
   }, []);
 
   if (!fontsLoaded || !hydrated) {
+    const boot = bootstrapPalette();
     return (
-      <View style={{ flex: 1, backgroundColor: darkColors.background, justifyContent: 'center' }}>
-        <ActivityIndicator color={darkColors.accent} size="large" />
+      <View style={{ flex: 1, backgroundColor: boot.background, justifyContent: 'center' }}>
+        <ActivityIndicator color={boot.accent} size="large" />
       </View>
     );
   }

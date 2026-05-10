@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Card } from '../../components/Card';
-import { colors, radius, spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
+import { makeStyles } from '../../theme/ThemeContext';
 import type { Player } from '../../types/domain';
 import { ProfileSparklineSection } from './ProfilePerformanceSparkline';
 
@@ -24,6 +25,7 @@ export function ProfilePerformanceCard({
   compositeScore,
   sparklinePoints,
 }: Props) {
+  const styles = usePerformanceCardStyles();
   const { wins, losses, draws } = player.stats;
   const ratingAvg = player.stats.ratingAverage100;
   const voteCount = player.stats.ratingVoteCount ?? 0;
@@ -77,6 +79,7 @@ export function ProfilePerformanceCard({
 }
 
 function MetricRow({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  const styles = usePerformanceCardStyles();
   return (
     <View style={styles.metricBlock}>
       <Text style={styles.metricLbl}>{label}</Text>
@@ -86,71 +89,73 @@ function MetricRow({ label, value, hint }: { label: string; value: string; hint?
   );
 }
 
-const styles = StyleSheet.create({
-  outer: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  card: {
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-  },
-  levelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  levelBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentMuted,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  levelTxt: {
-    ...typography.micro,
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  scoreHint: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: colors.accent,
-  },
-  metrics: {
-    marginTop: spacing.xs,
-    gap: spacing.md,
-  },
-  metricBlock: {
-    gap: 2,
-  },
-  metricLbl: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  metricVal: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  metricHint: {
-    ...typography.micro,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-});
+const usePerformanceCardStyles = makeStyles((t) =>
+  StyleSheet.create({
+    outer: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+    },
+    card: {
+      gap: spacing.sm,
+    },
+    cardTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+    },
+    levelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    levelBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.sm,
+      backgroundColor: t.colors.accentMuted,
+      borderWidth: 1,
+      borderColor: t.colors.accent,
+    },
+    levelTxt: {
+      ...typography.micro,
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    scoreHint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    progressTrack: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: t.colors.border,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 3,
+      backgroundColor: t.colors.accent,
+    },
+    metrics: {
+      marginTop: spacing.xs,
+      gap: spacing.md,
+    },
+    metricBlock: {
+      gap: 2,
+    },
+    metricLbl: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    metricVal: {
+      ...typography.body,
+      color: t.colors.text,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    metricHint: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      marginTop: 2,
+    },
+  }),
+);

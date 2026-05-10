@@ -7,11 +7,13 @@ import { Card } from '../components/Card';
 import { EmptyStateHero } from '../components/emptyIllustrations';
 import { PillButton } from '../components/PillButton';
 import { GroupCardSkeleton, SkeletonList } from '../components/skeleton';
+import type { GroupsStackParamList } from '../navigation/types';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useAuthStore, useGroupsStore, useMatchesStore } from '../store';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useThemeColors } from '../theme/ThemeContext';
+import type { Group } from '../types/domain';
 import { formatShortDate } from '../utils/dates';
-import type { GroupsStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'GroupsMain'>;
 
@@ -24,7 +26,68 @@ interface GroupListMeta {
   totalMemberCount: number;
 }
 
+type GroupsListRowProps = {
+  group: Group;
+  meta: GroupListMeta;
+  onPress: () => void;
+  accessibilityLabel: string;
+};
+
+function GroupsListRow({ group, meta, onPress, accessibilityLabel }: GroupsListRowProps) {
+  const styles = useGroupsStyles();
+  const c = useThemeColors();
+  const lastFinishedLabel = meta.lastFinishedAt ? formatShortDate(meta.lastFinishedAt) : null;
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+      testID="groups:group:open"
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
+      <View style={styles.cardHeaderRow}>
+        <Text style={styles.name} numberOfLines={1}>
+          {group.name}
+        </Text>
+        <View style={styles.memberHint} accessibilityElementsHidden>
+          <Ionicons name="people-outline" size={14} color={c.textMuted} />
+          <Text style={styles.memberCount}>{meta.totalMemberCount}</Text>
+        </View>
+      </View>
+
+      <View
+        style={styles.metaChipsRow}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View style={styles.metaChip}>
+          <Ionicons name="calendar-outline" size={12} color={c.accent} />
+          <Text style={styles.metaChipText} numberOfLines={1}>
+            {meta.upcomingCount} yaklaşan
+          </Text>
+        </View>
+        <View style={styles.metaChip}>
+          <Ionicons name="flag-outline" size={12} color={c.textMuted} />
+          <Text style={styles.metaChipText} numberOfLines={1}>
+            {lastFinishedLabel ? `Son: ${lastFinishedLabel}` : 'Henüz maç yok'}
+          </Text>
+        </View>
+        <View style={styles.metaChip}>
+          <Ionicons name="pulse-outline" size={12} color={c.textMuted} />
+          <Text style={styles.metaChipText} numberOfLines={1}>
+            {meta.activeMemberCount} aktif (30g)
+          </Text>
+        </View>
+      </View>
+
+      <Text style={styles.codeMeta}>Kod: {group.joinCode}</Text>
+    </Pressable>
+  );
+}
+
 export function GroupsScreen() {
+  const styles = useGroupsStyles();
   const navigation = useNavigation<Nav>();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const groups = useGroupsStore((s) => s.groups);
@@ -190,50 +253,12 @@ export function GroupsScreen() {
             `toplam ${meta.totalMemberCount} üye, gruba aç`;
 
           return (
-            <Pressable
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+            <GroupsListRow
+              group={item}
+              meta={meta}
               onPress={() => navigation.navigate('GroupDetail', { groupId: item.id })}
-              testID="groups:group:open"
-              accessibilityRole="button"
               accessibilityLabel={a11yLabel}
-            >
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <View style={styles.memberHint} accessibilityElementsHidden>
-                  <Ionicons name="people-outline" size={14} color={colors.textMuted} />
-                  <Text style={styles.memberCount}>{meta.totalMemberCount}</Text>
-                </View>
-              </View>
-
-              <View
-                style={styles.metaChipsRow}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                <View style={styles.metaChip}>
-                  <Ionicons name="calendar-outline" size={12} color={colors.accent} />
-                  <Text style={styles.metaChipText} numberOfLines={1}>
-                    {meta.upcomingCount} yaklaşan
-                  </Text>
-                </View>
-                <View style={styles.metaChip}>
-                  <Ionicons name="flag-outline" size={12} color={colors.textMuted} />
-                  <Text style={styles.metaChipText} numberOfLines={1}>
-                    {lastFinishedLabel ? `Son: ${lastFinishedLabel}` : 'Henüz maç yok'}
-                  </Text>
-                </View>
-                <View style={styles.metaChip}>
-                  <Ionicons name="pulse-outline" size={12} color={colors.textMuted} />
-                  <Text style={styles.metaChipText} numberOfLines={1}>
-                    {meta.activeMemberCount} aktif (30g)
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.codeMeta}>Kod: {item.joinCode}</Text>
-            </Pressable>
+            />
           );
         }}
       />
@@ -241,83 +266,90 @@ export function GroupsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  centeredEmpty: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    gap: spacing.md,
-    width: '100%',
-  },
-  ctaBlockCard: {
-    alignSelf: 'stretch',
-    width: '100%',
-    gap: spacing.sm,
-  },
-  ctaDescription: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textAlign: 'left',
-  },
-  ctaButton: {
-    alignSelf: 'stretch',
-    width: '100%',
-  },
-  actions: { padding: spacing.md, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  list: { padding: spacing.md, gap: spacing.sm, flexGrow: 1 },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.card,
-    padding: spacing.md,
-    gap: spacing.sm,
-    ...shadows.sm,
-  },
-  cardPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.997 }],
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  memberHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceSoft,
-  },
-  memberCount: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-  name: { ...typography.subtitle, color: colors.text, flexShrink: 1 },
-  metaChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  metaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  metaChipText: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-  codeMeta: { ...typography.caption, color: colors.textMuted },
-});
+const useGroupsStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.colors.background },
+    centeredEmpty: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+      gap: spacing.md,
+      width: '100%',
+    },
+    ctaBlockCard: {
+      alignSelf: 'stretch',
+      width: '100%',
+      gap: spacing.sm,
+    },
+    ctaDescription: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      textAlign: 'left',
+    },
+    ctaButton: {
+      alignSelf: 'stretch',
+      width: '100%',
+    },
+    actions: {
+      padding: spacing.md,
+      gap: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+    },
+    list: { padding: spacing.md, gap: spacing.sm, flexGrow: 1 },
+    card: {
+      backgroundColor: t.colors.surface,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: radius.card,
+      padding: spacing.md,
+      gap: spacing.sm,
+      ...shadows.sm,
+    },
+    cardPressed: {
+      opacity: 0.85,
+      transform: [{ scale: 0.997 }],
+    },
+    cardHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    memberHint: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+      backgroundColor: t.colors.surfaceSoft,
+    },
+    memberCount: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+    },
+    name: { ...typography.subtitle, color: t.colors.text, flexShrink: 1 },
+    metaChipsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+    },
+    metaChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.pill,
+      backgroundColor: t.colors.background,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+    },
+    metaChipText: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+    },
+    codeMeta: { ...typography.caption, color: t.colors.textMuted },
+  }),
+);

@@ -11,7 +11,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { PressableScale } from './PressableScale';
-import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useThemeColors } from '../theme/ThemeContext';
 import { EasingPresets, RsvpGoingMotion, Springs } from '../utils/animations';
 
 const AnimatedText = Animated.createAnimatedComponent(Text);
@@ -26,6 +27,8 @@ type Props = {
 const ICON_SIZE = 22;
 
 export function RsvpGoingButton({ onCommit, onSuccess, onError, testID }: Props) {
+  const styles = useStyles();
+  const colors = useThemeColors();
   const [reduceMotion, setReduceMotion] = useState(false);
   const [committing, setCommitting] = useState(false);
   const fill = useSharedValue(0);
@@ -46,7 +49,7 @@ export function RsvpGoingButton({ onCommit, onSuccess, onError, testID }: Props)
   }));
 
   const labelStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(fill.value, [0, 1], [colors.text, colors.background]),
+    color: interpolateColor(fill.value, [0, 1], [colors.text, colors.textOnAccent]),
   }));
 
   const iconGhostStyle = useAnimatedStyle(() => ({
@@ -120,7 +123,7 @@ export function RsvpGoingButton({ onCommit, onSuccess, onError, testID }: Props)
               <Ionicons name="checkmark-circle" size={ICON_SIZE} color={colors.text} />
             </Animated.View>
             <Animated.View style={[styles.iconLayer, iconAccentStyle]} pointerEvents="none">
-              <Ionicons name="checkmark-circle" size={ICON_SIZE} color={colors.background} />
+              <Ionicons name="checkmark-circle" size={ICON_SIZE} color={colors.textOnAccent} />
             </Animated.View>
           </View>
           <AnimatedText style={[styles.title, labelStyle]} accessibilityLiveRegion="polite">
@@ -132,45 +135,47 @@ export function RsvpGoingButton({ onCommit, onSuccess, onError, testID }: Props)
   );
 }
 
-const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radius.pill,
-    ...shadows.sm,
-  },
-  clip: {
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'transparent',
-    minHeight: 48,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fillLayer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.accent,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  iconSlot: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
-  },
-  iconLayer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...typography.subtitle,
-    fontSize: 15,
-    letterSpacing: letterSpacing.normal,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    pressable: {
+      borderRadius: radius.pill,
+      ...shadows.sm,
+    },
+    clip: {
+      borderRadius: radius.pill,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: 'transparent',
+      minHeight: 48,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.lg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    fillLayer: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: t.colors.accent,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+    },
+    iconSlot: {
+      width: ICON_SIZE,
+      height: ICON_SIZE,
+    },
+    iconLayer: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      ...typography.subtitle,
+      fontSize: 15,
+      letterSpacing: letterSpacing.normal,
+    },
+  }),
+);

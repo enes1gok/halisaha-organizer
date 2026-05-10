@@ -2,20 +2,22 @@ import React from 'react';
 import { Text, type TextProps } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useFontScale } from '../hooks/useFontScale';
-import { colors, letterSpacing, typography } from '../theme';
+import { letterSpacing, typography } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 import { Durations, EasingPresets } from '../utils/animations';
-
-/** Shared title styling for list ↔ detail continuity (Maç kartı / Maç detayı). */
-export const matchVenueTextStyle = {
-  ...typography.subtitle,
-  color: colors.text,
-  letterSpacing: letterSpacing.normal,
-};
 
 type Props = {
   venue: string;
   variant: 'list' | 'detail';
 } & Pick<TextProps, 'numberOfLines' | 'testID'>;
+
+const useVenueStyles = makeStyles((t) => ({
+  venueText: {
+    ...typography.subtitle,
+    color: t.colors.text,
+    letterSpacing: letterSpacing.normal,
+  },
+}));
 
 /**
  * Liste ve detayda aynı tipografi; detayda FadeIn kullanılır.
@@ -26,12 +28,12 @@ export function MatchHeroVenueTitle({
   numberOfLines,
   testID,
 }: Props) {
+  const styles = useVenueStyles();
   const { isLarge } = useFontScale();
-  // Liste varyantında varsayılan tek satır; büyük yazıda ikinci satıra izin veririz.
   const defaultListLines = isLarge ? 2 : 1;
   const lines = numberOfLines ?? (variant === 'list' ? defaultListLines : undefined);
   const text = (
-    <Text style={matchVenueTextStyle} numberOfLines={lines} testID={testID}>
+    <Text style={styles.venueText} numberOfLines={lines} testID={testID}>
       {venue}
     </Text>
   );

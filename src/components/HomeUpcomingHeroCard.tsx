@@ -4,7 +4,8 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EmptyStateHero } from './emptyIllustrations';
 import { PressableScale } from './PressableScale';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
-import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import type { Match, Player } from '../types/domain';
 import { formatMatchDateTimeWithWeekday } from '../utils/dates';
 import { maskIban } from '../utils/iban';
@@ -27,6 +28,8 @@ export function HomeUpcomingHeroCard({
   getPlayer,
   onOpenDetail,
 }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { showValidationToast } = useUserFeedback();
   const { label: ibanBtnLabel, runCopy: runIbanCopy, isCopied: ibanCopied } = useClipboardCopyFeedback({
     idleLabel: 'Kopyala',
@@ -189,171 +192,173 @@ export function HomeUpcomingHeroCard({
   );
 }
 
-const styles = StyleSheet.create({
-  outer: {
-    marginBottom: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surfaceGlass,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    overflow: 'hidden',
-    minHeight: 200,
-    ...shadows.md,
-  },
-  emptyInner: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-  },
-  headerSection: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.glassBorder,
-    backgroundColor: colors.surfaceSoft,
-    alignItems: 'stretch',
-  },
-  bodySection: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-  },
-  emptyHint: {
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
-  tabTitle: {
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-    fontSize: 16,
-  },
-  placeholderBody: {
-    color: colors.text,
-    marginTop: 2,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  placeholderTitle: {
-    fontSize: 19,
-  },
-  ibanPayBlock: {
-    alignSelf: 'stretch',
-  },
-  ibanAccountNameText: {
-    color: colors.text,
-    textAlign: 'left',
-    flex: 1,
-    minWidth: 0,
-  },
-  nameRowAfterIban: {
-    marginTop: spacing.sm,
-  },
-  afterTitle: {
-    marginTop: spacing.sm,
-  },
-  priceInHeader: {
-    ...typography.body,
-    fontSize: 16,
-    marginTop: spacing.sm,
-    textAlign: 'left',
-    alignSelf: 'stretch',
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  copyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    gap: spacing.sm,
-    zIndex: 1,
-  },
-  ibanMasked: {
-    color: colors.accent,
-    textAlign: 'left',
-    fontSize: 16,
-    flex: 1,
-    minWidth: 0,
-  },
-  copyBtn: {
-    borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(0, 210, 106, 0.14)',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexShrink: 0,
-    minWidth: 100,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  copyBtnPressed: {
-    opacity: 0.82,
-    backgroundColor: colors.accentMuted,
-  },
-  copyBtnText: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    color: colors.accent,
-  },
-  copyBtnTextCopied: {
-    color: colors.copyFeedbackLight,
-  },
-  ibanMissing: {
-    textAlign: 'left',
-  },
-  muted: {
-    color: colors.textMuted,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  venue: {
-    ...typography.headlineStrong,
-    fontSize: 24,
-    lineHeight: 30,
-    color: colors.text,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-    letterSpacing: letterSpacing.wide,
-  },
-  dateMuted: {
-    ...typography.body,
-    fontSize: 16,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  metaRow: {
-    marginTop: spacing.md,
-    alignItems: 'center',
-    alignSelf: 'stretch',
-  },
-  slotCount: {
-    ...typography.body,
-    fontSize: 16,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  warn: {
-    ...typography.body,
-    fontSize: 16,
-    color: colors.accent,
-    marginTop: spacing.md,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  gkAlert: {
-    ...typography.body,
-    fontSize: 16,
-    color: colors.position.GK,
-    marginTop: spacing.sm,
-    fontFamily: 'Inter_600SemiBold',
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    outer: {
+      marginBottom: spacing.md,
+    },
+    card: {
+      backgroundColor: t.colors.surfaceGlass,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+      overflow: 'hidden',
+      minHeight: 200,
+      ...shadows.md,
+    },
+    emptyInner: {
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+    },
+    headerSection: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.colors.glassBorder,
+      backgroundColor: t.colors.surfaceSoft,
+      alignItems: 'stretch',
+    },
+    bodySection: {
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+    },
+    emptyHint: {
+      marginTop: spacing.sm,
+      textAlign: 'center',
+    },
+    tabTitle: {
+      color: t.colors.textMuted,
+      marginBottom: spacing.sm,
+      textAlign: 'center',
+      alignSelf: 'stretch',
+      fontSize: 16,
+    },
+    placeholderBody: {
+      color: t.colors.text,
+      marginTop: 2,
+      textAlign: 'center',
+      alignSelf: 'stretch',
+    },
+    placeholderTitle: {
+      fontSize: 19,
+    },
+    ibanPayBlock: {
+      alignSelf: 'stretch',
+    },
+    ibanAccountNameText: {
+      color: t.colors.text,
+      textAlign: 'left',
+      flex: 1,
+      minWidth: 0,
+    },
+    nameRowAfterIban: {
+      marginTop: spacing.sm,
+    },
+    afterTitle: {
+      marginTop: spacing.sm,
+    },
+    priceInHeader: {
+      ...typography.body,
+      fontSize: 16,
+      marginTop: spacing.sm,
+      textAlign: 'left',
+      alignSelf: 'stretch',
+      color: t.colors.text,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    copyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      gap: spacing.sm,
+      zIndex: 1,
+    },
+    ibanMasked: {
+      color: t.colors.accent,
+      textAlign: 'left',
+      fontSize: 16,
+      flex: 1,
+      minWidth: 0,
+    },
+    copyBtn: {
+      borderWidth: 1,
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      flexShrink: 0,
+      minWidth: 100,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    copyBtnPressed: {
+      opacity: 0.82,
+      backgroundColor: t.colors.accentMuted,
+    },
+    copyBtnText: {
+      fontSize: 13,
+      fontFamily: 'Inter_600SemiBold',
+      color: t.colors.accent,
+    },
+    copyBtnTextCopied: {
+      color: t.colors.copyFeedbackLight,
+    },
+    ibanMissing: {
+      textAlign: 'left',
+    },
+    muted: {
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      alignSelf: 'stretch',
+    },
+    venue: {
+      ...typography.headlineStrong,
+      fontSize: 24,
+      lineHeight: 30,
+      color: t.colors.text,
+      textAlign: 'center',
+      alignSelf: 'stretch',
+      letterSpacing: letterSpacing.wide,
+    },
+    dateMuted: {
+      ...typography.body,
+      fontSize: 16,
+      color: t.colors.textMuted,
+      marginTop: spacing.sm,
+      textAlign: 'center',
+      alignSelf: 'stretch',
+    },
+    metaRow: {
+      marginTop: spacing.md,
+      alignItems: 'center',
+      alignSelf: 'stretch',
+    },
+    slotCount: {
+      ...typography.body,
+      fontSize: 16,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+    },
+    warn: {
+      ...typography.body,
+      fontSize: 16,
+      color: t.colors.accent,
+      marginTop: spacing.md,
+      textAlign: 'center',
+      alignSelf: 'stretch',
+    },
+    gkAlert: {
+      ...typography.body,
+      fontSize: 16,
+      color: t.colors.position.GK,
+      marginTop: spacing.sm,
+      fontFamily: 'Inter_600SemiBold',
+      textAlign: 'center',
+      alignSelf: 'stretch',
+    },
+  }),
+);

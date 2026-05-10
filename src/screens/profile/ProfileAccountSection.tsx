@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { User } from '@supabase/supabase-js';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
+import { makeStyles } from '../../theme/ThemeContext';
 import { isEmailVerified } from '../../utils/emailVerification';
 import { maskIban } from '../../utils/iban';
 import type { Player } from '../../types/domain';
@@ -13,6 +14,8 @@ type Props = {
 };
 
 export function ProfileAccountSection({ configured, user, player }: Props) {
+  const styles = useStyles();
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle} accessibilityRole="header">
@@ -36,36 +39,38 @@ export function ProfileAccountSection({ configured, user, player }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  section: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  emailOk: {
-    ...typography.body,
-    color: colors.accent,
-  },
-  emailWarn: {
-    ...typography.body,
-    color: colors.danger,
-  },
-  ibanBlock: {
-    marginTop: spacing.xs,
-    gap: 4,
-  },
-  ibanLbl: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  ibanVal: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    section: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.lg,
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      marginBottom: spacing.xs,
+    },
+    emailOk: {
+      ...typography.body,
+      color: t.colors.accent,
+    },
+    emailWarn: {
+      ...typography.body,
+      color: t.colors.danger,
+    },
+    ibanBlock: {
+      marginTop: spacing.xs,
+      gap: 4,
+    },
+    ibanLbl: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    ibanVal: {
+      ...typography.body,
+      color: t.colors.text,
+      fontFamily: 'Inter_600SemiBold',
+    },
+  }),
+);

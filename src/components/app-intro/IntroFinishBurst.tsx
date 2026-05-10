@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -8,18 +8,21 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import { colors } from '../../theme';
+import { makeStyles, useThemeColors } from '../../theme/ThemeContext';
 
 const PARTICLE_COUNT = 10;
-const PALETTE = [colors.accent, colors.indigo, colors.text, colors.position.MID] as const;
 
 type ParticleProps = {
   index: number;
 };
 
 function BurstParticle({ index }: ParticleProps) {
+  const colors = useThemeColors();
+  const palette = useMemo(
+    () => [colors.accent, colors.indigo, colors.text, colors.position.MID] as const,
+    [colors.accent, colors.indigo, colors.position.MID, colors.text],
+  );
   const progress = useSharedValue(0);
-  /** Deterministic “random” spread from index */
   const spread = ((index * 37) % 100) / 100;
   const drift = ((index * 53) % 40) - 20;
   const size = 4 + (index % 3);
@@ -55,7 +58,7 @@ function BurstParticle({ index }: ParticleProps) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: PALETTE[index % PALETTE.length],
+          backgroundColor: palette[index % palette.length],
         },
         animatedStyle,
       ]}
@@ -72,6 +75,8 @@ export type IntroFinishBurstProps = {
  * Son slayt kutlaması: kısa, tek seferlik mini parçacıklar (reduce motion’da kullanılmaz).
  */
 export function IntroFinishBurst({ visible }: IntroFinishBurstProps) {
+  const styles = useStyles();
+
   if (!visible) return null;
 
   return (
@@ -83,10 +88,12 @@ export function IntroFinishBurst({ visible }: IntroFinishBurstProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  host: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-});
+const useStyles = makeStyles(() =>
+  StyleSheet.create({
+    host: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
+  }),
+);

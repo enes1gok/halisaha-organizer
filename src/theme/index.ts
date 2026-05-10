@@ -20,6 +20,10 @@ export const darkColors = {
   indigoMuted: 'rgba(139, 123, 255, 0.2)',
   /** "Kopyalandı" gibi kısa geri bildirim metinleri — açık ton */
   copyFeedbackLight: '#F0FFF7',
+  /** Dolu accent (örn. yeşil şerit) üzeri birincil metin */
+  textOnAccent: '#0A0A0A',
+  /** Dolu accent üzeri ikincil / alt satır metni */
+  textOnAccentMuted: 'rgba(10, 10, 10, 0.72)',
   danger: '#FF4D4D',
   position: {
     GK: '#EAB308',
@@ -74,14 +78,17 @@ export const lightColors: ColorPalette = {
   glassHighlight: 'rgba(0, 0, 0, 0.04)',
   text: '#0A0A0A',
   textMuted: '#525B68',
-  accent: '#00A656',
-  accentMuted: 'rgba(0, 166, 86, 0.12)',
+  /** Beyaz `textOnAccent` ile WCAG AA kontrastı için biraz koyu yeşil */
+  accent: '#00824D',
+  accentMuted: 'rgba(0, 130, 77, 0.12)',
   slate: '#4B5563',
   slateMuted: 'rgba(75, 85, 99, 0.14)',
   indigo: '#5D52E5',
   indigoMuted: 'rgba(93, 82, 229, 0.14)',
   /** "Kopyalandı" gibi kısa geri bildirim metinleri — açık tema için koyu yazılır */
   copyFeedbackLight: '#04361F',
+  textOnAccent: '#FFFFFF',
+  textOnAccentMuted: 'rgba(255, 255, 255, 0.78)',
   danger: '#DC2626',
   position: {
     GK: '#B45309',
@@ -97,7 +104,7 @@ export const lightColors: ColorPalette = {
     line: 'rgba(15, 36, 24, 0.32)',
     lineStrong: 'rgba(15, 36, 24, 0.5)',
     slotRing: 'rgba(15, 36, 24, 0.38)',
-    slotRingGlow: 'rgba(0, 166, 86, 0.45)',
+    slotRingGlow: 'rgba(0, 130, 77, 0.45)',
     slotFill: 'rgba(255, 255, 255, 0.55)',
   },
   /** Liderlik tablosu podyum — madalya vurgusu (açık tema) */
@@ -171,7 +178,7 @@ export const darkGradients: GradientPalette = {
 export const lightGradients: GradientPalette = {
   screen: ['#F7F7F8', '#EAECEF'] as const,
   surface: ['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.01)'] as const,
-  accent: ['#00A656', '#5D52E5'] as const,
+  accent: ['#00824D', '#5D52E5'] as const,
 };
 
 export const gradientPalettes = { light: lightGradients, dark: darkGradients } as const;

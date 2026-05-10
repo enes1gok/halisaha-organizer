@@ -10,7 +10,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useReduceMotion } from '../../../hooks/useReduceMotion';
-import { colors, letterSpacing, radius, shadows, spacing, typography } from '../../../theme';
+import { letterSpacing, radius, shadows, spacing, typography } from '../../../theme';
+import { makeStyles, useThemeColors } from '../../../theme/ThemeContext';
 import { Durations, Springs } from '../../../utils/animations';
 import { lightImpact } from '../../../utils/haptics';
 import {
@@ -44,6 +45,8 @@ function MyMatchesCalendarBase({
   onSelectDay,
   onResetToToday,
 }: Props) {
+  const styles = useCalendarStyles();
+  const c = useThemeColors();
   const reduceMotion = useReduceMotion();
   const matrix = useMemo(() => buildMonthMatrix(monthAnchor, today), [monthAnchor, today]);
 
@@ -112,7 +115,7 @@ function MyMatchesCalendarBase({
           hitSlop={10}
           style={({ pressed }) => [styles.chev, pressed && styles.chevPressed]}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.text} />
+          <Ionicons name="chevron-back" size={20} color={c.text} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -133,7 +136,7 @@ function MyMatchesCalendarBase({
           hitSlop={10}
           style={({ pressed }) => [styles.chev, pressed && styles.chevPressed]}
         >
-          <Ionicons name="chevron-forward" size={20} color={colors.text} />
+          <Ionicons name="chevron-forward" size={20} color={c.text} />
         </Pressable>
       </View>
 
@@ -176,6 +179,8 @@ type DayCellProps = {
 };
 
 function DayCell({ cell, count, selected, onSelect, reduceMotion }: DayCellProps) {
+  const styles = useCalendarStyles();
+  const c = useThemeColors();
   const ringScale = useSharedValue(selected ? 1 : 0.6);
   const ringOpacity = useSharedValue(selected ? 1 : 0);
 
@@ -208,10 +213,12 @@ function DayCell({ cell, count, selected, onSelect, reduceMotion }: DayCellProps
 
   const dotsToShow = Math.min(count, MAX_DOTS);
   const numberColor = !cell.isCurrentMonth
-    ? colors.textMuted
+    ? c.textMuted
     : selected
-      ? colors.accent
-      : colors.text;
+      ? c.accent
+      : c.text;
+
+  const dotFill = !cell.isCurrentMonth ? c.textMuted : c.accent;
 
   return (
     <Pressable
@@ -242,11 +249,7 @@ function DayCell({ cell, count, selected, onSelect, reduceMotion }: DayCellProps
               style={[
                 styles.dot,
                 {
-                  backgroundColor: !cell.isCurrentMonth
-                    ? colors.textMuted
-                    : selected
-                      ? colors.accent
-                      : colors.accent,
+                  backgroundColor: dotFill,
                 },
               ]}
             />
@@ -264,131 +267,133 @@ const CELL_PADDING_V = 6;
 const CELL_MIN_HEIGHT = 56;
 const RING_SIZE = 36;
 
-const styles = StyleSheet.create({
-  shell: {
-    backgroundColor: colors.surfaceGlass,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    ...shadows.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.xs,
-  },
-  chev: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-  },
-  chevPressed: {
-    backgroundColor: colors.glassHighlight,
-  },
-  titleWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-  },
-  titlePressed: {
-    backgroundColor: colors.glassHighlight,
-  },
-  title: {
-    ...typography.subtitle,
-    color: colors.text,
-    letterSpacing: letterSpacing.tight,
-  },
-  titleHint: {
-    ...typography.micro,
-    color: colors.textMuted,
-    letterSpacing: letterSpacing.normal,
-    marginTop: 2,
-  },
-  weekdayRow: {
-    flexDirection: 'row',
-    paddingVertical: spacing.xs,
-  },
-  weekdayCell: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  weekdayLabel: {
-    ...typography.micro,
-    color: colors.textMuted,
-    letterSpacing: letterSpacing.wide,
-    textTransform: 'uppercase',
-  },
-  gridRow: {
-    flexDirection: 'row',
-  },
-  dayCell: {
-    flex: 1,
-    minHeight: CELL_MIN_HEIGHT,
-    paddingVertical: CELL_PADDING_V,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayInner: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    position: 'relative',
-  },
-  selectedRing: {
-    position: 'absolute',
-    width: RING_SIZE,
-    height: RING_SIZE,
-    borderRadius: RING_SIZE / 2,
-    backgroundColor: colors.accentMuted,
-    borderWidth: 1.5,
-    borderColor: colors.accent,
-  },
-  todayRing: {
-    position: 'absolute',
-    width: RING_SIZE,
-    height: RING_SIZE,
-    borderRadius: RING_SIZE / 2,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  dayNumber: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dayNumberToday: {
-    fontFamily: typography.subtitle.fontFamily,
-    fontWeight: typography.subtitle.fontWeight,
-  },
-  dayNumberOutside: {
-    opacity: 0.45,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
-    marginTop: 4,
-    minHeight: 6,
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-  },
-  dotOverflow: {
-    ...typography.micro,
-    color: colors.accent,
-    marginLeft: 2,
-  },
-});
+const useCalendarStyles = makeStyles((t) =>
+  StyleSheet.create({
+    shell: {
+      backgroundColor: t.colors.surfaceGlass,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+      paddingHorizontal: spacing.sm,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
+      ...shadows.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.xs,
+      paddingBottom: spacing.xs,
+    },
+    chev: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.pill,
+    },
+    chevPressed: {
+      backgroundColor: t.colors.glassHighlight,
+    },
+    titleWrap: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.pill,
+    },
+    titlePressed: {
+      backgroundColor: t.colors.glassHighlight,
+    },
+    title: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      letterSpacing: letterSpacing.tight,
+    },
+    titleHint: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      letterSpacing: letterSpacing.normal,
+      marginTop: 2,
+    },
+    weekdayRow: {
+      flexDirection: 'row',
+      paddingVertical: spacing.xs,
+    },
+    weekdayCell: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    weekdayLabel: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      letterSpacing: letterSpacing.wide,
+      textTransform: 'uppercase',
+    },
+    gridRow: {
+      flexDirection: 'row',
+    },
+    dayCell: {
+      flex: 1,
+      minHeight: CELL_MIN_HEIGHT,
+      paddingVertical: CELL_PADDING_V,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayInner: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+      position: 'relative',
+    },
+    selectedRing: {
+      position: 'absolute',
+      width: RING_SIZE,
+      height: RING_SIZE,
+      borderRadius: RING_SIZE / 2,
+      backgroundColor: t.colors.accentMuted,
+      borderWidth: 1.5,
+      borderColor: t.colors.accent,
+    },
+    todayRing: {
+      position: 'absolute',
+      width: RING_SIZE,
+      height: RING_SIZE,
+      borderRadius: RING_SIZE / 2,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+    },
+    dayNumber: {
+      ...typography.body,
+      color: t.colors.text,
+    },
+    dayNumberToday: {
+      fontFamily: typography.subtitle.fontFamily,
+      fontWeight: typography.subtitle.fontWeight,
+    },
+    dayNumberOutside: {
+      opacity: 0.45,
+    },
+    dotsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 3,
+      marginTop: 4,
+      minHeight: 6,
+    },
+    dot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+    },
+    dotOverflow: {
+      ...typography.micro,
+      color: t.colors.accent,
+      marginLeft: 2,
+    },
+  }),
+);

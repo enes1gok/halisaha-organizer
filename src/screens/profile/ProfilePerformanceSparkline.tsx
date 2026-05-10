@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
-import { colors, typography } from '../../theme';
+import { typography } from '../../theme';
+import { makeStyles, useThemeColors } from '../../theme/ThemeContext';
 
 const VB_W = 200;
 const VB_H = 48;
@@ -13,6 +14,8 @@ type Props = {
 
 /** Minimal sparkline for outcome scores in [0, 0.5, 1]. */
 export function ProfilePerformanceSparkline({ points }: Props) {
+  const colors = useThemeColors();
+
   if (points.length === 0) return null;
 
   const innerW = VB_W - PAD * 2;
@@ -25,7 +28,7 @@ export function ProfilePerformanceSparkline({ points }: Props) {
     const cx = VB_W / 2;
     return (
       <View
-        style={styles.wrap}
+        style={stylesWrap.wrap}
         accessibilityRole="image"
         accessibilityLabel={`Son maç performans puanı ${points[0]}`}
       >
@@ -46,7 +49,7 @@ export function ProfilePerformanceSparkline({ points }: Props) {
 
   return (
     <View
-      style={styles.wrap}
+      style={stylesWrap.wrap}
       accessibilityRole="image"
       accessibilityLabel={`Son ${points.length} maç performans eğrisi`}
     >
@@ -69,11 +72,19 @@ export function ProfilePerformanceSparkline({ points }: Props) {
   );
 }
 
+const stylesWrap = StyleSheet.create({
+  wrap: {
+    width: '100%',
+  },
+});
+
 export function ProfileSparklineSection({
   points,
 }: {
   points: number[];
 }) {
+  const styles = useSectionStyles();
+
   return (
     <View style={styles.section}>
       <Text style={styles.title}>Son 10 maç trendi</Text>
@@ -87,24 +98,23 @@ export function ProfileSparklineSection({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    width: '100%',
-  },
-  section: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  title: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  empty: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  legend: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-});
+const useSectionStyles = makeStyles((t) =>
+  StyleSheet.create({
+    section: {
+      gap: 8,
+      marginBottom: 8,
+    },
+    title: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    empty: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    legend: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+    },
+  }),
+);

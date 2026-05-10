@@ -51,6 +51,12 @@ describe('Tema rengi WCAG kontrast guard', () => {
         AA_NORMAL,
       );
     });
+
+    it('textOnAccent vs accent (dolgu üstü metin) AA (>= 4.5) olmalı', () => {
+      expect(contrastRatio(darkColors.textOnAccent, darkColors.accent)).toBeGreaterThanOrEqual(
+        AA_NORMAL,
+      );
+    });
   });
 
   describe('aydınlık tema', () => {
@@ -68,6 +74,12 @@ describe('Tema rengi WCAG kontrast guard', () => {
 
     it('textMuted vs surfaceSoft AA (>= 4.5) olmalı — opaque liste yüzeyleri için kritik', () => {
       expect(contrastRatio(lightColors.textMuted, lightColors.surfaceSoft)).toBeGreaterThanOrEqual(
+        AA_NORMAL,
+      );
+    });
+
+    it('textOnAccent vs accent AA (>= 4.5) olmalı', () => {
+      expect(contrastRatio(lightColors.textOnAccent, lightColors.accent)).toBeGreaterThanOrEqual(
         AA_NORMAL,
       );
     });

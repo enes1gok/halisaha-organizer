@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useReduceMotion } from '../../hooks/useReduceMotion';
-import { colors } from '../../theme';
+import { useThemeColors } from '../../theme/ThemeContext';
 import { EasingPresets, SkeletonMotion } from '../../utils/animations';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
@@ -29,6 +29,7 @@ export function SkeletonBlock({
   style,
   animated = true,
 }: Props) {
+  const colors = useThemeColors();
   const reduceMotion = useReduceMotion();
   const [layoutW, setLayoutW] = useState(0);
 
@@ -101,7 +102,7 @@ export function SkeletonBlock({
       onLayout={onLayout}
       style={[
         styles.base,
-        { width, height, borderRadius: radius },
+        { width, height, borderRadius: radius, backgroundColor: colors.border },
         containerAnimatedStyle,
         style,
       ]}
@@ -121,7 +122,6 @@ export function SkeletonBlock({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.border,
     overflow: 'hidden',
   },
   shimmer: {

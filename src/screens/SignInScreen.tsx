@@ -18,12 +18,13 @@ import { spacing } from '../theme';
 import { useUserFeedback } from '../utils/userFeedback';
 import { isEmailNotConfirmedSignInError } from '../utils/emailVerification';
 import { EmailPasswordFields } from './EmailPasswordFields';
-import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 
 type Nav = StackNavigationProp<OnboardingStackParamList, 'SignIn'>;
 type SignInRoute = RouteProp<OnboardingStackParamList, 'SignIn'>;
 
 export function SignInScreen() {
+  const styles = useOnboardingAuthStyles();
   const navigation = useNavigation<Nav>();
   const route = useRoute<SignInRoute>();
   const insets = useSafeAreaInsets();

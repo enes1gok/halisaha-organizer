@@ -3,7 +3,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useMatchesStore } from '../store';
 import { isAppError } from '../services/supabase/errors';
 import type { HomeStackParamList } from '../navigation/types';
@@ -12,6 +13,8 @@ import { useUserFeedback } from '../utils/userFeedback';
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'JoinMatch'>;
 
 export function JoinMatchScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const navigation = useNavigation<Nav>();
   const joinMatchByJoinCode = useMatchesStore((s) => s.joinMatchByJoinCode);
   const { showValidationToast, showToast, showUserFacingError } = useUserFeedback();
@@ -81,33 +84,35 @@ export function JoinMatchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.md,
-  },
-  intro: {
-    color: colors.textMuted,
-    marginBottom: spacing.lg,
-  },
-  label: {
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14,
-    marginBottom: spacing.md,
-  },
-  spacer: {
-    flex: 1,
-    minHeight: spacing.md,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+      padding: spacing.md,
+    },
+    intro: {
+      color: t.colors.textMuted,
+      marginBottom: spacing.lg,
+    },
+    label: {
+      color: t.colors.textMuted,
+      marginBottom: spacing.xs,
+    },
+    input: {
+      ...typography.body,
+      color: t.colors.text,
+      backgroundColor: t.colors.surface,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 14,
+      marginBottom: spacing.md,
+    },
+    spacer: {
+      flex: 1,
+      minHeight: spacing.md,
+    },
+  }),
+);

@@ -10,7 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { LineupFormation, LineupSlotDef } from '../data/lineupFormations';
 import { resolveSlotAnchor } from '../data/lineupFormations';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing } from '../theme';
+import { makeStyles, useThemeColors } from '../theme/ThemeContext';
 import type { Player } from '../types/domain';
 import { FormationDropZone, type ZoneMap } from './FormationDropZone';
 
@@ -47,6 +48,8 @@ function SlotDropHighlight({
   reduceMotion: boolean;
   children: React.ReactNode;
 }) {
+  const styles = usePitchStyles();
+  const colors = useThemeColors();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
@@ -95,8 +98,10 @@ function SlotDropHighlight({
 }
 
 function PitchMarkings() {
-  const line = colors.pitch.line;
-  const strong = colors.pitch.lineStrong;
+  const styles = usePitchStyles();
+  const { pitch } = useThemeColors();
+  const line = pitch.line;
+  const strong = pitch.lineStrong;
   return (
     <>
       <View style={[styles.markTop, { backgroundColor: strong }]} />
@@ -126,6 +131,9 @@ export function PitchHalfField({
   renderSlotContent,
   testID,
 }: Props) {
+  const styles = usePitchStyles();
+  const { pitch } = useThemeColors();
+
   return (
     <View
       style={[styles.pitchOuter, dimmed && styles.pitchDimmed]}
@@ -133,7 +141,7 @@ export function PitchHalfField({
       testID={testID}
     >
       <LinearGradient
-        colors={[colors.pitch.grassDeep, colors.pitch.grassMid, colors.pitch.grassLight]}
+        colors={[pitch.grassDeep, pitch.grassMid, pitch.grassLight]}
         start={{ x: 0.2, y: 1 }}
         end={{ x: 0.85, y: 0 }}
         style={StyleSheet.absoluteFill}
@@ -178,121 +186,123 @@ export function PitchHalfField({
   );
 }
 
-const styles = StyleSheet.create({
-  pitchOuter: {
-    position: 'relative',
-    width: '100%',
-    aspectRatio: 3 / 4,
-    minHeight: 200,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
-  },
-  pitchDimmed: {
-    opacity: 0.42,
-  },
-  grassNoise: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-  },
-  markTop: {
-    position: 'absolute',
-    top: 0,
-    left: spacing.sm,
-    right: spacing.sm,
-    height: 2,
-    opacity: 0.95,
-  },
-  markBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: spacing.sm,
-    right: spacing.sm,
-    height: 2,
-    opacity: 0.95,
-  },
-  markCenterV: {
-    position: 'absolute',
-    top: '12%',
-    bottom: '12%',
-    left: '50%',
-    width: 1,
-    marginLeft: -0.5,
-    opacity: 0.65,
-  },
-  penaltyVLeft: {
-    position: 'absolute',
-    bottom: 0,
-    left: '14%',
-    width: 1,
-    height: '32%',
-    opacity: 0.85,
-  },
-  penaltyVRight: {
-    position: 'absolute',
-    bottom: 0,
-    right: '14%',
-    width: 1,
-    height: '32%',
-    opacity: 0.85,
-  },
-  penaltyTop: {
-    position: 'absolute',
-    bottom: '32%',
-    left: '14%',
-    right: '14%',
-    height: 1,
-    opacity: 0.85,
-  },
-  halfCircle: {
-    position: 'absolute',
-    bottom: '28%',
-    left: '50%',
-    width: 56,
-    height: 28,
-    marginLeft: -28,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    opacity: 0.55,
-  },
-  slotLayer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  slotAbs: {
-    position: 'absolute',
-    minWidth: 72,
-    maxWidth: 108,
-    alignItems: 'center',
-  },
-  slotRing: {
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: colors.pitch.slotRing,
-    backgroundColor: colors.pitch.slotFill,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    minWidth: 56,
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 8,
-  },
-  slotRingFilled: {
-    borderColor: 'rgba(255,255,255,0.2)',
-    backgroundColor: 'rgba(0,0,0,0.12)',
-    shadowOpacity: 0,
-  },
-  slotRingReduceMotion: {
-    borderWidth: 2,
-  },
-});
+const usePitchStyles = makeStyles((t) =>
+  StyleSheet.create({
+    pitchOuter: {
+      position: 'relative',
+      width: '100%',
+      aspectRatio: 3 / 4,
+      minHeight: 200,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.12)',
+      overflow: 'hidden',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.22,
+      shadowRadius: 6,
+    },
+    pitchDimmed: {
+      opacity: 0.42,
+    },
+    grassNoise: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.06)',
+    },
+    markTop: {
+      position: 'absolute',
+      top: 0,
+      left: spacing.sm,
+      right: spacing.sm,
+      height: 2,
+      opacity: 0.95,
+    },
+    markBottom: {
+      position: 'absolute',
+      bottom: 0,
+      left: spacing.sm,
+      right: spacing.sm,
+      height: 2,
+      opacity: 0.95,
+    },
+    markCenterV: {
+      position: 'absolute',
+      top: '12%',
+      bottom: '12%',
+      left: '50%',
+      width: 1,
+      marginLeft: -0.5,
+      opacity: 0.65,
+    },
+    penaltyVLeft: {
+      position: 'absolute',
+      bottom: 0,
+      left: '14%',
+      width: 1,
+      height: '32%',
+      opacity: 0.85,
+    },
+    penaltyVRight: {
+      position: 'absolute',
+      bottom: 0,
+      right: '14%',
+      width: 1,
+      height: '32%',
+      opacity: 0.85,
+    },
+    penaltyTop: {
+      position: 'absolute',
+      bottom: '32%',
+      left: '14%',
+      right: '14%',
+      height: 1,
+      opacity: 0.85,
+    },
+    halfCircle: {
+      position: 'absolute',
+      bottom: '28%',
+      left: '50%',
+      width: 56,
+      height: 28,
+      marginLeft: -28,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      opacity: 0.55,
+    },
+    slotLayer: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    slotAbs: {
+      position: 'absolute',
+      minWidth: 72,
+      maxWidth: 108,
+      alignItems: 'center',
+    },
+    slotRing: {
+      borderRadius: 999,
+      borderWidth: 2,
+      borderColor: t.colors.pitch.slotRing,
+      backgroundColor: t.colors.pitch.slotFill,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.xs,
+      minWidth: 56,
+      minHeight: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: t.colors.accent,
+      shadowOffset: { width: 0, height: 0 },
+      shadowRadius: 8,
+    },
+    slotRingFilled: {
+      borderColor: 'rgba(255,255,255,0.2)',
+      backgroundColor: 'rgba(0,0,0,0.12)',
+      shadowOpacity: 0,
+    },
+    slotRingReduceMotion: {
+      borderWidth: 2,
+    },
+  }),
+);

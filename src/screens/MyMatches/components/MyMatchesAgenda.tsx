@@ -13,7 +13,8 @@ import type { EmptyStateVariant } from '../../../components/emptyIllustrations/t
 import { MatchCard } from '../../../components/MatchCard';
 import { MatchCardListRow } from '../../../components/MatchCardListRow';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../../../navigation/tabBarLayout';
-import { colors, letterSpacing, radius, spacing, typography } from '../../../theme';
+import { letterSpacing, radius, spacing, typography } from '../../../theme';
+import { makeStyles, useThemeColors } from '../../../theme/ThemeContext';
 import type { Match } from '../../../types/domain';
 import { countGoing } from '../../../utils/matchRoster';
 import type { AgendaSection, SegmentValue } from '../adapters/groupMatchesByDay';
@@ -85,6 +86,8 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
   },
   ref,
 ) {
+  const styles = useAgendaStyles();
+  const colors = useThemeColors();
   const listRef = useRef<SectionList<Match, AgendaSection>>(null);
   const indexByKey = useMemo(() => {
     const map = new Map<string, number>();
@@ -209,6 +212,7 @@ type SectionHeaderProps = {
 };
 
 function SectionHeader({ section, highlighted }: SectionHeaderProps) {
+  const styles = useAgendaStyles();
   return (
     <View
       style={[styles.sectionHeader, highlighted && styles.sectionHeaderActive]}
@@ -226,60 +230,62 @@ function SectionHeader({ section, highlighted }: SectionHeaderProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    padding: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
-  },
-  emptyContent: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
-    justifyContent: 'flex-start',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.background,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-    borderRadius: radius.sm,
-  },
-  sectionHeaderActive: {
-    backgroundColor: colors.accentMuted,
-    paddingHorizontal: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    letterSpacing: letterSpacing.tight,
-  },
-  sectionTitleActive: {
-    color: colors.accent,
-  },
-  subtitlePill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    backgroundColor: colors.surfaceGlass,
-  },
-  subtitlePillActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accent,
-  },
-  sectionSubtitle: {
-    ...typography.micro,
-    color: colors.textMuted,
-    letterSpacing: letterSpacing.normal,
-  },
-  sectionSubtitleActive: {
-    color: colors.background,
-  },
-});
+const useAgendaStyles = makeStyles((t) =>
+  StyleSheet.create({
+    content: {
+      padding: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
+    },
+    emptyContent: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
+      justifyContent: 'flex-start',
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: t.colors.background,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xs,
+      marginTop: spacing.sm,
+      marginBottom: spacing.xs,
+      borderRadius: radius.sm,
+    },
+    sectionHeaderActive: {
+      backgroundColor: t.colors.accentMuted,
+      paddingHorizontal: spacing.sm,
+    },
+    sectionTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      letterSpacing: letterSpacing.tight,
+    },
+    sectionTitleActive: {
+      color: t.colors.accent,
+    },
+    subtitlePill: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+      backgroundColor: t.colors.surfaceGlass,
+    },
+    subtitlePillActive: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accent,
+    },
+    sectionSubtitle: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      letterSpacing: letterSpacing.normal,
+    },
+    sectionSubtitleActive: {
+      color: t.colors.textOnAccent,
+    },
+  }),
+);

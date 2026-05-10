@@ -6,7 +6,8 @@ import { PillButton } from '../components/PillButton';
 import { PostMatchScoreForm } from '../components/PostMatchScoreForm';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
 import { formatMatchDateTime } from '../utils/dates';
 import { isRemoteMatchId } from '../utils/matchId';
@@ -20,6 +21,8 @@ type R =
 type Nav = NativeStackNavigationProp<Stacks>;
 
 export function MatchPostgameScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const route = useRoute<R>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
@@ -91,20 +94,22 @@ export function MatchPostgameScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, gap: spacing.sm },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroVenue: { ...typography.title, color: colors.text },
-  heroDate: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
-  heroEndHint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  lead: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm, lineHeight: 18 },
-  section: { ...typography.subtitle, color: colors.text },
-  muted: { ...typography.caption, color: colors.textMuted },
-  mt: { marginTop: spacing.md },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.colors.background },
+    content: { padding: spacing.md, gap: spacing.sm },
+    center: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroVenue: { ...typography.title, color: t.colors.text },
+    heroDate: { ...typography.body, color: t.colors.textMuted, marginTop: spacing.xs },
+    heroEndHint: { ...typography.caption, color: t.colors.textMuted, marginTop: spacing.xs },
+    lead: { ...typography.caption, color: t.colors.textMuted, marginTop: spacing.sm, lineHeight: 18 },
+    section: { ...typography.subtitle, color: t.colors.text },
+    muted: { ...typography.caption, color: t.colors.textMuted },
+    mt: { marginTop: spacing.md },
+  }),
+);

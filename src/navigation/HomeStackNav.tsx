@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useReduceMotion } from '../hooks/useReduceMotion';
+import { useThemeColors } from '../theme/ThemeContext';
 import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
@@ -15,8 +16,13 @@ const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 export function HomeStackNav() {
   const reduceMotion = useReduceMotion();
+  const colors = useThemeColors();
+  const screenOptions = useMemo(
+    () => getDefaultNativeStackScreenOptions(reduceMotion, colors),
+    [colors, reduceMotion],
+  );
   return (
-    <Stack.Navigator screenOptions={getDefaultNativeStackScreenOptions(reduceMotion)}>
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
         name="HomeMain"
         component={HomeScreen}

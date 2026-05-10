@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useReduceMotion } from '../hooks/useReduceMotion';
+import { useThemeColors } from '../theme/ThemeContext';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
@@ -14,8 +15,13 @@ const Stack = createNativeStackNavigator<MyMatchesStackParamList>();
 
 export function MyMatchesStackNav() {
   const reduceMotion = useReduceMotion();
+  const colors = useThemeColors();
+  const screenOptions = useMemo(
+    () => getDefaultNativeStackScreenOptions(reduceMotion, colors),
+    [colors, reduceMotion],
+  );
   return (
-    <Stack.Navigator screenOptions={getDefaultNativeStackScreenOptions(reduceMotion)}>
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
         name="MyMatchesMain"
         component={MyMatchesScreen}

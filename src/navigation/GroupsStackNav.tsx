@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useReduceMotion } from '../hooks/useReduceMotion';
+import { useThemeColors } from '../theme/ThemeContext';
 import { CreateGroupScreen } from '../screens/CreateGroupScreen';
 import { GroupDetailScreen } from '../screens/GroupDetailScreen';
 import { GroupWeeklySeriesScreen } from '../screens/GroupWeeklySeriesScreen';
@@ -19,8 +20,13 @@ const Stack = createNativeStackNavigator<GroupsStackParamList>();
 
 export function GroupsStackNav() {
   const reduceMotion = useReduceMotion();
+  const colors = useThemeColors();
+  const screenOptions = useMemo(
+    () => getDefaultNativeStackScreenOptions(reduceMotion, colors),
+    [colors, reduceMotion],
+  );
   return (
-    <Stack.Navigator screenOptions={getDefaultNativeStackScreenOptions(reduceMotion)}>
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="GroupsMain" component={GroupsScreen} options={{ title: 'Gruplarım' }} />
       <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Grup Detayı' }} />
       <Stack.Screen

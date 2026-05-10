@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import type { OnboardingStackParamList } from '../navigation/types';
-import { colors, spacing, typography } from '../theme';
-import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { spacing, typography } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = StackNavigationProp<OnboardingStackParamList, 'VerifyEmail'>;
@@ -16,6 +17,8 @@ type VerifyRoute = RouteProp<OnboardingStackParamList, 'VerifyEmail'>;
 const RESEND_COOLDOWN_SEC = 45;
 
 export function VerifyEmailScreen() {
+  const styles = useOnboardingAuthStyles();
+  const { colors } = useTheme();
   const navigation = useNavigation<Nav>();
   const route = useRoute<VerifyRoute>();
   const insets = useSafeAreaInsets();
@@ -85,7 +88,7 @@ export function VerifyEmailScreen() {
 
           <Text style={styles.label}>E-posta</Text>
           <Text
-            style={emailText}
+            style={[emailText, { color: colors.text }]}
             selectable
             testID="onboarding:verify-email:address"
             accessibilityLabel={`Doğrulanacak e-posta ${email}`}
@@ -131,7 +134,6 @@ export function VerifyEmailScreen() {
 
 const emailText = {
   ...typography.body,
-  color: colors.text,
   fontFamily: 'Inter_600SemiBold' as const,
 };
 

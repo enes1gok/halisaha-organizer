@@ -1,7 +1,8 @@
 import React from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { colors, radius } from '../../theme';
+import { radius } from '../../theme';
+import { makeStyles } from '../../theme/ThemeContext';
 
 export type IntroProgressBarProps = {
   scrollX: SharedValue<number>;
@@ -17,6 +18,7 @@ export function IntroProgressBar({
   slideCount,
   pageIndex,
 }: IntroProgressBarProps) {
+  const styles = useStyles();
   const trackW = useSharedValue(0);
 
   const onTrackLayout = (e: LayoutChangeEvent) => {
@@ -53,20 +55,22 @@ export function IntroProgressBar({
   );
 }
 
-const styles = StyleSheet.create({
-  track: {
-    width: '100%',
-    height: 5,
-    borderRadius: radius.sm,
-    backgroundColor: colors.border,
-    overflow: 'hidden',
-  },
-  fill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accent,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    track: {
+      width: '100%',
+      height: 5,
+      borderRadius: radius.sm,
+      backgroundColor: t.colors.border,
+      overflow: 'hidden',
+    },
+    fill: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      borderRadius: radius.sm,
+      backgroundColor: t.colors.accent,
+    },
+  }),
+);

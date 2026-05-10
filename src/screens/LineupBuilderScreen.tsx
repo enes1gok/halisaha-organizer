@@ -43,7 +43,8 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
 import { useFontScale } from '../hooks/useFontScale';
 import { useReduceMotion } from '../hooks/useReduceMotion';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import type { Player } from '../types/domain';
 import { lightImpact, selectionTick } from '../utils/haptics';
 import {
@@ -126,6 +127,7 @@ function DraggableCard({
   onDragActivated?: (playerId: string) => void;
   onDragFinalize?: () => void;
 }) {
+  const styles = useLineupStyles();
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const dragging = useSharedValue(0);
@@ -196,6 +198,8 @@ function DraggableCard({
 }
 
 export function LineupBuilderScreen() {
+  const styles = useLineupStyles();
+  const { colors } = useTheme();
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
@@ -1059,16 +1063,17 @@ export function LineupBuilderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useLineupStyles = makeStyles((t) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: t.colors.background,
     padding: spacing.md,
     gap: spacing.sm,
   },
   screenFormation: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: t.colors.background,
   },
   formationTop: {
     gap: spacing.sm,
@@ -1094,14 +1099,14 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   benchSheetBg: {
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     borderTopLeftRadius: radius.card,
     borderTopRightRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
   },
   benchHandleIndicator: {
-    backgroundColor: colors.textMuted,
+    backgroundColor: t.colors.textMuted,
     width: 40,
   },
   benchSheetBody: {
@@ -1110,27 +1115,27 @@ const styles = StyleSheet.create({
   },
   benchSheetHeading: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: t.colors.textMuted,
     fontWeight: '600',
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: t.colors.background,
   },
   formationTitle: {
     ...typography.subtitle,
-    color: colors.text,
+    color: t.colors.text,
   },
   hint: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: t.colors.textMuted,
     lineHeight: 18,
   },
   hintWarn: {
     ...typography.caption,
-    color: colors.accent,
+    color: t.colors.accent,
     lineHeight: 18,
   },
   chipRow: {
@@ -1142,21 +1147,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.surface,
     minHeight: 44,
     justifyContent: 'center',
   },
   chipSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
+    borderColor: t.colors.accent,
+    backgroundColor: t.colors.accentMuted,
   },
   chipText: {
     ...typography.body,
-    color: colors.text,
+    color: t.colors.text,
   },
   chipTextSelected: {
-    color: colors.accent,
+    color: t.colors.accent,
     fontWeight: '600',
   },
   stepRow: {
@@ -1166,7 +1171,7 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: t.colors.textMuted,
   },
   phaseBanner: {
     flexDirection: 'row',
@@ -1177,7 +1182,7 @@ const styles = StyleSheet.create({
   },
   phaseText: {
     ...typography.caption,
-    color: colors.accent,
+    color: t.colors.accent,
     flex: 1,
   },
   pitchColumns: {
@@ -1193,7 +1198,7 @@ const styles = StyleSheet.create({
   },
   pitchTeamTitle: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: t.colors.textMuted,
     textAlign: 'center',
   },
   slotInner: {
@@ -1211,7 +1216,7 @@ const styles = StyleSheet.create({
   },
   slotRole: {
     ...typography.micro,
-    color: colors.textMuted,
+    color: t.colors.textMuted,
   },
   benchDrop: {
     minHeight: 56,
@@ -1223,7 +1228,7 @@ const styles = StyleSheet.create({
   },
   benchEmpty: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: t.colors.textMuted,
     paddingVertical: spacing.md,
   },
   row: {
@@ -1234,10 +1239,10 @@ const styles = StyleSheet.create({
   zone: {
     flex: 1,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
     borderRadius: radius.card,
     padding: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     maxHeight: 420,
     elevation: 2,
     shadowColor: 'black',
@@ -1247,7 +1252,7 @@ const styles = StyleSheet.create({
   },
   zoneTitle: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: t.colors.textMuted,
     marginBottom: spacing.sm,
   },
   card: {
@@ -1258,22 +1263,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: t.colors.border,
+    backgroundColor: t.colors.background,
     shadowColor: 'black',
   },
   cardName: {
     ...typography.body,
-    color: colors.text,
+    color: t.colors.text,
   },
   cardMeta: {
     flex: 1,
   },
   emptyText: {
-    color: colors.textMuted,
+    color: t.colors.textMuted,
   },
   actions: {
     gap: spacing.sm,
     paddingBottom: spacing.lg,
   },
-});
+}),
+);

@@ -1,6 +1,7 @@
 import type { StackNavigationOptions } from '@react-navigation/stack';
 import { CardStyleInterpolators } from '@react-navigation/stack';
-import { colors, typography } from '../theme';
+import { typography } from '../theme';
+import type { ThemeColors } from '../theme/ThemeContext';
 import { StackTransition } from '../utils/animations';
 
 const stackTransitionSpec = {
@@ -20,7 +21,10 @@ const stackTransitionSpec = {
   },
 };
 
-export function getDefaultStackScreenOptions(reduceMotion: boolean): StackNavigationOptions {
+export function getDefaultStackScreenOptions(
+  reduceMotion: boolean,
+  colors: ThemeColors,
+): StackNavigationOptions {
   return {
     headerStyle: { backgroundColor: colors.background },
     headerTintColor: colors.text,

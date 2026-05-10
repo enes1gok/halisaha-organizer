@@ -1,11 +1,13 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors, radius, spacing } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { makeStyles } from '../../theme/ThemeContext';
 import { SkeletonBlock } from './SkeletonBlock';
 import { SkeletonList } from './SkeletonList';
 import { SkeletonText } from './SkeletonText';
 
 export function MatchCardSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.matchCard}>
       <View style={styles.matchRow}>
@@ -21,6 +23,7 @@ export function MatchCardSkeleton() {
 
 /** Ana sayfa — hero altı “Son maç” kartı iskeleti. */
 export function HomeLastMatchSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.lastMatchOuter}>
       <View style={styles.lastMatchCard}>
@@ -37,6 +40,7 @@ export function HomeLastMatchSkeleton() {
 }
 
 export function HomeHeroSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.hero}>
       <View style={styles.heroTop}>
@@ -55,6 +59,7 @@ export function HomeHeroSkeleton() {
 }
 
 export function HomeActionStripSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.actionStrip}>
       <View style={styles.actionCell}>
@@ -69,6 +74,7 @@ export function HomeActionStripSkeleton() {
 }
 
 export function SettingsSectionSkeleton({ rows = 3 }: { rows?: number }) {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.settingsSection}>
       <SkeletonText variant="subtitle" width="42%" />
@@ -90,6 +96,7 @@ export function SettingsSectionSkeleton({ rows = 3 }: { rows?: number }) {
 }
 
 export function ProfileHeaderSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.profileHeader}>
       <SkeletonBlock width={88} height={88} radius={44} />
@@ -103,6 +110,7 @@ export function ProfileHeaderSkeleton() {
 
 /** KPI şeridi + performans kartı iskeleti (Profil / İstatistikler ekranı). */
 export function ProfileStatsHeroSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.profileStatsHero}>
       <View style={styles.kpiStripSkeleton}>
@@ -130,6 +138,7 @@ export function ProfileStatsGridSkeleton() {
 }
 
 export function LeaderboardRowSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.leaderRow}>
       <SkeletonText variant="body" width={24} />
@@ -141,6 +150,7 @@ export function LeaderboardRowSkeleton() {
 }
 
 export function MyMatchesCalendarSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.calendarShell}>
       <View style={styles.calendarHeader}>
@@ -172,6 +182,7 @@ export function MyMatchesCalendarSkeleton() {
 }
 
 export function GroupCardSkeleton() {
+  const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.groupCard}>
       <View style={styles.groupCardHeaderRow}>
@@ -188,16 +199,17 @@ export function GroupCardSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
+const useSkeletonPresetStyles = makeStyles((t) =>
+  StyleSheet.create({
   topGap4: { marginTop: 4 },
   lastMatchOuter: {
     marginTop: spacing.md,
   },
   lastMatchCard: {
-    backgroundColor: colors.surfaceGlass,
+    backgroundColor: t.colors.surfaceGlass,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: t.colors.glassBorder,
     padding: spacing.md,
     gap: 4,
   },
@@ -209,10 +221,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   hero: {
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
     padding: spacing.lg,
     gap: spacing.sm,
     marginBottom: spacing.sm,
@@ -223,7 +235,7 @@ const styles = StyleSheet.create({
   },
   heroDivider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: t.colors.border,
     marginVertical: spacing.xs,
   },
   heroBottom: {
@@ -231,10 +243,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   matchCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
     padding: spacing.md,
   },
   matchRow: {
@@ -247,10 +259,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionStrip: {
-    backgroundColor: colors.accentMuted,
+    backgroundColor: t.colors.accentMuted,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.accent,
+    borderColor: t.colors.accent,
     height: 72,
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,14 +274,14 @@ const styles = StyleSheet.create({
   actionDivider: {
     width: 1,
     height: 44,
-    backgroundColor: colors.accent,
+    backgroundColor: t.colors.accent,
     opacity: 0.3,
   },
   settingsSection: {
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -287,9 +299,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
-    backgroundColor: colors.surfaceGlass,
+    backgroundColor: t.colors.surfaceGlass,
     borderBottomWidth: 1,
-    borderBottomColor: colors.glassBorder,
+    borderBottomColor: t.colors.glassBorder,
     alignItems: 'center',
     gap: spacing.sm,
   },
@@ -304,10 +316,10 @@ const styles = StyleSheet.create({
   kpiStripSkeleton: {
     flexDirection: 'row',
     marginHorizontal: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
     overflow: 'hidden',
   },
   kpiCellSkeleton: {
@@ -316,17 +328,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderRightWidth: 1,
-    borderRightColor: colors.border,
+    borderRightColor: t.colors.border,
   },
   kpiCellSkeletonLast: {
     borderRightWidth: 0,
   },
   performanceCardSkeleton: {
     marginHorizontal: spacing.md,
-    backgroundColor: colors.surfaceGlass,
+    backgroundColor: t.colors.surfaceGlass,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: t.colors.glassBorder,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -336,12 +348,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: t.colors.border,
   },
   groupCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
     borderRadius: radius.card,
     padding: spacing.md,
     gap: spacing.sm,
@@ -357,10 +369,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   calendarShell: {
-    backgroundColor: colors.surface,
+    backgroundColor: t.colors.surface,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: t.colors.border,
     padding: spacing.sm,
     gap: spacing.xs,
   },
@@ -391,4 +403,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
   },
-});
+}),
+);

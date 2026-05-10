@@ -3,7 +3,8 @@ import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { PUBLIC_PRIVACY_POLICY_URL } from '../constants/legalUrls';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 
 const PRIVACY_CONTACT_EMAIL = 'privacy@halisaha.app';
 
@@ -31,6 +32,8 @@ const SECTIONS: Array<{ title: string; body: string }> = [
 ];
 
 export function PrivacyPolicyScreen() {
+  const styles = useStyles();
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.card}>
@@ -67,50 +70,52 @@ export function PrivacyPolicyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
-    gap: spacing.sm,
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.title,
-    color: colors.text,
-  },
-  meta: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  intro: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  section: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  sectionTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-  },
-  body: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
+      gap: spacing.sm,
+    },
+    card: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.surface,
+      borderRadius: 16,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    title: {
+      ...typography.title,
+      color: t.colors.text,
+    },
+    meta: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    intro: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    section: {
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.surface,
+      borderRadius: 16,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    sectionTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+    },
+    body: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+  }),
+);

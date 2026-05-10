@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
+import { makeStyles } from '../../theme/ThemeContext';
 import type { Match } from '../../types/domain';
 import { formatShortDate } from '../../utils/dates';
 
@@ -15,6 +16,8 @@ type Props = {
 };
 
 export function ProfileRecentMatches({ rows }: Props) {
+  const styles = useStyles();
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle} accessibilityRole="header">
@@ -40,52 +43,54 @@ export function ProfileRecentMatches({ rows }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  section: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  muted: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  rm: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  rmDate: {
-    ...typography.caption,
-    color: colors.textMuted,
-    width: 56,
-  },
-  rmMid: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  rmTag: {
-    ...typography.subtitle,
-    width: 24,
-    textAlign: 'center',
-    color: colors.textMuted,
-  },
-  win: { color: colors.accent },
-  loss: { color: colors.danger },
-  rmG: {
-    ...typography.caption,
-    color: colors.textMuted,
-    width: 52,
-    textAlign: 'right',
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    section: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.lg,
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      marginBottom: spacing.xs,
+    },
+    muted: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    rm: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+      gap: spacing.sm,
+    },
+    rmDate: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      width: 56,
+    },
+    rmMid: {
+      ...typography.body,
+      color: t.colors.text,
+      flex: 1,
+      textAlign: 'center',
+    },
+    rmTag: {
+      ...typography.subtitle,
+      width: 24,
+      textAlign: 'center',
+      color: t.colors.textMuted,
+    },
+    win: { color: t.colors.accent },
+    loss: { color: t.colors.danger },
+    rmG: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      width: 52,
+      textAlign: 'right',
+    },
+  }),
+);

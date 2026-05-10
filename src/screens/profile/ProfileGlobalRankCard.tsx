@@ -6,7 +6,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Card } from '../../components/Card';
 import type { RootTabParamList } from '../../navigation/types';
 import { fetchPlayerLeaderboardStats } from '../../services/supabase/leaderboard';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
+import { makeStyles, useThemeColors } from '../../theme/ThemeContext';
 
 type Props = {
   userId: string;
@@ -15,6 +16,8 @@ type Props = {
 };
 
 export function ProfileGlobalRankCard({ userId, remoteUserId, refreshKey }: Props) {
+  const styles = useGlobalRankStyles();
+  const themeColors = useThemeColors();
   const navigation = useNavigation();
   const [rank, setRank] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -60,7 +63,7 @@ export function ProfileGlobalRankCard({ userId, remoteUserId, refreshKey }: Prop
         <Text style={styles.title}>Genel gol sıralaması</Text>
         {loading ? (
           <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={colors.accent} />
+            <ActivityIndicator size="small" color={themeColors.accent} />
             <Text style={styles.loadingTxt}>Sıra yükleniyor…</Text>
           </View>
         ) : rank != null ? (
@@ -83,61 +86,63 @@ export function ProfileGlobalRankCard({ userId, remoteUserId, refreshKey }: Prop
           hitSlop={4}
         >
           <Text style={styles.ctaTxt}>Gruplara git</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+          <Ionicons name="chevron-forward" size={18} color={themeColors.accent} />
         </Pressable>
       </Card>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  outer: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-  },
-  card: {
-    gap: spacing.sm,
-  },
-  title: {
-    ...typography.subtitle,
-    color: colors.text,
-  },
-  rankLine: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  rankNum: {
-    ...typography.title,
-    color: colors.accent,
-    fontFamily: 'Inter_700Bold',
-  },
-  hint: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  loadingTxt: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 44,
-    paddingVertical: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  ctaPressed: {
-    opacity: 0.85,
-  },
-  ctaTxt: {
-    ...typography.body,
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});
+const useGlobalRankStyles = makeStyles((t) =>
+  StyleSheet.create({
+    outer: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+    },
+    card: {
+      gap: spacing.sm,
+    },
+    title: {
+      ...typography.subtitle,
+      color: t.colors.text,
+    },
+    rankLine: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    rankNum: {
+      ...typography.title,
+      color: t.colors.accent,
+      fontFamily: 'Inter_700Bold',
+    },
+    hint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    loadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    loadingTxt: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    cta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 44,
+      paddingVertical: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    ctaPressed: {
+      opacity: 0.85,
+    },
+    ctaTxt: {
+      ...typography.body,
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+  }),
+);

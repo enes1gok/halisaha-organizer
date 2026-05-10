@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { colors } from '../theme';
-import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { useTheme } from '../theme/ThemeContext';
+import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 
 type Props = {
   email: string;
@@ -26,6 +26,8 @@ export function EmailPasswordFields({
   passwordTestID,
   passwordVisibilityTestID = 'onboarding:password-visibility:toggle',
 }: Props) {
+  const styles = useOnboardingAuthStyles();
+  const { colors } = useTheme();
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   return (

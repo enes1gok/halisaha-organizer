@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { darkColors, letterSpacing, radius, spacing, typography } from '../../theme';
+import { letterSpacing, radius, spacing, typography } from '../../theme';
 import { makeStyles, type ThemeColors } from '../../theme/ThemeContext';
 
 function buildSheet(colors: ThemeColors) {
@@ -233,9 +233,3 @@ function buildSheet(colors: ThemeColors) {
  * Tema-bağımlı `MatchDetail` stylesheet üreticisi.
  */
 export const useMatchDetailStyles = makeStyles((t) => buildSheet(t.colors));
-
-/**
- * @deprecated Use `useMatchDetailStyles()` for theme-aware styles.
- * Geriye dönük uyum için sabit (dark) stil seti.
- */
-export const matchDetailStyles = buildSheet(darkColors);

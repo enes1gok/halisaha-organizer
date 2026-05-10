@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PressableScale } from './PressableScale';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import type { Match } from '../types/domain';
 import { formatMatchDateTime } from '../utils/dates';
 import { getPlayerMatchOutcome } from '../utils/matchOutcome';
@@ -13,19 +14,25 @@ type Props = {
   onPress: () => void;
 };
 
-const OUTCOME_COPY: Record<'W' | 'L' | 'D', { label: string; color: string }> = {
-  W: { label: 'Galibiyet', color: colors.accent },
-  L: { label: 'Mağlubiyet', color: colors.danger },
-  D: { label: 'Beraberlik', color: colors.slate },
-};
-
 export function HomeLastMatchCard({ match, playerId, onPress }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const outcome = useMemo(() => getPlayerMatchOutcome(match, playerId), [match, playerId]);
   const result = match.result;
 
+  const outcomeCopy = useMemo(
+    () =>
+      ({
+        W: { label: 'Galibiyet', color: colors.accent },
+        L: { label: 'Mağlubiyet', color: colors.danger },
+        D: { label: 'Beraberlik', color: colors.slate },
+      }) as const,
+    [colors.accent, colors.danger, colors.slate],
+  );
+
   if (!result || !outcome) return null;
 
-  const oc = OUTCOME_COPY[outcome];
+  const oc = outcomeCopy[outcome];
 
   return (
     <View style={styles.outer}>
@@ -53,48 +60,50 @@ export function HomeLastMatchCard({ match, playerId, onPress }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  outer: {
-    marginTop: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surfaceGlass,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    padding: spacing.md,
-    ...shadows.sm,
-  },
-  sectionLabel: {
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  date: {
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  score: {
-    color: colors.text,
-    flexShrink: 1,
-  },
-  badge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    backgroundColor: colors.surfaceSoft,
-  },
-  badgeTxt: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    outer: {
+      marginTop: spacing.md,
+    },
+    card: {
+      backgroundColor: t.colors.surfaceGlass,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+      padding: spacing.md,
+      ...shadows.sm,
+    },
+    sectionLabel: {
+      color: t.colors.textMuted,
+      marginBottom: spacing.xs,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    date: {
+      color: t.colors.textMuted,
+      marginTop: 4,
+    },
+    scoreRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      marginTop: spacing.sm,
+    },
+    score: {
+      color: t.colors.text,
+      flexShrink: 1,
+    },
+    badge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      backgroundColor: t.colors.surfaceSoft,
+    },
+    badgeTxt: {
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+    },
+  }),
+);

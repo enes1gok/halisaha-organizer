@@ -4,11 +4,14 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
-import { colors, spacing, typography } from '../theme';
-import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
+import { spacing, typography } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
+import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 import { useUserFeedback } from '../utils/userFeedback';
 
 export function SetNewPasswordScreen() {
+  const styles = useOnboardingAuthStyles();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { completePasswordRecovery, signOut } = useSupabaseAuth();
   const { showValidationToast, showToast } = useUserFeedback();

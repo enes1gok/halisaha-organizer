@@ -7,7 +7,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { PillButton } from './PillButton';
 
 type Props = {
@@ -34,6 +35,9 @@ export function ConfirmationModal({
   onCancel,
   danger,
 }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
+
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel}>
       <Pressable style={styles.backdrop} onPress={onCancel}>
@@ -67,52 +71,54 @@ export function ConfirmationModal({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
-  },
-  title: {
-    color: colors.text,
-  },
-  msg: {
-    color: colors.textMuted,
-  },
-  destructiveRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 77, 77, 0.35)',
-    backgroundColor: 'rgba(255, 77, 77, 0.08)',
-  },
-  destructiveHint: {
-    ...typography.body,
-    flex: 1,
-    color: colors.danger,
-    fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  flex: {
-    flex: 1,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: t.colors.surface,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      gap: spacing.md,
+    },
+    title: {
+      color: t.colors.text,
+    },
+    msg: {
+      color: t.colors.textMuted,
+    },
+    destructiveRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 77, 77, 0.35)',
+      backgroundColor: 'rgba(255, 77, 77, 0.08)',
+    },
+    destructiveHint: {
+      ...typography.body,
+      flex: 1,
+      color: t.colors.danger,
+      fontWeight: '600',
+    },
+    row: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    flex: {
+      flex: 1,
+    },
+  }),
+);

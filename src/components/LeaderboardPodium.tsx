@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PlayerAvatar } from './PlayerAvatar';
 import { useFontScale } from '../hooks/useFontScale';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useThemeColors, type ThemeColors } from '../theme/ThemeContext';
 
 export type PodiumLeaderRow = {
   playerId: string;
@@ -12,35 +13,43 @@ export type PodiumLeaderRow = {
 
 type Medal = 'gold' | 'silver' | 'bronze';
 
-const MEDAL_STYLES: Record<
-  Medal,
-  { accent: string; surface: string; border: string; minHeight: number; avatar: number; testSuffix: string }
-> = {
-  silver: {
-    accent: colors.leaderboard.silverAccent,
-    surface: colors.leaderboard.silverSurface,
-    border: colors.leaderboard.silverBorder,
-    minHeight: 132,
-    avatar: 44,
-    testSuffix: 'rank-2',
-  },
-  gold: {
-    accent: colors.leaderboard.goldAccent,
-    surface: colors.leaderboard.goldSurface,
-    border: colors.leaderboard.goldBorder,
-    minHeight: 168,
-    avatar: 52,
-    testSuffix: 'rank-1',
-  },
-  bronze: {
-    accent: colors.leaderboard.bronzeAccent,
-    surface: colors.leaderboard.bronzeSurface,
-    border: colors.leaderboard.bronzeBorder,
-    minHeight: 116,
-    avatar: 44,
-    testSuffix: 'rank-3',
-  },
+type MedalStyleRow = {
+  accent: string;
+  surface: string;
+  border: string;
+  minHeight: number;
+  avatar: number;
+  testSuffix: string;
 };
+
+function buildMedalStyles(colors: ThemeColors): Record<Medal, MedalStyleRow> {
+  return {
+    silver: {
+      accent: colors.leaderboard.silverAccent,
+      surface: colors.leaderboard.silverSurface,
+      border: colors.leaderboard.silverBorder,
+      minHeight: 132,
+      avatar: 44,
+      testSuffix: 'rank-2',
+    },
+    gold: {
+      accent: colors.leaderboard.goldAccent,
+      surface: colors.leaderboard.goldSurface,
+      border: colors.leaderboard.goldBorder,
+      minHeight: 168,
+      avatar: 52,
+      testSuffix: 'rank-1',
+    },
+    bronze: {
+      accent: colors.leaderboard.bronzeAccent,
+      surface: colors.leaderboard.bronzeSurface,
+      border: colors.leaderboard.bronzeBorder,
+      minHeight: 116,
+      avatar: 44,
+      testSuffix: 'rank-3',
+    },
+  };
+}
 
 type Props = {
   /** İlk üç sıra (sıralı: 1., 2., 3.) */
@@ -51,6 +60,7 @@ type Props = {
 
 /** Solda 2., ortada 1., sağda 3. — klasik podyum düzeni; aşırı büyük yazı ölçeğinde dikey listeye düşer */
 export function LeaderboardPodium({ entries, resolvePlayer, formatValue }: Props) {
+  const styles = useStyles();
   const first = entries[0];
   const second = entries[1];
   const third = entries[2];
@@ -121,7 +131,10 @@ function PodiumColumn({
   formatValue: Props['formatValue'];
   fontScale: number;
 }) {
-  const m = MEDAL_STYLES[medal];
+  const styles = useStyles();
+  const colors = useThemeColors();
+  const medalStyles = useMemo(() => buildMedalStyles(colors), [colors]);
+  const m = medalStyles[medal];
   const p = row ? resolvePlayer(row.playerId) : undefined;
   const filled = !!(row && p);
   const label =
@@ -129,8 +142,6 @@ function PodiumColumn({
   const a11y = filled
     ? `${label}. sıra, ${p!.name}, ${formatValue(row!.value)}`
     : `${label}. sıra, boş`;
-  // Sabit minHeight, font ölçeği büyüdükçe metni kırptığı için ölçeğe göre büyütüyoruz.
-  // 1.6 tavanı `App.tsx`'teki `maxFontSizeMultiplier` ile uyumludur.
   const scaledMinHeight = Math.round(m.minHeight * Math.min(Math.max(fontScale, 1), 1.6));
 
   return (
@@ -167,10 +178,6 @@ function PodiumColumn({
   );
 }
 
-/**
- * Aşırı büyük yazı ölçeğinde 3 sütun yatay düzen okunaksız kalır; bu yüzden
- * `useFontScale().isHuge` durumunda madalya rozetli dikey bir listeye geçeriz.
- */
 function PodiumStackedRow({
   medal,
   row,
@@ -182,7 +189,10 @@ function PodiumStackedRow({
   resolvePlayer: Props['resolvePlayer'];
   formatValue: Props['formatValue'];
 }) {
-  const m = MEDAL_STYLES[medal];
+  const styles = useStyles();
+  const colors = useThemeColors();
+  const medalStyles = useMemo(() => buildMedalStyles(colors), [colors]);
+  const m = medalStyles[medal];
   const p = row ? resolvePlayer(row.playerId) : undefined;
   const filled = !!(row && p);
   const label = medal === 'gold' ? '1' : medal === 'silver' ? '2' : '3';
@@ -231,78 +241,80 @@ function PodiumStackedRow({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
-  },
-  stackedWrap: {
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  stackedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.card,
-    borderWidth: 1,
-  },
-  stackedRank: {
-    minWidth: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stackedMeta: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  col: {
-    flex: 1,
-    maxWidth: 120,
-  },
-  pedestal: {
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.sm,
-    paddingTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  rankBadge: {
-    ...typography.title,
-    fontFamily: 'Inter_900Black',
-    marginBottom: spacing.xs,
-  },
-  name: {
-    ...typography.caption,
-    color: colors.text,
-    textAlign: 'center',
-    fontFamily: 'Inter_600SemiBold',
-  },
-  val: {
-    ...typography.subtitle,
-    fontFamily: 'Inter_700Bold',
-  },
-  avatarPh: {
-    backgroundColor: colors.border,
-    opacity: 0.5,
-  },
-  placeholderTxt: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  placeholderSub: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    wrap: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+      paddingHorizontal: spacing.xs,
+    },
+    stackedWrap: {
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    stackedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.card,
+      borderWidth: 1,
+    },
+    stackedRank: {
+      minWidth: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stackedMeta: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    col: {
+      flex: 1,
+      maxWidth: 120,
+    },
+    pedestal: {
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      paddingHorizontal: spacing.xs,
+      paddingBottom: spacing.sm,
+      paddingTop: spacing.sm,
+      gap: spacing.xs,
+    },
+    rankBadge: {
+      ...typography.title,
+      fontFamily: 'Inter_900Black',
+      marginBottom: spacing.xs,
+    },
+    name: {
+      ...typography.caption,
+      color: t.colors.text,
+      textAlign: 'center',
+      fontFamily: 'Inter_600SemiBold',
+    },
+    val: {
+      ...typography.subtitle,
+      fontFamily: 'Inter_700Bold',
+    },
+    avatarPh: {
+      backgroundColor: t.colors.border,
+      opacity: 0.5,
+    },
+    placeholderTxt: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    placeholderSub: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+    },
+  }),
+);

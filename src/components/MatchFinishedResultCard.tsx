@@ -2,7 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Card } from './Card';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
-import { colors, letterSpacing, spacing, typography } from '../theme';
+import { letterSpacing, spacing, typography } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 import type { Match, Player } from '../types/domain';
 import { formatMatchDateTime } from '../utils/dates';
 
@@ -15,6 +16,7 @@ export type MatchFinishedResultCardProps = {
 
 export const MatchFinishedResultCard = React.forwardRef<View, MatchFinishedResultCardProps>(
   function MatchFinishedResultCard({ match, getPlayer, myRatingAvg }, ref) {
+    const styles = useStyles();
     const result = match.result;
 
     return (
@@ -77,78 +79,80 @@ export const MatchFinishedResultCard = React.forwardRef<View, MatchFinishedResul
   },
 );
 
-const styles = StyleSheet.create({
-  captureRoot: {
-    alignSelf: 'stretch',
-  },
-  card: {
-    gap: spacing.sm,
-  },
-  date: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  scoreHero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  teamTag: {
-    ...typography.caption,
-    color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: letterSpacing.wide,
-    minWidth: 16,
-    textAlign: 'center',
-  },
-  scoreBig: {
-    ...typography.headlineStrong,
-    color: colors.text,
-    fontVariant: ['tabular-nums'],
-  },
-  scoreSep: {
-    ...typography.headlineStrong,
-    color: colors.textMuted,
-  },
-  noResult: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-  },
-  detailBlock: {
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  sectionLbl: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: letterSpacing.normal,
-    marginBottom: spacing.xs,
-  },
-  body: {
-    ...typography.body,
-    color: colors.text,
-  },
-  muted: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  myAvg: {
-    ...typography.caption,
-    color: colors.accent,
-    marginTop: spacing.sm,
-  },
-  brandFoot: {
-    ...typography.micro,
-    color: colors.textMuted,
-    marginTop: spacing.md,
-    textAlign: 'center',
-    opacity: 0.85,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    captureRoot: {
+      alignSelf: 'stretch',
+    },
+    card: {
+      gap: spacing.sm,
+    },
+    date: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginTop: spacing.xs,
+    },
+    scoreHero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
+      marginTop: spacing.sm,
+      flexWrap: 'wrap',
+    },
+    teamTag: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      fontWeight: '700',
+      letterSpacing: letterSpacing.wide,
+      minWidth: 16,
+      textAlign: 'center',
+    },
+    scoreBig: {
+      ...typography.headlineStrong,
+      color: t.colors.text,
+      fontVariant: ['tabular-nums'],
+    },
+    scoreSep: {
+      ...typography.headlineStrong,
+      color: t.colors.textMuted,
+    },
+    noResult: {
+      ...typography.body,
+      color: t.colors.textMuted,
+      marginTop: spacing.sm,
+    },
+    detailBlock: {
+      marginTop: spacing.sm,
+      gap: spacing.xs,
+    },
+    sectionLbl: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: letterSpacing.normal,
+      marginBottom: spacing.xs,
+    },
+    body: {
+      ...typography.body,
+      color: t.colors.text,
+    },
+    muted: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginTop: spacing.xs,
+    },
+    myAvg: {
+      ...typography.caption,
+      color: t.colors.accent,
+      marginTop: spacing.sm,
+    },
+    brandFoot: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      marginTop: spacing.md,
+      textAlign: 'center',
+      opacity: 0.85,
+    },
+  }),
+);
