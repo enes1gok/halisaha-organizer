@@ -8,9 +8,21 @@ export const onboardingAuthStyles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: spacing.xl,
   },
-  hero: {
+  heroWrap: {
+    position: 'relative',
+    minHeight: 240,
+    borderRadius: radius.card,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.pitch.line,
+  },
+  heroText: {
+    position: 'relative',
+    zIndex: 1,
     alignItems: 'flex-start',
     gap: spacing.sm,
+    padding: spacing.lg,
+    paddingBottom: spacing.md,
   },
   brand: {
     ...typography.micro,

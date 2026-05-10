@@ -3,7 +3,9 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WelcomePitchBackdrop } from '../components/onboarding/WelcomePitchBackdrop';
 import { PillButton } from '../components/PillButton';
+import { useReduceMotion } from '../hooks/useReduceMotion';
 import type { OnboardingStackParamList } from '../navigation/types';
 import { spacing } from '../theme';
 import { onboardingAuthStyles as styles } from './onboardingAuthStyles';
@@ -13,6 +15,7 @@ type Nav = StackNavigationProp<OnboardingStackParamList, 'AuthWelcome'>;
 export function AuthWelcomeScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
 
   return (
     <KeyboardAvoidingView
@@ -27,13 +30,16 @@ export function AuthWelcomeScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.hero}>
-          <Text style={styles.brand}>Halısaha</Text>
-          <Text style={styles.title}>Maçlarını organize et</Text>
-          <Text style={styles.subtitle}>
-            Maç oluştur, arkadaşlarını davet et, kadroyu kur ve skorları kaydet. Devam etmek için
-            yeni hesap oluştur veya mevcut hesabınla giriş yap.
-          </Text>
+        <View style={styles.heroWrap}>
+          <WelcomePitchBackdrop reduceMotion={reduceMotion} />
+          <View style={styles.heroText}>
+            <Text style={styles.brand}>Halısaha</Text>
+            <Text style={styles.title}>Maçlarını organize et</Text>
+            <Text style={styles.subtitle}>
+              Maç oluştur, arkadaşlarını davet et, kadroyu kur ve skorları kaydet. Devam etmek için
+              yeni hesap oluştur veya mevcut hesabınla giriş yap.
+            </Text>
+          </View>
         </View>
 
         <View style={localStyles.ctaBlock}>
