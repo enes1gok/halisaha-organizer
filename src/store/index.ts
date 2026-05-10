@@ -20,6 +20,7 @@ import type {
   AuthSlice,
   GroupsSlice,
   MatchesSlice,
+  MatchTemplatesSlice,
   PlayersSlice,
   PreferencesSlice,
 } from './types';
@@ -41,5 +42,9 @@ export function useGroupsStore<T>(selector: (state: GroupsSlice) => T): T {
 }
 
 export function usePreferencesStore<T>(selector: (state: PreferencesSlice) => T): T {
+  return useAppStore((s) => selector(s));
+}
+
+export function useMatchTemplatesStore<T>(selector: (state: MatchTemplatesSlice) => T): T {
   return useAppStore((s) => selector(s));
 }

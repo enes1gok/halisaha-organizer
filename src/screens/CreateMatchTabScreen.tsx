@@ -12,15 +12,21 @@ import Slider from '@react-native-community/slider';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
 import type { ShowToastOptions } from '../context/toastTypes';
 import { radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
-import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
+import {
+  useAuthStore,
+  useGroupsStore,
+  useMatchTemplatesStore,
+  useMatchesStore,
+  usePlayersStore,
+} from '../store';
 import { useUserFeedback } from '../utils/userFeedback';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
-import type { MatchPaymentMethod } from '../types/domain';
+import { MATCH_TEMPLATE_NAME_MAX_LEN, type MatchPaymentMethod, type MatchTemplate } from '../types/domain';
 import {
   formatIbanForInput,
   isValidTurkishIban,
@@ -28,6 +34,11 @@ import {
   normalizeIban,
 } from '../utils/iban';
 import { selectionTick } from '../utils/haptics';
+import {
+  applyMatchTemplateToFormFields,
+  buildMatchTemplateFromForm,
+} from '../utils/matchTemplateApply';
+import { normalizeStartsAtFromPicker } from '../utils/matchStartsAtNormalize';
 
 const MIN_MAX_PLAYERS = 4;
 const MAX_MAX_PLAYERS = 22;
@@ -48,47 +59,6 @@ function clampMaxPlayers(n: number): number {
 
 function sanitizeMaxPlayersDigits(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, 2);
-}
-
-/** Seçilen zamanı en yakın tam / buçuk saate (:00 veya :30) yuvarlar. */
-function snapStartsAtToNearestHalfHour(d: Date): Date {
-  const x = new Date(d);
-  const minutes = x.getMinutes();
-  if (minutes < 15) {
-    x.setMinutes(0, 0, 0);
-  } else if (minutes < 45) {
-    x.setMinutes(30, 0, 0);
-  } else {
-    x.setHours(x.getHours() + 1, 0, 0, 0);
-  }
-  return x;
-}
-
-/** Geçerli andan sonraki tam veya buçuk saat (dakika/saniye sıfırlanmış). */
-function roundUpToNextHalfHour(d: Date): Date {
-  const x = new Date(d);
-  const mins = x.getMinutes();
-  const secs = x.getSeconds();
-  const ms = x.getMilliseconds();
-  if (secs === 0 && ms === 0 && (mins === 0 || mins === 30)) {
-    return x;
-  }
-  if (mins < 30) {
-    x.setMinutes(30, 0, 0);
-  } else {
-    x.setHours(x.getHours() + 1, 0, 0, 0);
-  }
-  return x;
-}
-
-/** Picker çıktısı: yarım saat grid + geçmişte kalmışsa şu andan sonraki uygun slot. */
-function normalizeStartsAtFromPicker(d: Date): Date {
-  const snapped = snapStartsAtToNearestHalfHour(d);
-  const t = Date.now();
-  if (snapped.getTime() >= t) {
-    return snapped;
-  }
-  return roundUpToNextHalfHour(new Date(t));
 }
 
 export function CreateMatchTabScreen() {
@@ -140,6 +110,86 @@ export function CreateMatchTabScreen() {
       ),
     [groups, memberships, userId],
   );
+
+  const matchTemplates = useMatchTemplatesStore((s) => s.matchTemplates);
+  const addMatchTemplate = useMatchTemplatesStore((s) => s.addMatchTemplate);
+  const removeMatchTemplate = useMatchTemplatesStore((s) => s.removeMatchTemplate);
+
+  const [templateDraftName, setTemplateDraftName] = useState('');
+  const [templateSaveExpanded, setTemplateSaveExpanded] = useState(false);
+
+  const applyTemplate = useCallback(
+    (tpl: MatchTemplate) => {
+      const patch = applyMatchTemplateToFormFields(tpl, { fallbackStartsAt: startsAt });
+      setVenue(patch.venue);
+      setMaxPlayers(patch.maxPlayers);
+      setMaxPlayersInputText(patch.maxPlayersInputText);
+      setSelectedGroupId(patch.selectedGroupId);
+      setStartsAt(patch.startsAt);
+      setPaymentMethod(patch.paymentMethod);
+      setPrice(patch.price);
+      setIbanAccountName(patch.ibanAccountName);
+      setPaymentNote(patch.paymentNote);
+      setOverrideIban(patch.overrideIban);
+      if (patch.overrideIban) {
+        syncFromStored(
+          patch.ibanCompactForInput
+            ? formatIbanForInput(patch.ibanCompactForInput)
+            : formatIbanForInput('TR'),
+        );
+      } else {
+        syncFromStored('');
+      }
+      void selectionTick();
+    },
+    [startsAt, syncFromStored],
+  );
+
+  const onSaveTemplate = useCallback(() => {
+    const built = buildMatchTemplateFromForm({
+      name: templateDraftName,
+      venue,
+      maxPlayers,
+      selectedGroupId,
+      startsAt,
+      paymentMethod,
+      price,
+      profileIbanNorm: profileNorm,
+      ibanFieldNorm: normalizeIban(iban),
+      ibanAccountName,
+      paymentNote,
+      overrideIban,
+      hasValidProfileIban,
+    });
+    if (!built.ok) {
+      showValidationToast('Şablon kaydedilemedi', built.message);
+      return;
+    }
+    addMatchTemplate(built.template);
+    setTemplateDraftName('');
+    setTemplateSaveExpanded(false);
+    showToast({
+      title: 'Şablon kaydedildi',
+      message: `"${built.template.name}" kaydedildi.`,
+    });
+  }, [
+    templateDraftName,
+    venue,
+    maxPlayers,
+    selectedGroupId,
+    startsAt,
+    paymentMethod,
+    price,
+    profileNorm,
+    iban,
+    ibanAccountName,
+    paymentNote,
+    overrideIban,
+    hasValidProfileIban,
+    addMatchTemplate,
+    showValidationToast,
+    showToast,
+  ]);
 
   const { startsAtDateLine, startsAtTimeLine, startsAtAccessibilityLabel } = useMemo(() => {
     const dateLine = startsAt.toLocaleDateString('tr-TR', {
@@ -350,6 +400,8 @@ export function CreateMatchTabScreen() {
       setPaymentNote('');
       syncFromStored('');
       setOverrideIban(!hasValidProfileIban);
+      setTemplateSaveExpanded(false);
+      setTemplateDraftName('');
       sheetRef.current?.dismiss();
     } catch (e) {
       showApiErrorToast(e, {
@@ -384,6 +436,101 @@ export function CreateMatchTabScreen() {
           onScroll={onFormScroll}
         >
           <Text style={[typography.title, styles.title]}>Yeni Maç</Text>
+          {matchTemplates.length > 0 ? (
+            <View style={styles.templateBlock}>
+              <Text style={styles.templateSectionLabel}>Şablonlar</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.templateChipRow}
+                keyboardShouldPersistTaps="handled"
+              >
+                {matchTemplates.map((tpl) => (
+                  <View key={tpl.id} style={styles.templateChipWrap}>
+                    <Pressable
+                      testID={`match:template:${tpl.id}:apply`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Şablon uygula: ${tpl.name}`}
+                      onPress={() => {
+                        void selectionTick();
+                        applyTemplate(tpl);
+                      }}
+                      style={({ pressed }) => [styles.templateChip, pressed && styles.templateChipPressed]}
+                    >
+                      <Text style={styles.templateChipText} numberOfLines={1}>
+                        {tpl.name}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      testID={`match:template:${tpl.id}:remove`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Şablonu sil: ${tpl.name}`}
+                      hitSlop={8}
+                      onPress={() => {
+                        void selectionTick();
+                        Alert.alert('Şablonu sil', `"${tpl.name}" silinsin mi?`, [
+                          { text: 'İptal', style: 'cancel' },
+                          {
+                            text: 'Sil',
+                            style: 'destructive',
+                            onPress: () => removeMatchTemplate(tpl.id),
+                          },
+                        ]);
+                      }}
+                      style={({ pressed }) => [
+                        styles.templateChipRemove,
+                        pressed && styles.templateChipRemovePressed,
+                      ]}
+                    >
+                      <Text style={styles.templateChipRemoveMark}>×</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+          <PillButton
+            title={
+              templateSaveExpanded ? 'Şablon kaydetmeyi iptal et' : 'Bu ayarları şablon olarak kaydet'
+            }
+            variant="ghost"
+            testID="match:template:toggle-save"
+            onPress={() => {
+              void selectionTick();
+              setTemplateSaveExpanded((v) => {
+                if (v) setTemplateDraftName('');
+                return !v;
+              });
+            }}
+          />
+          {templateSaveExpanded ? (
+            <View style={styles.templateSaveBlock}>
+              <Text style={styles.label}>Şablon adı</Text>
+              <BottomSheetTextInput
+                value={templateDraftName}
+                onChangeText={(t) => setTemplateDraftName(t.slice(0, MATCH_TEMPLATE_NAME_MAX_LEN))}
+                placeholder="Örn. Çarşamba Kadıköy"
+                placeholderTextColor={colors.textMuted}
+                style={styles.input}
+                maxLength={MATCH_TEMPLATE_NAME_MAX_LEN}
+                testID="match:template:name-input"
+                accessibilityLabel="Şablon adı"
+              />
+              <Text style={styles.ibanHint}>
+                {templateDraftName.trim().length}/{MATCH_TEMPLATE_NAME_MAX_LEN} karakter
+              </Text>
+              <View style={styles.templateSaveActions}>
+                <PillButton
+                  title="Şablonu kaydet"
+                  onPress={() => {
+                    void selectionTick();
+                    onSaveTemplate();
+                  }}
+                  testID="match:template:save-commit"
+                />
+              </View>
+            </View>
+          ) : null}
           <View
             style={styles.stepsStrip}
             testID="match:create:steps"
@@ -770,6 +917,70 @@ const useStyles = makeStyles((t) =>
     title: {
       color: t.colors.text,
       marginBottom: spacing.sm,
+    },
+    templateBlock: {
+      marginBottom: spacing.sm,
+    },
+    templateSectionLabel: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginBottom: spacing.xs,
+    },
+    templateChipRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    templateChipWrap: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      maxWidth: 280,
+      borderRadius: radius.pill,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.background,
+      ...shadows.sm,
+    },
+    templateChip: {
+      flexShrink: 1,
+      paddingVertical: 10,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.xs,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    templateChipPressed: {
+      opacity: 0.85,
+    },
+    templateChipText: {
+      ...typography.caption,
+      color: t.colors.text,
+    },
+    templateChipRemove: {
+      paddingHorizontal: spacing.sm,
+      minWidth: 44,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderLeftWidth: 1,
+      borderLeftColor: t.colors.border,
+    },
+    templateChipRemovePressed: {
+      backgroundColor: t.colors.surface,
+    },
+    templateChipRemoveMark: {
+      ...typography.subtitle,
+      color: t.colors.textMuted,
+      fontSize: 20,
+      lineHeight: 22,
+    },
+    templateSaveBlock: {
+      marginBottom: spacing.sm,
+    },
+    templateSaveActions: {
+      marginTop: spacing.xs,
     },
     stepsStrip: {
       flexDirection: 'row',

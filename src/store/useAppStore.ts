@@ -1,13 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { Group, GroupMembership, Match, Player } from '../types/domain';
+import type { Group, GroupMembership, Match, MatchTemplate, Player } from '../types/domain';
 import { buildSeedState, STORE_VERSION } from '../data/seed';
 import { mergeStatLines } from './helpers';
 import { createAuthSlice } from './slices/authSlice';
 import { createGroupsSlice } from './slices/groupsSlice';
 import { createMatchesSlice } from './slices/matchesSlice';
 import { createPlayersSlice } from './slices/playersSlice';
+import { createMatchTemplatesSlice } from './slices/matchTemplatesSlice';
 import { createPreferencesSlice, DEFAULT_THEME_PREFERENCE } from './slices/preferencesSlice';
 import type { AppState, RemoteProfileRow, ThemePreference } from './types';
 
@@ -20,6 +21,7 @@ type PersistedShape = {
   groups: Group[];
   groupMemberships: GroupMembership[];
   themePreference: ThemePreference;
+  matchTemplates: MatchTemplate[];
 };
 
 const VALID_PREFERENCES: ReadonlyArray<ThemePreference> = ['system', 'light', 'dark'];
@@ -30,6 +32,10 @@ function coerceThemePreference(value: unknown): ThemePreference {
     : DEFAULT_THEME_PREFERENCE;
 }
 
+function coerceMatchTemplates(value: unknown): MatchTemplate[] {
+  return Array.isArray(value) ? (value as MatchTemplate[]) : [];
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get, api) => ({
@@ -38,6 +44,7 @@ export const useAppStore = create<AppState>()(
       ...createMatchesSlice(set, get, api),
       ...createGroupsSlice(set, get, api),
       ...createPreferencesSlice(set, get, api),
+      ...createMatchTemplatesSlice(set, get, api),
 
       resetToSeed: () => {
         const s = buildSeedState();
@@ -52,6 +59,7 @@ export const useAppStore = create<AppState>()(
           matchRatingsSubmissionByMatchId: {},
           matchIdsPendingListEntrance: [],
           themePreference: DEFAULT_THEME_PREFERENCE,
+          matchTemplates: [],
         });
       },
     }),
@@ -65,6 +73,7 @@ export const useAppStore = create<AppState>()(
         groups: s.groups,
         groupMemberships: s.groupMemberships,
         themePreference: s.themePreference,
+        matchTemplates: s.matchTemplates,
       }),
       migrate: (persisted: unknown, version: number): PersistedShape => {
         if (version < 4) {
@@ -77,27 +86,18 @@ export const useAppStore = create<AppState>()(
             groups: safe.groups ?? [],
             groupMemberships: safe.groupMemberships ?? [],
             themePreference: coerceThemePreference(safe.themePreference),
+            matchTemplates: coerceMatchTemplates(safe.matchTemplates),
           };
         }
 
-        if (version !== STORE_VERSION) {
-          const fresh = buildSeedState();
-          return {
-            players: fresh.players,
-            matches: fresh.matches,
-            groups: [],
-            groupMemberships: [],
-            themePreference: DEFAULT_THEME_PREFERENCE,
-          };
-        }
-
-        const safe = persisted as Partial<PersistedShape> | null;
+        const safe = (persisted ?? {}) as Partial<PersistedShape>;
         return {
-          players: safe?.players ?? [],
-          matches: safe?.matches ?? [],
-          groups: safe?.groups ?? [],
-          groupMemberships: safe?.groupMemberships ?? [],
-          themePreference: coerceThemePreference(safe?.themePreference),
+          players: safe.players ?? [],
+          matches: safe.matches ?? [],
+          groups: safe.groups ?? [],
+          groupMemberships: safe.groupMemberships ?? [],
+          themePreference: coerceThemePreference(safe.themePreference),
+          matchTemplates: coerceMatchTemplates(safe.matchTemplates),
         };
       },
       onRehydrateStorage: () => (state, error) => {

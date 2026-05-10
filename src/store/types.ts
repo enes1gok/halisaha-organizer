@@ -9,6 +9,7 @@ import type {
   GroupWeeklySeries,
   Match,
   MatchStatus,
+  MatchTemplate,
   Player,
   RSVPStatus,
   ScoreResult,
@@ -49,6 +50,14 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 export interface PreferencesSlice {
   themePreference: ThemePreference;
   setThemePreference: (preference: ThemePreference) => void;
+}
+
+export interface MatchTemplatesSlice {
+  matchTemplates: MatchTemplate[];
+  addMatchTemplate: (template: Omit<MatchTemplate, 'id'> & { id?: string }) => string;
+  updateMatchTemplate: (id: string, patch: Partial<Omit<MatchTemplate, 'id'>>) => void;
+  removeMatchTemplate: (id: string) => void;
+  reorderMatchTemplates: (idsInOrder: string[]) => void;
 }
 
 export interface PlayersSlice {
@@ -136,6 +145,7 @@ export type AppState = AuthSlice &
   PlayersSlice &
   MatchesSlice &
   GroupsSlice &
-  PreferencesSlice & {
+  PreferencesSlice &
+  MatchTemplatesSlice & {
     resetToSeed: () => void;
   };

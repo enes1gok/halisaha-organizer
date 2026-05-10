@@ -63,6 +63,33 @@ export interface SelfReportRequest {
   status: SelfReportApprovalStatus;
 }
 
+/** Kullanıcının maç oluşturma ekranında kaydettiği yerel şablon (AsyncStorage). Grup haftalık serisinden bağımsızdır. */
+export const MATCH_TEMPLATE_NAME_MAX_LEN = 40;
+
+export interface MatchTemplateSchedule {
+  /** 1 = Pazartesi … 7 = Pazar (ISO), `GroupWeeklySeries` ile aynı. */
+  weekdayIsodow: number;
+  /** `HH:mm` veya `HH:mm:ss` (yerel). */
+  localTime: string;
+}
+
+export interface MatchTemplate {
+  id: string;
+  name: string;
+  venue: string;
+  maxPlayers: number;
+  groupId?: string;
+  /** Yoksa şablon uygulanırken mevcut tarih/saat korunur. */
+  schedule?: MatchTemplateSchedule;
+  paymentMethod: MatchPaymentMethod;
+  pricePerPerson?: number;
+  iban?: string;
+  ibanAccountName?: string;
+  paymentNote?: string;
+  /** `paymentMethod === 'iban'` iken true: formda profil IBAN’ı (override kapalı). */
+  ibanUsesProfile?: boolean;
+}
+
 /** Haftalık sabit gün/saat şablonu (Supabase `group_weekly_series`). */
 export interface GroupWeeklySeries {
   id: string;

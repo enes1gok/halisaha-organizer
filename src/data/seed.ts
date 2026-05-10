@@ -33,8 +33,9 @@ export function buildSeedState(now: Date = new Date()): {
  * Persist sürümü.
  * - v3: Opsiyonel `Match.lineupFormationId` geriye dönük uyumludur; sürüm sıçraması gerekmez.
  * - v4: `themePreference` (PreferencesSlice) eklendi; eksik olduğunda `'system'` ile doldurulur.
+ * - v5: `matchTemplates` (yerel maç şablonları) eklendi.
  */
-export const STORE_VERSION = 4;
+export const STORE_VERSION = 5;
 
 /** Generate join code for new matches (seed uses fixed codes) */
 export { createJoinCode };
