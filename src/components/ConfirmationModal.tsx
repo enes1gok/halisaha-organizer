@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
   Modal,
@@ -13,6 +14,8 @@ type Props = {
   visible: boolean;
   title: string;
   message: string;
+  /** İkinci satır: uyarı ikonu + vurgulu metin (ör. geri alınamaz işlemler). */
+  destructiveHint?: string;
   confirmLabel: string;
   cancelLabel?: string;
   onConfirm: () => void;
@@ -24,6 +27,7 @@ export function ConfirmationModal({
   visible,
   title,
   message,
+  destructiveHint,
   confirmLabel,
   cancelLabel = 'Vazgeç',
   onConfirm,
@@ -36,6 +40,16 @@ export function ConfirmationModal({
         <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
           <Text style={[typography.subtitle, styles.title]}>{title}</Text>
           <Text style={[typography.body, styles.msg]}>{message}</Text>
+          {destructiveHint ? (
+            <View
+              style={styles.destructiveRow}
+              accessibilityRole="text"
+              accessibilityLabel={destructiveHint}
+            >
+              <Ionicons name="warning" size={20} color={colors.danger} accessibilityElementsHidden />
+              <Text style={styles.destructiveHint}>{destructiveHint}</Text>
+            </View>
+          ) : null}
           <View style={styles.row}>
             <PillButton title={cancelLabel} variant="ghost" onPress={onCancel} style={styles.flex} />
             <PillButton
@@ -75,6 +89,23 @@ const styles = StyleSheet.create({
   },
   msg: {
     color: colors.textMuted,
+  },
+  destructiveRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 77, 77, 0.35)',
+    backgroundColor: 'rgba(255, 77, 77, 0.08)',
+  },
+  destructiveHint: {
+    ...typography.body,
+    flex: 1,
+    color: colors.danger,
+    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',

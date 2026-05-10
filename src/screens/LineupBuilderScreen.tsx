@@ -1,6 +1,7 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import {
   Alert,
   LayoutAnimation,
@@ -19,11 +20,13 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
   interpolate,
+  ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
 import { Springs } from '../utils/animations';
 import {
@@ -33,6 +36,7 @@ import {
   type LineupSlotDef,
 } from '../data/lineupFormations';
 import { FormationDropZone, type DropRect, type ZoneMap } from '../components/FormationDropZone';
+import { LineupFormationThumbnail } from '../components/LineupFormationThumbnail';
 import { PitchHalfField } from '../components/PitchHalfField';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PillButton } from '../components/PillButton';
@@ -64,6 +68,9 @@ const LONG_PRESS_MS = 300;
 const DRAG_SCALE = 1.03;
 
 const FORMATION_TOTALS = new Set([14, 16, 22]);
+
+/** BottomSheet snap points — sabit referans (her render’da yeni dizi vermemek için). */
+const BENCH_SHEET_SNAP_POINTS: Array<string | number> = ['20%', '48%'];
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -245,7 +252,9 @@ export function LineupBuilderScreen() {
   const rects = useRef<{ A?: DropRect; B?: DropRect }>({});
 
   const formationZonesRef = useRef<ZoneMap>(new Map());
+  const benchSheetRef = useRef<React.ElementRef<typeof BottomSheet>>(null);
 
+  const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const stackHalfPitches = windowWidth < 420;
 
@@ -444,14 +453,29 @@ export function LineupBuilderScreen() {
     [lineupPhase, slotsA, slotsB, stepMode],
   );
 
-  const onFormationDragActivated = useCallback((playerId: string) => {
+  const sheetTimingConfig = useMemo(
+    () => (reduceMotion ? ({ duration: 0 } as const) : undefined),
+    [reduceMotion],
+  );
+
+  const onPitchDragActivated = useCallback((playerId: string) => {
     void selectionTick();
     setDraggingPlayerId(playerId);
   }, []);
 
+  const onBenchDragActivated = useCallback(
+    (playerId: string) => {
+      void selectionTick();
+      setDraggingPlayerId(playerId);
+      benchSheetRef.current?.snapToIndex(0, sheetTimingConfig);
+    },
+    [sheetTimingConfig],
+  );
+
   const onFormationDragFinalize = useCallback(() => {
     setDraggingPlayerId(null);
-  }, []);
+    benchSheetRef.current?.snapToIndex(1, sheetTimingConfig);
+  }, [sheetTimingConfig]);
 
   const benchPlayerIds = useMemo(() => {
     if (!formationMode || !selectedFormation) return [];
@@ -725,7 +749,7 @@ export function LineupBuilderScreen() {
             <DraggableCard
               player={p}
               onDragEnd={handleDropFormation}
-              onDragActivated={onFormationDragActivated}
+              onDragActivated={onPitchDragActivated}
               onDragFinalize={onFormationDragFinalize}
               testID={slotTestId}
             />
@@ -743,79 +767,93 @@ export function LineupBuilderScreen() {
 
   if (formationMode && formationsForCount.length > 0 && selectedFormation) {
     return (
-      <View style={styles.screen}>
-        <Text style={styles.formationTitle}>
-          {goingPlayers.length}/{match.maxPlayers} katılımcı · {selectedFormation.playersPerTeam}’şer ·{' '}
-          {selectedFormation.label}
-        </Text>
-        {!strictFormationFill ? (
-          <Text style={styles.hintWarn} accessibilityRole="text">
-            Tam kadro değil; boş slot bırakabilirsiniz. Tüm katılımcılar sahada olmalı.
+      <View style={styles.screenFormation}>
+        <View style={styles.formationTop}>
+          <Text style={styles.formationTitle}>
+            {goingPlayers.length}/{match.maxPlayers} katılımcı · {selectedFormation.playersPerTeam}’şer ·{' '}
+            {selectedFormation.label}
           </Text>
-        ) : null}
-        <Text style={styles.hint} accessibilityRole="text">
-          Havuzu kaydırın. Oyuncuyu basılı tutup slota veya havuza bırakın. Dolu slotta yer değiştirir.
-          Soldan sağa: Siyah, Beyaz.
-        </Text>
+          {!strictFormationFill ? (
+            <Text style={styles.hintWarn} accessibilityRole="text">
+              Tam kadro değil; boş slot bırakabilirsiniz. Tüm katılımcılar sahada olmalı.
+            </Text>
+          ) : null}
+          <Text style={styles.hint} accessibilityRole="text">
+            Havuzu alttan çekerek genişletin; oyuncuları yatay kaydırabilirsiniz. Oyuncuyu basılı tutup
+            slota veya havuza bırakın. Soldan sağa: Siyah, Beyaz.
+          </Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipRow}
+            testID="lineup:formation:scroll"
+          >
+            {formationsForCount.map((f) => (
+              <Pressable
+                key={f.id}
+                onPress={() => onPickFormation(f.id)}
+                style={[styles.chip, resolvedFormationId === f.id && styles.chipSelected]}
+                testID={`lineup:formation:${f.id}`}
+              >
+                <Text style={[styles.chipText, resolvedFormationId === f.id && styles.chipTextSelected]}>
+                  {f.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <LineupFormationThumbnail
+            formation={selectedFormation}
+            teamLabelB={TEAM_SIDE_LABELS.B}
+            teamLabelA={TEAM_SIDE_LABELS.A}
+            testID="lineup:formation:thumbnail"
+          />
+
+          <View style={styles.stepRow}>
+            <Text style={styles.stepLabel}>Adım adım (önce Beyaz)</Text>
+            <Switch
+              testID="lineup:step-mode:switch"
+              accessibilityLabel="Adım adım kadro modu"
+              value={stepMode}
+              onValueChange={(v) => {
+                setStepMode(v);
+                if (v) setLineupPhase('beyaz');
+              }}
+              trackColor={{ false: colors.border, true: colors.accentMuted }}
+              thumbColor={stepMode ? colors.accent : colors.textMuted}
+            />
+          </View>
+          {stepMode ? (
+            <View style={styles.phaseBanner}>
+              <Text style={styles.phaseText}>
+                {lineupPhase === 'beyaz' ? 'Beyaz takım slotları aktif' : 'Siyah takım slotları aktif'}
+              </Text>
+              {lineupPhase === 'beyaz' ? (
+                <PillButton
+                  title="Siyah takıma geç"
+                  variant="ghost"
+                  onPress={() => setLineupPhase('siyah')}
+                  testID="lineup:phase:goto-siyah"
+                />
+              ) : (
+                <PillButton
+                  title="Beyaza dön"
+                  variant="ghost"
+                  onPress={() => setLineupPhase('beyaz')}
+                  testID="lineup:phase:goto-beyaz"
+                />
+              )}
+            </View>
+          ) : null}
+        </View>
 
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
-          testID="lineup:formation:scroll"
+          style={styles.pitchScroll}
+          contentContainerStyle={styles.pitchScrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {formationsForCount.map((f) => (
-            <Pressable
-              key={f.id}
-              onPress={() => onPickFormation(f.id)}
-              style={[styles.chip, resolvedFormationId === f.id && styles.chipSelected]}
-              testID={`lineup:formation:${f.id}`}
-            >
-              <Text style={[styles.chipText, resolvedFormationId === f.id && styles.chipTextSelected]}>
-                {f.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <View style={styles.stepRow}>
-          <Text style={styles.stepLabel}>Adım adım (önce Beyaz)</Text>
-          <Switch
-            testID="lineup:step-mode:switch"
-            accessibilityLabel="Adım adım kadro modu"
-            value={stepMode}
-            onValueChange={(v) => {
-              setStepMode(v);
-              if (v) setLineupPhase('beyaz');
-            }}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={stepMode ? colors.accent : colors.textMuted}
-          />
-        </View>
-        {stepMode ? (
-          <View style={styles.phaseBanner}>
-            <Text style={styles.phaseText}>
-              {lineupPhase === 'beyaz' ? 'Beyaz takım slotları aktif' : 'Siyah takım slotları aktif'}
-            </Text>
-            {lineupPhase === 'beyaz' ? (
-              <PillButton
-                title="Siyah takıma geç"
-                variant="ghost"
-                onPress={() => setLineupPhase('siyah')}
-                testID="lineup:phase:goto-siyah"
-              />
-            ) : (
-              <PillButton
-                title="Beyaza dön"
-                variant="ghost"
-                onPress={() => setLineupPhase('beyaz')}
-                testID="lineup:phase:goto-beyaz"
-              />
-            )}
-          </View>
-        ) : null}
-
-        <ScrollView style={styles.scrollMain} contentContainerStyle={styles.scrollMainContent}>
           <View style={[styles.pitchColumns, stackHalfPitches && styles.pitchColumnsStack]}>
             <View style={styles.pitchCol}>
               <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.B}</Text>
@@ -838,39 +876,9 @@ export function LineupBuilderScreen() {
               )}
             </View>
           </View>
-
-          <Text style={styles.benchTitle}>Havuz</Text>
-          <FormationDropZone zoneKey="bench" zonesRef={formationZonesRef} style={styles.benchDrop}>
-            <ScrollView
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.benchScroll}
-              keyboardShouldPersistTaps="handled"
-              testID="lineup:bench:scroll"
-            >
-              {benchPlayerIds.map((id) => {
-                const p = getPlayer(id);
-                if (!p) return null;
-                return (
-                  <DraggableCard
-                    key={id}
-                    player={p}
-                    onDragEnd={handleDropFormation}
-                    onDragActivated={onFormationDragActivated}
-                    onDragFinalize={onFormationDragFinalize}
-                    testID={`lineup:player-card:${id}`}
-                  />
-                );
-              })}
-              {benchPlayerIds.length === 0 ? (
-                <Text style={styles.benchEmpty}>Tüm oyuncular sahada</Text>
-              ) : null}
-            </ScrollView>
-          </FormationDropZone>
         </ScrollView>
 
-        <View style={styles.actions}>
+        <View style={styles.actionsBar}>
           <PillButton
             title="Otomatik Denge"
             variant="ghost"
@@ -890,11 +898,63 @@ export function LineupBuilderScreen() {
           />
         </View>
 
+        <BottomSheet
+          ref={benchSheetRef}
+          index={1}
+          snapPoints={BENCH_SHEET_SNAP_POINTS}
+          enablePanDownToClose={false}
+          enableContentPanningGesture={false}
+          enableDynamicSizing={false}
+          animateOnMount
+          overrideReduceMotion={reduceMotion ? ReduceMotion.Always : ReduceMotion.System}
+          backgroundStyle={styles.benchSheetBg}
+          handleIndicatorStyle={styles.benchHandleIndicator}
+        >
+          <BottomSheetView
+            style={[styles.benchSheetBody, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}
+          >
+            <Text style={styles.benchSheetHeading} accessibilityRole="header">
+              Havuz
+              {benchPlayerIds.length > 0 ? ` · ${benchPlayerIds.length}` : ''}
+            </Text>
+            <FormationDropZone zoneKey="bench" zonesRef={formationZonesRef} style={styles.benchDrop}>
+              <ScrollView
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.benchScroll}
+                keyboardShouldPersistTaps="handled"
+                testID="lineup:bench:scroll"
+              >
+                {benchPlayerIds.map((id) => {
+                  const p = getPlayer(id);
+                  if (!p) return null;
+                  return (
+                    <DraggableCard
+                      key={id}
+                      player={p}
+                      onDragEnd={handleDropFormation}
+                      onDragActivated={onBenchDragActivated}
+                      onDragFinalize={onFormationDragFinalize}
+                      testID={`lineup:player-card:${id}`}
+                    />
+                  );
+                })}
+                {benchPlayerIds.length === 0 ? (
+                  <Text style={styles.benchEmpty}>Tüm oyuncular sahada</Text>
+                ) : null}
+              </ScrollView>
+            </FormationDropZone>
+          </BottomSheetView>
+        </BottomSheet>
+
         <ConfirmationModal
           visible={confirmOpen}
           title="Kadroyu kilitle?"
-          message="Tüm oyunculara kadro bildirilecek. Bu işlem geri alınamaz."
+          message="Tüm oyunculara kadro bildirilecek."
+          destructiveHint="Bu işlem geri alınamaz."
           confirmLabel="Onayla"
+          danger
           onCancel={() => setConfirmOpen(false)}
           onConfirm={() => void publishLineup()}
         />
@@ -937,8 +997,10 @@ export function LineupBuilderScreen() {
       <ConfirmationModal
         visible={confirmOpen}
         title="Kadroyu kilitle?"
-        message="Tüm oyunculara kadro bildirilecek. Bu işlem geri alınamaz."
+        message="Tüm oyunculara kadro bildirilecek."
+        destructiveHint="Bu işlem geri alınamaz."
         confirmLabel="Onayla"
+        danger
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => void publishLineup()}
       />
@@ -952,6 +1014,53 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: spacing.md,
     gap: spacing.sm,
+  },
+  screenFormation: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  formationTop: {
+    gap: spacing.sm,
+    flexShrink: 0,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  pitchScroll: {
+    flex: 1,
+    flexGrow: 1,
+    minHeight: 120,
+  },
+  pitchScrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.md,
+  },
+  actionsBar: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    flexShrink: 0,
+  },
+  benchSheetBg: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  benchHandleIndicator: {
+    backgroundColor: colors.textMuted,
+    width: 40,
+  },
+  benchSheetBody: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  benchSheetHeading: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
   center: {
     flex: 1,
@@ -1020,13 +1129,6 @@ const styles = StyleSheet.create({
     color: colors.accent,
     flex: 1,
   },
-  scrollMain: {
-    flex: 1,
-  },
-  scrollMainContent: {
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-  },
   pitchColumns: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -1060,10 +1162,6 @@ const styles = StyleSheet.create({
     ...typography.micro,
     color: colors.textMuted,
   },
-  benchTitle: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
   benchDrop: {
     minHeight: 56,
   },
@@ -1091,7 +1189,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     maxHeight: 420,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: 'black',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -1111,7 +1209,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.background,
-    shadowColor: '#000',
+    shadowColor: 'black',
   },
   cardName: {
     ...typography.body,
