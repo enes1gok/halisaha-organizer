@@ -1,10 +1,12 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { useReduceMotion } from '../hooks/useReduceMotion';
+import { LicensesScreen } from '../screens/LicensesScreen';
 import { NotificationSettingsScreen } from '../screens/NotificationSettingsScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { TermsOfUseScreen } from '../screens/TermsOfUseScreen';
 import { getDefaultStackScreenOptions } from './defaultStackScreenOptions';
 import type { ProfileStackParamList } from './types';
 
@@ -26,6 +28,8 @@ export function ProfileStackNav() {
         component={PrivacyPolicyScreen}
         options={{ title: 'Gizlilik Politikasi' }}
       />
+      <Stack.Screen name="TermsOfUse" component={TermsOfUseScreen} options={{ title: 'Kullanım Koşulları' }} />
+      <Stack.Screen name="Licenses" component={LicensesScreen} options={{ title: 'Açık kaynak lisansları' }} />
     </Stack.Navigator>
   );
 }

@@ -24,6 +24,8 @@ export type ProfileStackParamList = {
   Settings: undefined;
   NotificationSettings: undefined;
   PrivacyPolicy: undefined;
+  TermsOfUse: undefined;
+  Licenses: undefined;
 };
 
 export type OnboardingStackParamList = {
