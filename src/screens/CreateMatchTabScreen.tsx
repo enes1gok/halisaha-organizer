@@ -12,7 +12,17 @@ import Slider from '@react-native-community/slider';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { PillButton } from '../components/PillButton';
 import type { ShowToastOptions } from '../context/toastTypes';
 import { radius, shadows, spacing, typography } from '../theme';
@@ -98,6 +108,7 @@ export function CreateMatchTabScreen() {
   const [ibanAccountName, setIbanAccountName] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [startsAt, setStartsAt] = useState(() =>
     normalizeStartsAtFromPicker(new Date(Date.now() + 86400000)),
   );
@@ -108,6 +119,12 @@ export function CreateMatchTabScreen() {
       ),
     [groups, memberships, userId],
   );
+
+  const groupTriggerLabel = useMemo(() => {
+    if (selectedGroupId === null) return 'Genel maç';
+    const name = groups.find((g) => g.id === selectedGroupId)?.name;
+    return name ?? 'Genel maç';
+  }, [selectedGroupId, groups]);
 
   const matchTemplates = useMatchTemplatesStore((s) => s.matchTemplates);
   const addMatchTemplate = useMatchTemplatesStore((s) => s.addMatchTemplate);
@@ -270,6 +287,7 @@ export function CreateMatchTabScreen() {
   }, [navigation]);
 
   const handleSheetDismiss = useCallback(() => {
+    setGroupPickerOpen(false);
     goHome();
     const pending = pendingMatchToastRef.current;
     pendingMatchToastRef.current = null;
@@ -406,6 +424,7 @@ export function CreateMatchTabScreen() {
       setOverrideIban(!hasValidProfileIban);
       setTemplateSaveExpanded(false);
       setTemplateDraftName('');
+      setSelectedGroupId(null);
       sheetRef.current?.dismiss();
     } catch (e) {
       showApiErrorToast(e, {
@@ -562,60 +581,22 @@ export function CreateMatchTabScreen() {
           </View>
           <View onLayout={setStepAnchorY(0)}>
           <Text style={styles.label}>Grup (isteğe bağlı)</Text>
-          <View style={styles.groupSelectList}>
-            <Pressable
-              testID="match:create:group-general"
-              accessibilityRole="button"
-              accessibilityState={{ selected: selectedGroupId === null }}
-              accessibilityLabel="Genel maç"
-              onPress={() => {
-                void selectionTick();
-                setSelectedGroupId(null);
-              }}
-              style={({ pressed }) => [
-                styles.groupSelectRow,
-                selectedGroupId === null && styles.groupSelectRowActive,
-                pressed && styles.groupSelectRowPressed,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.groupSelectRowText,
-                  selectedGroupId === null && styles.groupSelectRowTextActive,
-                ]}
-              >
-                Genel maç
-              </Text>
-            </Pressable>
-            {myGroups.map((group) => (
-              <Pressable
-                key={group.id}
-                testID={`match:create:group:${group.id}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedGroupId === group.id }}
-                accessibilityLabel={group.name}
-                onPress={() => {
-                  void selectionTick();
-                  setSelectedGroupId(group.id);
-                }}
-                style={({ pressed }) => [
-                  styles.groupSelectRow,
-                  selectedGroupId === group.id && styles.groupSelectRowActive,
-                  pressed && styles.groupSelectRowPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.groupSelectRowText,
-                    selectedGroupId === group.id && styles.groupSelectRowTextActive,
-                  ]}
-                  numberOfLines={2}
-                >
-                  {group.name}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <Pressable
+            testID="match:create:group-open"
+            accessibilityRole="button"
+            accessibilityLabel={`Grup, ${groupTriggerLabel}`}
+            accessibilityHint="Grup listesini açar"
+            onPress={() => {
+              void selectionTick();
+              setGroupPickerOpen(true);
+            }}
+            style={({ pressed }) => [styles.groupPickerTrigger, pressed && styles.groupPickerTriggerPressed]}
+          >
+            <Text style={styles.groupPickerTriggerText} numberOfLines={2}>
+              {groupTriggerLabel}
+            </Text>
+            <Ionicons name="chevron-down" size={22} color={colors.textMuted} accessibilityElementsHidden />
+          </Pressable>
           </View>
           <View onLayout={setStepAnchorY(1)}>
           <Text style={styles.label}>Saha</Text>
@@ -895,6 +876,83 @@ export function CreateMatchTabScreen() {
           </View>
         </BottomSheetScrollView>
       </BottomSheetModal>
+      <Modal
+        transparent
+        animationType="fade"
+        visible={groupPickerOpen}
+        onRequestClose={() => setGroupPickerOpen(false)}
+      >
+        <Pressable
+          style={styles.groupModalBackdrop}
+          onPress={() => setGroupPickerOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Grup seçimini kapat"
+        >
+          <Pressable style={styles.groupModalCard} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.groupModalTitle}>Grup seçin</Text>
+            <ScrollView
+              style={styles.groupModalScroll}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+            >
+              <Pressable
+                testID="match:create:group-general"
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedGroupId === null }}
+                accessibilityLabel="Genel maç"
+                onPress={() => {
+                  void selectionTick();
+                  setSelectedGroupId(null);
+                  setGroupPickerOpen(false);
+                }}
+                style={({ pressed }) => [
+                  styles.groupModalOption,
+                  selectedGroupId === null && styles.groupModalOptionSelected,
+                  pressed && styles.groupModalOptionPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.groupModalOptionText,
+                    selectedGroupId === null && styles.groupModalOptionTextSelected,
+                  ]}
+                >
+                  Genel maç
+                </Text>
+              </Pressable>
+              {myGroups.map((group) => (
+                <Pressable
+                  key={group.id}
+                  testID={`match:create:group:${group.id}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedGroupId === group.id }}
+                  accessibilityLabel={group.name}
+                  onPress={() => {
+                    void selectionTick();
+                    setSelectedGroupId(group.id);
+                    setGroupPickerOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.groupModalOption,
+                    selectedGroupId === group.id && styles.groupModalOptionSelected,
+                    pressed && styles.groupModalOptionPressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.groupModalOptionText,
+                      selectedGroupId === group.id && styles.groupModalOptionTextSelected,
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {group.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1107,34 +1165,69 @@ const useStyles = makeStyles((t) =>
       ...typography.micro,
       color: t.colors.accent,
     },
-    groupSelectList: {
-      width: '100%',
-      gap: spacing.sm,
-    },
-    groupSelectRow: {
-      width: '100%',
+    groupPickerTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       minHeight: 44,
-      paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
+      paddingVertical: 12,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: t.colors.border,
       backgroundColor: t.colors.background,
-      justifyContent: 'center',
+      gap: spacing.sm,
       ...shadows.sm,
     },
-    groupSelectRowActive: {
-      borderColor: t.colors.accent,
-      backgroundColor: t.colors.accentMuted,
-    },
-    groupSelectRowPressed: {
+    groupPickerTriggerPressed: {
       opacity: 0.92,
     },
-    groupSelectRowText: {
+    groupPickerTriggerText: {
+      ...typography.body,
+      flex: 1,
+      color: t.colors.text,
+    },
+    groupModalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    groupModalCard: {
+      borderRadius: radius.card,
+      backgroundColor: t.colors.surface,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      maxHeight: '75%',
+      paddingVertical: spacing.md,
+      ...shadows.sm,
+    },
+    groupModalTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    groupModalScroll: {
+      maxHeight: 360,
+    },
+    groupModalOption: {
+      minHeight: 48,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      justifyContent: 'center',
+    },
+    groupModalOptionSelected: {
+      backgroundColor: t.colors.accentMuted,
+    },
+    groupModalOptionPressed: {
+      opacity: 0.88,
+    },
+    groupModalOptionText: {
       ...typography.body,
       color: t.colors.textMuted,
     },
-    groupSelectRowTextActive: {
+    groupModalOptionTextSelected: {
       color: t.colors.accent,
       fontFamily: 'Inter_600SemiBold',
     },
