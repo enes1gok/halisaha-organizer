@@ -11,6 +11,7 @@ import DateTimePicker, {
 import Slider from '@react-native-community/slider';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
   Alert,
   Platform,
@@ -22,7 +23,7 @@ import {
 import { PillButton } from '../components/PillButton';
 import { useToast } from '../context/ToastContext';
 import type { ShowToastOptions } from '../context/toastTypes';
-import { colors, shadows, spacing, typography } from '../theme';
+import { colors, radius, shadows, spacing, typography } from '../theme';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { toUserMessage } from '../services/supabase/errors';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
@@ -37,6 +38,24 @@ import { selectionTick } from '../utils/haptics';
 
 const MIN_MAX_PLAYERS = 4;
 const MAX_MAX_PLAYERS = 22;
+
+const CREATE_MATCH_STEPS = [
+  { label: 'Grup' },
+  { label: 'Saha' },
+  { label: 'Tarih' },
+  { label: 'Oyuncu' },
+  { label: 'Ödeme' },
+] as const;
+
+const STEP_SCROLL_ANCHOR_OFFSET = 80;
+
+function clampMaxPlayers(n: number): number {
+  return Math.min(MAX_MAX_PLAYERS, Math.max(MIN_MAX_PLAYERS, Math.round(n)));
+}
+
+function sanitizeMaxPlayersDigits(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, 2);
+}
 
 /** Seçilen zamanı en yakın tam / buçuk saate (:00 veya :30) yuvarlar. */
 function snapStartsAtToNearestHalfHour(d: Date): Date {
@@ -108,6 +127,9 @@ export function CreateMatchTabScreen() {
 
   const [venue, setVenue] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(14);
+  const [maxPlayersInputText, setMaxPlayersInputText] = useState('14');
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const stepAnchorYRef = useRef<number[]>([0, 0, 0, 0, 0]);
   const [price, setPrice] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<MatchPaymentMethod | null>(null);
   const [ibanAccountName, setIbanAccountName] = useState('');
@@ -213,6 +235,52 @@ export function CreateMatchTabScreen() {
     }
   }, [goHome, showToast]);
 
+  const setStepAnchorY = useCallback((index: number) => (e: LayoutChangeEvent) => {
+    stepAnchorYRef.current[index] = e.nativeEvent.layout.y;
+  }, []);
+
+  const onFormScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollY = e.nativeEvent.contentOffset.y;
+    const ys = stepAnchorYRef.current;
+    const anchor = scrollY + STEP_SCROLL_ANCHOR_OFFSET;
+    let next = 0;
+    for (let i = 0; i < ys.length; i++) {
+      if (ys[i] <= anchor) next = i;
+    }
+    setActiveStepIndex((prev) => (prev === next ? prev : next));
+  }, []);
+
+  const onMaxPlayersSliderChange = useCallback((v: number) => {
+    const rounded = Math.round(v);
+    setMaxPlayers(rounded);
+    setMaxPlayersInputText(String(rounded));
+  }, []);
+
+  const onMaxPlayersInputChange = useCallback((text: string) => {
+    const digits = sanitizeMaxPlayersDigits(text);
+    setMaxPlayersInputText(digits);
+    if (digits.length > 0) {
+      const n = parseInt(digits, 10);
+      if (!Number.isNaN(n) && n >= MIN_MAX_PLAYERS && n <= MAX_MAX_PLAYERS) {
+        setMaxPlayers(n);
+      }
+    }
+  }, []);
+
+  const onMaxPlayersInputBlur = useCallback(() => {
+    const trimmed = maxPlayersInputText.trim();
+    if (trimmed === '') {
+      const c = clampMaxPlayers(maxPlayers);
+      setMaxPlayers(c);
+      setMaxPlayersInputText(String(c));
+      return;
+    }
+    const n = parseInt(trimmed, 10);
+    const c = clampMaxPlayers(Number.isNaN(n) ? maxPlayers : n);
+    setMaxPlayers(c);
+    setMaxPlayersInputText(String(c));
+  }, [maxPlayers, maxPlayersInputText]);
+
   const onSubmit = async () => {
     if (!venue.trim()) {
       Alert.alert('Eksik bilgi', 'Saha adını girin.');
@@ -250,7 +318,13 @@ export function CreateMatchTabScreen() {
       Alert.alert('Geçersiz tarih', 'Maç başlangıcı geçmişte olamaz.');
       return;
     }
-    const mp = Math.min(MAX_MAX_PLAYERS, Math.max(MIN_MAX_PLAYERS, Math.round(maxPlayers)));
+    const trimmedPlayers = maxPlayersInputText.trim();
+    const parsedPlayers = trimmedPlayers === '' ? NaN : parseInt(trimmedPlayers, 10);
+    const mp = clampMaxPlayers(Number.isNaN(parsedPlayers) ? maxPlayers : parsedPlayers);
+    if (String(mp) !== maxPlayersInputText.trim()) {
+      setMaxPlayers(mp);
+      setMaxPlayersInputText(String(mp));
+    }
     const priceNum = price.trim() ? parseFloat(price.replace(',', '.')) : undefined;
     try {
       const m = await createMatch({
@@ -274,6 +348,7 @@ export function CreateMatchTabScreen() {
       };
       setVenue('');
       setMaxPlayers(14);
+      setMaxPlayersInputText('14');
       setPrice('');
       setPaymentMethod(null);
       setIbanAccountName('');
@@ -304,8 +379,38 @@ export function CreateMatchTabScreen() {
         backgroundStyle={styles.sheetBg}
         handleIndicatorStyle={styles.handle}
       >
-        <BottomSheetScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+        <BottomSheetScrollView
+          contentContainerStyle={styles.sheetBody}
+          keyboardShouldPersistTaps="handled"
+          onScroll={onFormScroll}
+        >
           <Text style={[typography.title, styles.title]}>Yeni Maç</Text>
+          <View
+            style={styles.stepsStrip}
+            testID="match:create:steps"
+            accessibilityRole="header"
+            accessibilityLabel={`Form adımları, ${activeStepIndex + 1} / ${CREATE_MATCH_STEPS.length}, ${CREATE_MATCH_STEPS[activeStepIndex]?.label ?? ''}`}
+          >
+            {CREATE_MATCH_STEPS.map((step, i) => {
+              const active = i === activeStepIndex;
+              return (
+                <View
+                  key={step.label}
+                  style={styles.stepItem}
+                  testID={`match:create:step:${i}`}
+                >
+                  <View style={[styles.stepDot, active && styles.stepDotActive]} />
+                  <Text
+                    style={[styles.stepLabel, active && styles.stepLabelActive]}
+                    numberOfLines={1}
+                  >
+                    {step.label}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+          <View onLayout={setStepAnchorY(0)}>
           <Text style={styles.label}>Grup (isteğe bağlı)</Text>
           <View style={styles.groupSelectList}>
             <Pressable
@@ -361,6 +466,8 @@ export function CreateMatchTabScreen() {
               </Pressable>
             ))}
           </View>
+          </View>
+          <View onLayout={setStepAnchorY(1)}>
           <Text style={styles.label}>Saha</Text>
           <BottomSheetTextInput
             value={venue}
@@ -369,6 +476,8 @@ export function CreateMatchTabScreen() {
             placeholderTextColor={colors.textMuted}
             style={styles.input}
           />
+          </View>
+          <View onLayout={setStepAnchorY(2)}>
           <Text style={styles.label}>Tarih ve saat</Text>
           <PillButton
             variant="ghost"
@@ -420,20 +529,33 @@ export function CreateMatchTabScreen() {
               onChange={onAndroidTimeChange}
             />
           ) : null}
+          </View>
+          <View onLayout={setStepAnchorY(3)}>
           <Text style={styles.label}>Maksimum oyuncu</Text>
           <View style={styles.maxPlayersBlock}>
-            <Text
-              style={styles.maxPlayersValue}
-              accessibilityLabel={`Maksimum oyuncu: ${maxPlayers}`}
-            >
-              {maxPlayers}
-            </Text>
+            <View style={styles.maxPlayersTopRow}>
+              <BottomSheetTextInput
+                testID="match:create:max-players-input"
+                value={maxPlayersInputText}
+                onChangeText={onMaxPlayersInputChange}
+                onBlur={onMaxPlayersInputBlur}
+                keyboardType="number-pad"
+                maxLength={2}
+                accessibilityLabel="Maksimum oyuncu sayısı, 4 ile 22 arası"
+                placeholder={`${MIN_MAX_PLAYERS}`}
+                placeholderTextColor={colors.textMuted}
+                style={styles.maxPlayersInput}
+              />
+              <Text style={styles.maxPlayersSuffix} importantForAccessibility="no">
+                kişi
+              </Text>
+            </View>
             <Slider
               testID="match:create:max-players"
-              accessibilityLabel={`Maksimum oyuncu, ${maxPlayers} kişi`}
+              accessibilityLabel={`Maksimum oyuncu kaydırıcı, ${maxPlayers} kişi`}
               style={styles.maxPlayersSlider}
               value={maxPlayers}
-              onValueChange={setMaxPlayers}
+              onValueChange={onMaxPlayersSliderChange}
               minimumValue={MIN_MAX_PLAYERS}
               maximumValue={MAX_MAX_PLAYERS}
               step={1}
@@ -446,6 +568,8 @@ export function CreateMatchTabScreen() {
               <Text style={styles.ibanHint}>{MAX_MAX_PLAYERS}</Text>
             </View>
           </View>
+          </View>
+          <View onLayout={setStepAnchorY(4)}>
           <Text style={styles.label}>Ödeme yöntemi</Text>
           <View style={styles.paymentSegmentRow}>
             <Pressable
@@ -539,11 +663,21 @@ export function CreateMatchTabScreen() {
           ) : null}
           {paymentMethod === 'iban' ? (
             <>
-              <Text style={styles.label}>IBAN</Text>
+              <View style={styles.ibanLabelRow}>
+                <Text style={styles.ibanLabelText}>IBAN</Text>
+                {hasValidProfileIban && !overrideIban ? (
+                  <View
+                    style={styles.profileIbanBadge}
+                    accessibilityRole="text"
+                    accessibilityLabel="Profil IBAN'ı kullanılıyor"
+                  >
+                    <Text style={styles.profileIbanBadgeText}>Profil IBAN'ı</Text>
+                  </View>
+                ) : null}
+              </View>
               {hasValidProfileIban && !overrideIban ? (
                 <View style={styles.ibanBlock}>
                   <Text style={styles.ibanMasked}>{maskIban(profileNorm)}</Text>
-                  <Text style={styles.ibanHint}>Profilinizdeki IBAN bu maç için kullanılacak.</Text>
                   <PillButton
                     title="Başka IBAN kullanacağım"
                     variant="ghost"
@@ -608,6 +742,7 @@ export function CreateMatchTabScreen() {
             </>
           ) : null}
           <PillButton title="Maçı Oluştur" onPress={onSubmit} disabled={!paymentMethod} style={styles.cta} />
+          </View>
         </BottomSheetScrollView>
       </BottomSheetModal>
     </View>
@@ -636,6 +771,40 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.sm,
   },
+  stepsStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.md,
+    paddingVertical: spacing.xs,
+    gap: spacing.xs,
+  },
+  stepItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing.xs,
+    minWidth: 0,
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  stepDotActive: {
+    backgroundColor: colors.accent,
+    transform: [{ scale: 1.15 }],
+  },
+  stepLabel: {
+    ...typography.micro,
+    fontSize: 10,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  stepLabelActive: {
+    color: colors.accent,
+    fontFamily: 'Inter_600SemiBold',
+  },
   label: {
     ...typography.caption,
     color: colors.textMuted,
@@ -662,12 +831,30 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     ...shadows.sm,
   },
-  maxPlayersValue: {
-    ...typography.subtitle,
-    fontSize: 20,
-    color: colors.text,
-    textAlign: 'center',
+  maxPlayersTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
     marginBottom: spacing.xs,
+  },
+  maxPlayersInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    minWidth: 56,
+    maxWidth: 72,
+    color: colors.text,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 18,
+    textAlign: 'center',
+    backgroundColor: colors.surface,
+  },
+  maxPlayersSuffix: {
+    ...typography.body,
+    color: colors.textMuted,
   },
   maxPlayersSlider: {
     width: '100%',
@@ -683,6 +870,27 @@ const styles = StyleSheet.create({
   },
   ibanBlock: {
     gap: spacing.sm,
+  },
+  ibanLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  ibanLabelText: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  profileIbanBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentMuted,
+  },
+  profileIbanBadgeText: {
+    ...typography.micro,
+    color: colors.accent,
   },
   groupSelectList: {
     width: '100%',
