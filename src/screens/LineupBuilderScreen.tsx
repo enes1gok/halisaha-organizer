@@ -41,6 +41,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
+import { useFontScale } from '../hooks/useFontScale';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { colors, radius, spacing, typography } from '../theme';
 import type { Player } from '../types/domain';
@@ -128,6 +129,7 @@ function DraggableCard({
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const dragging = useSharedValue(0);
+  const { isLarge } = useFontScale();
 
   const pan = Gesture.Pan()
     .activateAfterLongPress(LONG_PRESS_MS)
@@ -183,7 +185,7 @@ function DraggableCard({
       >
         <PlayerAvatar name={player.name} uri={player.photoUri} size={36} />
         <View style={styles.cardMeta}>
-          <Text style={styles.cardName} numberOfLines={1}>
+          <Text style={styles.cardName} numberOfLines={isLarge ? 2 : 1}>
             {player.name}
           </Text>
           <PositionBadge position={player.position} />

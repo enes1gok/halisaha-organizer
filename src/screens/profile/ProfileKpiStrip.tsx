@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useFontScale } from '../../hooks/useFontScale';
 import { colors, radius, shadows, spacing, typography } from '../../theme';
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
 
 export function ProfileKpiStrip({ matchesPlayed, goals, assists }: Props) {
   const summary = `${matchesPlayed} maç, ${goals} gol, ${assists} asist`;
+  const { isHuge } = useFontScale();
 
   return (
     <View
@@ -17,20 +19,28 @@ export function ProfileKpiStrip({ matchesPlayed, goals, assists }: Props) {
       accessibilityRole="text"
       accessibilityLabel={`Özet istatistikler: ${summary}`}
     >
-      <View style={styles.row}>
-        <KpiCell value={matchesPlayed} label="Maç" />
-        <View style={styles.divider} />
-        <KpiCell value={goals} label="Gol" />
-        <View style={styles.divider} />
-        <KpiCell value={assists} label="Asist" />
+      <View style={[styles.row, isHuge && styles.rowStacked]}>
+        <KpiCell value={matchesPlayed} label="Maç" stacked={isHuge} />
+        <View style={isHuge ? styles.dividerHorizontal : styles.divider} />
+        <KpiCell value={goals} label="Gol" stacked={isHuge} />
+        <View style={isHuge ? styles.dividerHorizontal : styles.divider} />
+        <KpiCell value={assists} label="Asist" stacked={isHuge} />
       </View>
     </View>
   );
 }
 
-function KpiCell({ value, label }: { value: number; label: string }) {
+function KpiCell({
+  value,
+  label,
+  stacked,
+}: {
+  value: number;
+  label: string;
+  stacked: boolean;
+}) {
   return (
-    <View style={styles.cell}>
+    <View style={[styles.cell, stacked && styles.cellStacked]}>
       <Text style={styles.cellVal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
         {value}
       </Text>
@@ -54,6 +64,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadows.sm,
   },
+  rowStacked: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
   cell: {
     flex: 1,
     paddingVertical: spacing.md,
@@ -62,10 +76,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 0,
   },
+  cellStacked: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+  },
   divider: {
     width: 1,
     backgroundColor: colors.border,
     marginVertical: spacing.sm,
+  },
+  dividerHorizontal: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
   },
   cellVal: {
     ...typography.title,

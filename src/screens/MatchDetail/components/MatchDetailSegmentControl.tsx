@@ -52,6 +52,8 @@ export function MatchDetailSegmentControl({ value, onChange }: Props) {
             <Text
               style={[styles.label, active ? styles.labelActive : styles.labelInactive]}
               numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
             >
               {option.label}
             </Text>

@@ -434,8 +434,10 @@ const styles = StyleSheet.create({
   quickChipLblOn: { color: colors.accent, fontWeight: '700' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   stepBtn: {
-    minWidth: 40,
-    height: 36,
+    minWidth: 44,
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: radius.sm,
     backgroundColor: colors.surface,
     borderWidth: 1,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PlayerAvatar } from './PlayerAvatar';
+import { useFontScale } from '../hooks/useFontScale';
 import { colors, radius, shadows, spacing, typography } from '../theme';
 
 export type PodiumLeaderRow = {
@@ -48,11 +49,37 @@ type Props = {
   formatValue: (value: number) => string;
 };
 
-/** Solda 2., ortada 1., sağda 3. — klasik podyum düzeni */
+/** Solda 2., ortada 1., sağda 3. — klasik podyum düzeni; aşırı büyük yazı ölçeğinde dikey listeye düşer */
 export function LeaderboardPodium({ entries, resolvePlayer, formatValue }: Props) {
   const first = entries[0];
   const second = entries[1];
   const third = entries[2];
+  const { fontScale, isHuge } = useFontScale();
+
+  if (isHuge) {
+    return (
+      <View style={styles.stackedWrap}>
+        <PodiumStackedRow
+          medal="gold"
+          row={first}
+          resolvePlayer={resolvePlayer}
+          formatValue={formatValue}
+        />
+        <PodiumStackedRow
+          medal="silver"
+          row={second}
+          resolvePlayer={resolvePlayer}
+          formatValue={formatValue}
+        />
+        <PodiumStackedRow
+          medal="bronze"
+          row={third}
+          resolvePlayer={resolvePlayer}
+          formatValue={formatValue}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrap}>
@@ -61,18 +88,21 @@ export function LeaderboardPodium({ entries, resolvePlayer, formatValue }: Props
         row={second}
         resolvePlayer={resolvePlayer}
         formatValue={formatValue}
+        fontScale={fontScale}
       />
       <PodiumColumn
         medal="gold"
         row={first}
         resolvePlayer={resolvePlayer}
         formatValue={formatValue}
+        fontScale={fontScale}
       />
       <PodiumColumn
         medal="bronze"
         row={third}
         resolvePlayer={resolvePlayer}
         formatValue={formatValue}
+        fontScale={fontScale}
       />
     </View>
   );
@@ -83,11 +113,13 @@ function PodiumColumn({
   row,
   resolvePlayer,
   formatValue,
+  fontScale,
 }: {
   medal: Medal;
   row: PodiumLeaderRow | undefined;
   resolvePlayer: Props['resolvePlayer'];
   formatValue: Props['formatValue'];
+  fontScale: number;
 }) {
   const m = MEDAL_STYLES[medal];
   const p = row ? resolvePlayer(row.playerId) : undefined;
@@ -97,6 +129,9 @@ function PodiumColumn({
   const a11y = filled
     ? `${label}. sıra, ${p!.name}, ${formatValue(row!.value)}`
     : `${label}. sıra, boş`;
+  // Sabit minHeight, font ölçeği büyüdükçe metni kırptığı için ölçeğe göre büyütüyoruz.
+  // 1.6 tavanı `App.tsx`'teki `maxFontSizeMultiplier` ile uyumludur.
+  const scaledMinHeight = Math.round(m.minHeight * Math.min(Math.max(fontScale, 1), 1.6));
 
   return (
     <View style={styles.col} accessibilityLabel={a11y} testID={`leaderboard:podium:${m.testSuffix}`}>
@@ -104,7 +139,7 @@ function PodiumColumn({
         style={[
           styles.pedestal,
           {
-            minHeight: m.minHeight,
+            minHeight: scaledMinHeight,
             borderColor: filled ? m.border : colors.leaderboard.placeholderBorder,
             backgroundColor: filled ? m.surface : colors.leaderboard.placeholderSurface,
           },
@@ -132,6 +167,70 @@ function PodiumColumn({
   );
 }
 
+/**
+ * Aşırı büyük yazı ölçeğinde 3 sütun yatay düzen okunaksız kalır; bu yüzden
+ * `useFontScale().isHuge` durumunda madalya rozetli dikey bir listeye geçeriz.
+ */
+function PodiumStackedRow({
+  medal,
+  row,
+  resolvePlayer,
+  formatValue,
+}: {
+  medal: Medal;
+  row: PodiumLeaderRow | undefined;
+  resolvePlayer: Props['resolvePlayer'];
+  formatValue: Props['formatValue'];
+}) {
+  const m = MEDAL_STYLES[medal];
+  const p = row ? resolvePlayer(row.playerId) : undefined;
+  const filled = !!(row && p);
+  const label = medal === 'gold' ? '1' : medal === 'silver' ? '2' : '3';
+  const a11y = filled
+    ? `${label}. sıra, ${p!.name}, ${formatValue(row!.value)}`
+    : `${label}. sıra, boş`;
+
+  return (
+    <View
+      style={[
+        styles.stackedRow,
+        {
+          borderColor: filled ? m.border : colors.leaderboard.placeholderBorder,
+          backgroundColor: filled ? m.surface : colors.leaderboard.placeholderSurface,
+        },
+        shadows.sm,
+      ]}
+      accessibilityLabel={a11y}
+      testID={`leaderboard:podium:${m.testSuffix}`}
+    >
+      <View style={styles.stackedRank}>
+        <Text style={[styles.rankBadge, { color: m.accent }]}>{label}</Text>
+      </View>
+      {filled ? (
+        <>
+          <PlayerAvatar name={p!.name} uri={p!.photoUri ?? undefined} size={m.avatar} />
+          <View style={styles.stackedMeta}>
+            <Text style={styles.name} numberOfLines={3}>
+              {p!.name}
+            </Text>
+            <Text style={[styles.val, { color: m.accent }]}>{formatValue(row!.value)}</Text>
+          </View>
+        </>
+      ) : (
+        <>
+          <View
+            style={[styles.avatarPh, { width: m.avatar, height: m.avatar, borderRadius: m.avatar / 2 }]}
+          />
+          <View style={styles.stackedMeta}>
+            <Text style={styles.placeholderTxt}>—</Text>
+            <Text style={styles.placeholderSub}>—</Text>
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
@@ -140,6 +239,30 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.md,
     paddingHorizontal: spacing.xs,
+  },
+  stackedWrap: {
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  stackedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.card,
+    borderWidth: 1,
+  },
+  stackedRank: {
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stackedMeta: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
   col: {
     flex: 1,

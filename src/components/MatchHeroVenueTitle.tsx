@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, type TextProps } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useFontScale } from '../hooks/useFontScale';
 import { colors, letterSpacing, typography } from '../theme';
 import { Durations, EasingPresets } from '../utils/animations';
 
@@ -25,7 +26,10 @@ export function MatchHeroVenueTitle({
   numberOfLines,
   testID,
 }: Props) {
-  const lines = numberOfLines ?? (variant === 'list' ? 1 : undefined);
+  const { isLarge } = useFontScale();
+  // Liste varyantında varsayılan tek satır; büyük yazıda ikinci satıra izin veririz.
+  const defaultListLines = isLarge ? 2 : 1;
+  const lines = numberOfLines ?? (variant === 'list' ? defaultListLines : undefined);
   const text = (
     <Text style={matchVenueTextStyle} numberOfLines={lines} testID={testID}>
       {venue}
