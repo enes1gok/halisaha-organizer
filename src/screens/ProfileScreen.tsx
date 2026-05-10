@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   LayoutAnimation,
@@ -31,7 +31,10 @@ import {
 import { spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import type { Position, PreferredFoot } from '../types/domain';
+import { computeBadgeTiles, computeLocalBadgeInputs, type BadgeTileVm } from '../domain/badges';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
+import { getSupabaseClient } from '../lib/supabase';
+import { fetchMyPlayerBadgeInputs } from '../services/supabase/playerBadges';
 import { uploadProfileAvatar } from '../services/supabase/avatarUpload';
 import { updateCurrentUserProfile } from '../services/supabase/profiles';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
@@ -114,6 +117,7 @@ export function ProfileScreen() {
   const [foot, setFoot] = useState<PreferredFoot>(player?.preferredFoot ?? 'both');
   const [refreshing, setRefreshing] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [badgeTiles, setBadgeTiles] = useState<BadgeTileVm[]>([]);
 
   const { iban, syncFromStored, onChange: onIbanChange, onFocus: onIbanFocus } = useTurkishIbanField(
     player?.iban,
@@ -133,6 +137,29 @@ export function ProfileScreen() {
     () => (player ? sparklineTrendScores(matches, effectiveUserId, 10) : []),
     [effectiveUserId, matches, player],
   );
+
+  const loadBadgeTiles = useCallback(async () => {
+    if (!player) return;
+    const localTiles = computeBadgeTiles(computeLocalBadgeInputs(player, matches));
+    if (!configured || !session) {
+      setBadgeTiles(localTiles);
+      return;
+    }
+    try {
+      const inputs = await fetchMyPlayerBadgeInputs(getSupabaseClient());
+      if (inputs) {
+        setBadgeTiles(computeBadgeTiles(inputs));
+      } else {
+        setBadgeTiles(localTiles);
+      }
+    } catch {
+      setBadgeTiles(localTiles);
+    }
+  }, [player, matches, configured, session]);
+
+  useEffect(() => {
+    void loadBadgeTiles();
+  }, [loadBadgeTiles]);
 
   const recent: RecentMatchRow[] = useMemo(() => {
     const finished = matches
@@ -266,6 +293,7 @@ export function ProfileScreen() {
         await refreshRemoteProfile();
         await hydrateRemoteMatches();
       }
+      await loadBadgeTiles();
       setRankRefreshKey((k) => k + 1);
     } finally {
       setRefreshing(false);
@@ -313,6 +341,7 @@ export function ProfileScreen() {
     >
       <ProfileStatsHero
         player={player}
+        badgeTiles={badgeTiles}
         winRatePct={wr}
         winStreak={winStreak}
         levelLabel={level}

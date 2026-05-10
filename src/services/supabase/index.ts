@@ -50,6 +50,11 @@ export {
   updateCurrentUserProfile,
   type ProfileUpdate,
 } from './profiles';
+export {
+  fetchMyPlayerBadgeInputs,
+  mapRpcToPlayerBadgeInputs,
+  type PlayerBadgeInputsRpcRow,
+} from './playerBadges';
 export type {
   GroupWeeklySeriesRow,
   MatchAttendeeRow,

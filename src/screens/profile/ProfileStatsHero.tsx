@@ -1,4 +1,5 @@
 import React from 'react';
+import type { BadgeTileVm } from '../../domain/badges';
 import type { Player } from '../../types/domain';
 import { ProfileIdentityHeader } from './ProfileIdentityHeader';
 import { ProfileKpiStrip } from './ProfileKpiStrip';
@@ -12,6 +13,7 @@ type Props = {
   tierProgress01: number;
   compositeScore: number;
   sparklinePoints: number[];
+  badgeTiles?: BadgeTileVm[];
 };
 
 export function ProfileStatsHero({
@@ -22,10 +24,11 @@ export function ProfileStatsHero({
   tierProgress01,
   compositeScore,
   sparklinePoints,
+  badgeTiles,
 }: Props) {
   return (
     <>
-      <ProfileIdentityHeader player={player} />
+      <ProfileIdentityHeader player={player} badgeTiles={badgeTiles} />
       <ProfileKpiStrip
         matchesPlayed={player.stats.matchesPlayed}
         goals={player.stats.goals}
