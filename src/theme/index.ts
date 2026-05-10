@@ -36,6 +36,20 @@ export const colors = {
     slotRingGlow: 'rgba(0, 210, 106, 0.55)',
     slotFill: 'rgba(0, 0, 0, 0.18)',
   },
+  /** Liderlik tablosu podyum — madalya vurgusu (koyu tema) */
+  leaderboard: {
+    goldAccent: '#F5C542',
+    goldSurface: 'rgba(245, 197, 66, 0.14)',
+    goldBorder: 'rgba(245, 197, 66, 0.5)',
+    silverAccent: '#C8D4E0',
+    silverSurface: 'rgba(200, 212, 224, 0.12)',
+    silverBorder: 'rgba(200, 212, 224, 0.42)',
+    bronzeAccent: '#CD8F4A',
+    bronzeSurface: 'rgba(205, 143, 74, 0.14)',
+    bronzeBorder: 'rgba(205, 143, 74, 0.48)',
+    placeholderBorder: 'rgba(163, 163, 163, 0.28)',
+    placeholderSurface: 'rgba(28, 28, 28, 0.6)',
+  },
 } as const;
 
 export const radius = {

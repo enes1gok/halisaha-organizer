@@ -8,9 +8,10 @@ type Props = {
   subtitle?: string;
   actionLabel?: string;
   onAction?: () => void;
+  actionTestID?: string;
 };
 
-export function EmptyState({ title, subtitle, actionLabel, onAction }: Props) {
+export function EmptyState({ title, subtitle, actionLabel, onAction, actionTestID }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.iconWrap}>
@@ -21,7 +22,12 @@ export function EmptyState({ title, subtitle, actionLabel, onAction }: Props) {
         <Text style={[typography.body, styles.sub]}>{subtitle}</Text>
       ) : null}
       {actionLabel && onAction ? (
-        <PillButton title={actionLabel} onPress={onAction} style={styles.btn} />
+        <PillButton
+          title={actionLabel}
+          onPress={onAction}
+          style={styles.btn}
+          testID={actionTestID}
+        />
       ) : null}
     </View>
   );

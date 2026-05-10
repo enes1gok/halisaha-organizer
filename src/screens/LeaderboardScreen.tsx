@@ -1,4 +1,5 @@
-import { RouteProp, useRoute } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -9,6 +10,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import { EmptyState } from '../components/EmptyState';
+import { LeaderboardPodium } from '../components/LeaderboardPodium';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { LeaderboardRowSkeleton, SkeletonList } from '../components/skeleton';
 import {
@@ -17,7 +20,7 @@ import {
 } from '../navigation/tabBarLayout';
 import { colors, spacing, typography } from '../theme';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
-import type { GroupsStackParamList } from '../navigation/types';
+import type { GroupsStackParamList, RootTabParamList } from '../navigation/types';
 import { fetchPlayerLeaderboardStats } from '../services/supabase/leaderboard';
 import { toUserMessage } from '../services/supabase/errors';
 import {
@@ -50,6 +53,7 @@ function Chip({
 }
 
 export function LeaderboardScreen() {
+  const navigation = useNavigation();
   const route = useRoute<GroupLeaderboardRoute>();
   const groupId = route.params?.groupId;
   const players = usePlayersStore((s) => s.players);
@@ -116,6 +120,8 @@ export function LeaderboardScreen() {
   const rows = remoteRows ?? localRows;
 
   const top = rows.slice(0, 10);
+  const podium = top.slice(0, 3);
+  const rest = top.slice(3);
   const mine = rows.find((r) => r.playerId === userId);
   const showPinned = !!(mine && mine.rank > 10);
   const me = players.find((p) => p.id === userId);
@@ -123,6 +129,22 @@ export function LeaderboardScreen() {
   const fmt = (v: number) =>
     metric === 'winRate' ? `${Math.round(v * 100)}%` : `${Math.round(v)}`;
   const showInitialSkeleton = !!remoteUserId && remoteLoading && remoteRows == null;
+
+  const openCreateMatch = () => {
+    navigation.getParent<BottomTabNavigationProp<RootTabParamList>>()?.navigate('CreateTab');
+  };
+
+  const podiumHeader =
+    !showInitialSkeleton && podium.length > 0 ? (
+      <LeaderboardPodium
+        entries={podium}
+        resolvePlayer={(playerId) => {
+          const pl = players.find((x) => x.id === playerId);
+          return pl ? { name: pl.name, photoUri: pl.photoUri } : undefined;
+        }}
+        formatValue={fmt}
+      />
+    ) : null;
 
   return (
     <View style={styles.screen}>
@@ -153,8 +175,9 @@ export function LeaderboardScreen() {
 
       <FlatList
         style={{ flex: 1 }}
-        data={showInitialSkeleton ? [] : top}
+        data={showInitialSkeleton ? [] : rest}
         keyExtractor={(item) => item.playerId}
+        ListHeaderComponent={podiumHeader}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -180,6 +203,14 @@ export function LeaderboardScreen() {
         ListEmptyComponent={
           showInitialSkeleton ? (
             <SkeletonList count={8} renderItem={() => <LeaderboardRowSkeleton />} />
+          ) : top.length === 0 ? (
+            <EmptyState
+              title="Sıralama için veri yok"
+              subtitle="İlk maçını oyna ve sıralamaya gir!"
+              actionLabel="Maç oluştur"
+              onAction={openCreateMatch}
+              actionTestID="leaderboard:empty:create-match:press"
+            />
           ) : null
         }
         renderItem={({ item }) => {
