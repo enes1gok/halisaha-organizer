@@ -11,7 +11,6 @@ import DateTimePicker, {
 import Slider from '@react-native-community/slider';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
   Alert,
   Modal,
@@ -56,15 +55,7 @@ import {
 } from '../utils/matchMaxPlayers';
 import { normalizeStartsAtFromPicker } from '../utils/matchStartsAtNormalize';
 
-const CREATE_MATCH_STEPS = [
-  { label: 'Grup' },
-  { label: 'Saha' },
-  { label: 'Tarih' },
-  { label: 'Oyuncu' },
-  { label: 'Ödeme' },
-] as const;
 
-const STEP_SCROLL_ANCHOR_OFFSET = 80;
 
 function sanitizeMaxPlayersDigits(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, 2);
@@ -102,8 +93,6 @@ export function CreateMatchTabScreen() {
   const [venue, setVenue] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(14);
   const [maxPlayersInputText, setMaxPlayersInputText] = useState('14');
-  const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const stepAnchorYRef = useRef<number[]>([0, 0, 0, 0, 0]);
   const [price, setPrice] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<MatchPaymentMethod | null>(null);
   const [ibanAccountName, setIbanAccountName] = useState('');
@@ -292,20 +281,7 @@ export function CreateMatchTabScreen() {
     }
   }, [goHome, showToast]);
 
-  const setStepAnchorY = useCallback((index: number) => (e: LayoutChangeEvent) => {
-    stepAnchorYRef.current[index] = e.nativeEvent.layout.y;
-  }, []);
 
-  const onFormScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const scrollY = e.nativeEvent.contentOffset.y;
-    const ys = stepAnchorYRef.current;
-    const anchor = scrollY + STEP_SCROLL_ANCHOR_OFFSET;
-    let next = 0;
-    for (let i = 0; i < ys.length; i++) {
-      if (ys[i] <= anchor) next = i;
-    }
-    setActiveStepIndex((prev) => (prev === next ? prev : next));
-  }, []);
 
   const onMaxPlayersSliderChange = useCallback((v: number) => {
     const even = clampEvenMatchMaxPlayers(Math.round(v));
@@ -472,7 +448,6 @@ export function CreateMatchTabScreen() {
         <BottomSheetScrollView
           contentContainerStyle={styles.sheetBody}
           keyboardShouldPersistTaps="handled"
-          onScroll={onFormScroll}
         >
           <Text style={[typography.title, styles.title]}>Yeni Maç</Text>
           {matchTemplates.length > 0 ? (
@@ -570,32 +545,7 @@ export function CreateMatchTabScreen() {
               </View>
             </View>
           ) : null}
-          <View
-            style={styles.stepsStrip}
-            testID="match:create:steps"
-            accessibilityRole="header"
-            accessibilityLabel={`Form adımları, ${activeStepIndex + 1} / ${CREATE_MATCH_STEPS.length}, ${CREATE_MATCH_STEPS[activeStepIndex]?.label ?? ''}`}
-          >
-            {CREATE_MATCH_STEPS.map((step, i) => {
-              const active = i === activeStepIndex;
-              return (
-                <View
-                  key={step.label}
-                  style={styles.stepItem}
-                  testID={`match:create:step:${i}`}
-                >
-                  <View style={[styles.stepDot, active && styles.stepDotActive]} />
-                  <Text
-                    style={[styles.stepLabel, active && styles.stepLabelActive]}
-                    numberOfLines={1}
-                  >
-                    {step.label}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-          <View onLayout={setStepAnchorY(0)}>
+          <View>
           <Text style={styles.label}>Grup (isteğe bağlı)</Text>
           <Pressable
             testID="match:create:group-open"
@@ -614,7 +564,7 @@ export function CreateMatchTabScreen() {
             <Ionicons name="chevron-down" size={22} color={colors.textMuted} accessibilityElementsHidden />
           </Pressable>
           </View>
-          <View onLayout={setStepAnchorY(1)}>
+          <View>
           <Text style={styles.label}>Saha</Text>
           <BottomSheetTextInput
             value={venue}
@@ -624,7 +574,7 @@ export function CreateMatchTabScreen() {
             style={styles.input}
           />
           </View>
-          <View onLayout={setStepAnchorY(2)}>
+          <View>
           <View style={styles.startsAtButtonsRow}>
             <View style={styles.startsAtSegmentColumn}>
               <Text style={styles.label}>Tarih</Text>
@@ -707,7 +657,7 @@ export function CreateMatchTabScreen() {
             />
           ) : null}
           </View>
-          <View onLayout={setStepAnchorY(3)}>
+          <View>
           <Text style={styles.label}>Maksimum oyuncu</Text>
           <View style={styles.maxPlayersBlock}>
             <View style={styles.maxPlayersTopRow}>
@@ -748,7 +698,7 @@ export function CreateMatchTabScreen() {
             </View>
           </View>
           </View>
-          <View onLayout={setStepAnchorY(4)}>
+          <View>
           <Text style={styles.label}>Ödeme yöntemi</Text>
           <View style={styles.paymentSegmentRow}>
             <Pressable
@@ -1091,40 +1041,6 @@ const useStyles = makeStyles((t) =>
     },
     templateSaveActions: {
       marginTop: spacing.xs,
-    },
-    stepsStrip: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: spacing.md,
-      paddingVertical: spacing.xs,
-      gap: spacing.xs,
-    },
-    stepItem: {
-      flex: 1,
-      alignItems: 'center',
-      gap: spacing.xs,
-      minWidth: 0,
-    },
-    stepDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: t.colors.border,
-    },
-    stepDotActive: {
-      backgroundColor: t.colors.accent,
-      transform: [{ scale: 1.15 }],
-    },
-    stepLabel: {
-      ...typography.micro,
-      fontSize: 10,
-      color: t.colors.textMuted,
-      textAlign: 'center',
-    },
-    stepLabelActive: {
-      color: t.colors.accent,
-      fontFamily: 'Inter_600SemiBold',
     },
     label: {
       ...typography.caption,
