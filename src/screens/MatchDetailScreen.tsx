@@ -4,6 +4,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -11,26 +12,18 @@ import {
   Alert,
   LayoutAnimation,
   Platform,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   UIManager,
   View,
 } from 'react-native';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { MatchHeroVenueTitle } from '../components/MatchHeroVenueTitle';
-import { PillButton } from '../components/PillButton';
+import { PressableScale } from '../components/PressableScale';
 import { RsvpGoingButton } from '../components/RsvpGoingButton';
-import { PlayerAvatar } from '../components/PlayerAvatar';
-import { PositionBadge } from '../components/PositionBadge';
-import { colors, letterSpacing, spacing, typography, radius } from '../theme';
+import { colors } from '../theme';
 import type { RSVPStatus } from '../types/domain';
-import { maskIban } from '../utils/iban';
-import { formatMatchDateTime } from '../utils/dates';
-import { hasAssignedLineup } from '../utils/matchRoster';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
@@ -43,6 +36,13 @@ import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { sortAttendeesWithPlayers } from '../store/helpers';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
+import { MatchDetailHero } from './MatchDetail/components/MatchDetailHero';
+import { MatchDetailPaymentPanel } from './MatchDetail/components/MatchDetailPaymentPanel';
+import { MatchDetailRosterPanel } from './MatchDetail/components/MatchDetailRosterPanel';
+import { MatchDetailSegmentControl } from './MatchDetail/components/MatchDetailSegmentControl';
+import { MatchDetailSummaryPanel } from './MatchDetail/components/MatchDetailSummaryPanel';
+import { matchDetailStyles } from './MatchDetail/matchDetailStyles';
+import type { MatchDetailTab } from './MatchDetail/types';
 
 type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type MatchDetailRoute =
@@ -93,10 +93,16 @@ export function MatchDetailScreen() {
   );
 
   const [ratingHints, setRatingHints] = useState({ peer: false, motm: false });
+  const [tab, setTab] = useState<MatchDetailTab>('summary');
+  const [paidConfirm, setPaidConfirm] = useState<{
+    playerId: string;
+    playerName: string;
+    nextPaid: boolean;
+  } | null>(null);
 
   const rsvpRef = useRef<BottomSheetModal>(null);
   const lastRemoteDetailRefreshMs = useRef(0);
-  const snapPoints = useMemo(() => ['32%'], []);
+  const snapPoints = useMemo(() => ['40%'], []);
   const [refreshing, setRefreshing] = useState(false);
   const [rsvpGoingKey, setRsvpGoingKey] = useState(0);
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
@@ -108,8 +114,7 @@ export function MatchDetailScreen() {
   const organizer = match ? getPlayer(match.organizerId) : undefined;
   const isOrganizer = match?.organizerId === userId;
   const userOnMatchLineup = Boolean(
-    match &&
-      (match.teamAIds.includes(userId) || match.teamBIds.includes(userId)),
+    match && (match.teamAIds.includes(userId) || match.teamBIds.includes(userId)),
   );
 
   const rosterSize = useMemo(
@@ -265,6 +270,23 @@ export function MatchDetailScreen() {
     }
   };
 
+  const handlePressEditPaid = useCallback((playerId: string, playerName: string, nextPaid: boolean) => {
+    setPaidConfirm({ playerId, playerName, nextPaid });
+  }, []);
+
+  const closePaidConfirm = useCallback(() => {
+    setPaidConfirm(null);
+  }, []);
+
+  const onConfirmPaidChange = useCallback(() => {
+    if (!paidConfirm || !match || !userId) return;
+    const { playerId, nextPaid } = paidConfirm;
+    setPaidConfirm(null);
+    void setPaid(match.id, playerId, nextPaid, userId).catch((err) =>
+      Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+    );
+  }, [paidConfirm, match, userId, setPaid]);
+
   const renderBackdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
@@ -288,8 +310,8 @@ export function MatchDetailScreen() {
 
   if (!match) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>Maç bulunamadı.</Text>
+      <View style={matchDetailStyles.center}>
+        <Text style={matchDetailStyles.emptyText}>Maç bulunamadı.</Text>
       </View>
     );
   }
@@ -307,343 +329,96 @@ export function MatchDetailScreen() {
     );
   }, [match, userId]);
 
+  const paidConfirmMessage =
+    paidConfirm &&
+    `${paidConfirm.playerName} için ödeme durumu “${paidConfirm.nextPaid ? 'Ödendi' : 'Ödenmedi'}” olarak kaydedilsin mi?`;
+
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
-    >
-      <View style={styles.hero}>
-        <MatchHeroVenueTitle venue={match.venue} variant="detail" />
-        <Text style={styles.heroDate}>{formatMatchDateTime(match.startsAt)}</Text>
-        <Text style={[styles.heroCd, match.status === 'cancelled' && styles.heroCdCancelled]}>
-          {match.status === 'upcoming'
-            ? countdown
-            : match.status === 'cancelled'
-              ? 'Maç İptal Edildi'
-              : 'Maç Bitti'}
-        </Text>
-        {match.status === 'cancelled' ? (
-          <View style={styles.cancelBadge} accessibilityRole="text" accessibilityLabel="Maç iptal edildi">
-            <Text style={styles.cancelBadgeTxt}>İPTAL EDİLDİ</Text>
-          </View>
-        ) : null}
-        {match.status === 'finished' && match.result ? (
-          <Text style={styles.heroScore}>
-            Skor: {match.result.scoreA} – {match.result.scoreB}
-          </Text>
-        ) : null}
+    <View style={matchDetailStyles.screen}>
+      <MatchDetailHero match={match} countdownLabel={countdown} />
+      <View style={matchDetailStyles.segmentWrap}>
+        <MatchDetailSegmentControl value={tab} onChange={setTab} />
       </View>
 
-      {match.status === 'finished' && match.result ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Skor detayı</Text>
-          {match.result.scorers.length === 0 &&
-          match.result.assists.length === 0 &&
-          (match.result.ownGoals ?? []).length === 0 ? (
-            <Text style={styles.muted}>Oyuncu bazlı gol kaydı yok.</Text>
-          ) : (
-            <>
-              {match.result.scorers.map((l) => (
-                <Text key={`g-${l.playerId}`} style={styles.body}>
-                  {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Gol ×{l.count}
-                </Text>
-              ))}
-              {(match.result.ownGoals ?? []).map((l) => (
-                <Text key={`og-${l.playerId}`} style={styles.body}>
-                  {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — KK ×{l.count}
-                </Text>
-              ))}
-              {match.result.assists.map((l) => (
-                <Text key={`a-${l.playerId}`} style={styles.body}>
-                  {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Asist ×{l.count}
-                </Text>
-              ))}
-            </>
-          )}
-        </View>
-      ) : null}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Organizatör</Text>
-        <Text style={styles.body}>{organizer?.name ?? '—'}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Katılım kodu</Text>
-        <View style={styles.rowBetween}>
-          <Text style={styles.code}>{match.joinCode}</Text>
-          <PillButton
-            title={joinCopyLabel}
-            variant="ghost"
-            onPress={onPressCopyJoin}
-            titleColor={joinCopied ? colors.copyFeedbackLight : undefined}
-            accessibilityLabel={joinCopied ? 'Kopyalandı' : 'Katılım kodunu panoya kopyala'}
+      <ScrollView
+        style={styles.tabScroll}
+        contentContainerStyle={[styles.tabScrollContent, { paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+      >
+        {tab === 'summary' ? (
+          <MatchDetailSummaryPanel
+            match={match}
+            navigation={navigation}
+            organizerName={organizer?.name ?? '—'}
+            joinCopyLabel={joinCopyLabel}
+            joinCopied={joinCopied}
+            onPressCopyJoin={onPressCopyJoin}
+            isOrganizer={isOrganizer}
+            userOnMatchLineup={userOnMatchLineup}
+            showFinishedRatingsChrome={showFinishedRatingsChrome}
+            ratingHints={ratingHints}
+            actionablePending={actionablePending}
+            getPlayer={getPlayer}
+            onRespondSelfReport={(reportId, approved) =>
+              void respondSelfReport(match.id, reportId, approved).catch((err) =>
+                Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+              )
+            }
+            openRsvp={openRsvp}
+            onAddSelfReport={(kind) => {
+              if (!userId) return;
+              void addSelfReport(match.id, userId, kind).catch((err) =>
+                Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+              );
+            }}
+            pastScheduledEnd={pastScheduledEnd}
+            endsAtIso={endsAtIso}
+            onUnlockLineup={onUnlockLineup}
+            openCancelConfirm={openCancelConfirm}
+            onSetSelfReportEnabled={(v) =>
+              void setSelfReportEnabled(match.id, v).catch((err) =>
+                Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
+              )
+            }
           />
-        </View>
-      </View>
-
-      {isRemoteMatchId(match.id) && userOnMatchLineup && !isOrganizer ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Saha</Text>
-          <Text style={styles.muted}>Skoru girmek veya takım arkadaşlarını değerlendirmek için maç sonrası ekranını kullanın.</Text>
-          <PillButton
-            title="Maç sonrası"
-            onPress={() => navigation.navigate('MatchPostgame', { matchId })}
-            style={styles.mt}
-            disabled={!pastScheduledEnd}
-            accessibilityState={{ disabled: !pastScheduledEnd }}
-            testID="match:detail:postgame:player"
-          />
-          {!pastScheduledEnd ? (
-            <Text style={[styles.muted, styles.mtXs]}>
-              Tahmini bitiş ({formatMatchDateTime(endsAtIso)}) sonrası açılır.
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-
-      {showIbanPayment ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ödeme</Text>
-          {showPrice ? <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text> : null}
-          {match.ibanAccountName ? <Text style={styles.body}>{match.ibanAccountName}</Text> : null}
-          <Text style={styles.iban}>{maskIban(match.iban ?? '')}</Text>
-          <PillButton
-            title={ibanCopyLabel}
-            onPress={onPressCopyIban}
-            style={styles.mt}
-            titleColor={ibanCopied ? colors.copyFeedbackLight : undefined}
-            accessibilityLabel={ibanCopied ? 'Kopyalandı' : 'IBAN\'ı panoya kopyala'}
-          />
-        </View>
-      ) : null}
-      {showCashPayment ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ödeme</Text>
-          {showPrice ? <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text> : null}
-          <Text style={styles.muted}>Ödeme nakit olarak sahada toplanacaktır.</Text>
-        </View>
-      ) : null}
-      {showNoteOnlyPayment ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ödeme</Text>
-          <Text style={styles.body}>{match.paymentNote ?? 'Not eklenmemiş.'}</Text>
-        </View>
-      ) : null}
-
-      {isOrganizer && match.status !== 'cancelled' ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Yönetim</Text>
-          <View style={styles.rowWrap}>
-            {match.status === 'upcoming' && match.lineupLocked ? (
-              <PillButton
-                title="Kilidi kaldır"
-                variant="secondary"
-                onPress={onUnlockLineup}
-                style={styles.flex}
-                testID="match:lineup:unlock:press"
-              />
-            ) : null}
-            {!match.lineupLocked && match.status === 'upcoming' ? (
-              <PillButton
-                title={hasAssignedLineup(match) ? 'Kadroyu düzenle' : 'Kadro Kur'}
-                onPress={() => navigation.navigate('LineupBuilder', { matchId })}
-                style={styles.flex}
-                testID="match:lineup:builder:press"
-              />
-            ) : null}
-            {match.status !== 'finished' ? (
-              <>
-                <PillButton
-                  title="Maç sonrası"
-                  onPress={() => navigation.navigate('MatchPostgame', { matchId })}
-                  variant="ghost"
-                  style={styles.flex}
-                  disabled={!pastScheduledEnd}
-                  accessibilityState={{ disabled: !pastScheduledEnd }}
-                  testID="match:detail:postgame:organizer"
-                />
-                {!pastScheduledEnd ? (
-                  <Text style={[styles.muted, styles.fullRow, styles.mtXs]}>
-                    Tahmini bitiş ({formatMatchDateTime(endsAtIso)}) sonrası açılır.
-                  </Text>
-                ) : null}
-              </>
-            ) : null}
-            {match.status === 'upcoming' ? (
-              <PillButton
-                title="Maçı İptal Et"
-                variant="danger"
-                onPress={openCancelConfirm}
-                style={styles.fullRow}
-                accessibilityLabel="Maçı iptal et"
-                testID="match:cancel:press"
-              />
-            ) : null}
-          </View>
-          <View style={[styles.rowBetween, styles.mt]}>
-            <Text style={styles.body}>Oyuncular kendi bildirsin</Text>
-            <Switch
-              value={match.selfReportEnabled}
-              onValueChange={(v) =>
-                void setSelfReportEnabled(match.id, v).catch((err) =>
-                  Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
-                )
-              }
-              trackColor={{ false: colors.border, true: colors.accentMuted }}
-              thumbColor={match.selfReportEnabled ? colors.accent : colors.textMuted}
-            />
-          </View>
-        </View>
-      ) : null}
-
-      {showFinishedRatingsChrome ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Derecelendirme</Text>
-          <Text style={styles.muted}>
-            Kadrodaki oyuncuların ortalama oyları listede gösterilir; bireysel oylar anonimdir. En çok seçilen maçın adamı
-            vurgulanır.
-          </Text>
-          {userOnMatchLineup ? (
-            <PillButton
-              title={
-                ratingHints.peer || ratingHints.motm ? 'Derecelendirmeyi düzenle' : 'Oyuncuları derecelendir'
-              }
-              onPress={() => navigation.navigate('MatchRatings', { matchId })}
-              testID="match:ratings:cta:press"
-              style={styles.mt}
-            />
-          ) : null}
-        </View>
-      ) : null}
-
-      {actionablePending.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Taslak bildirimler</Text>
-          <Text style={[styles.muted, styles.peerHint]}>
-            Onaylanınca gol ve asist istatistiklere işlenir. Organizatör veya karşı takımdan biri onaylayabilir
-            (akran onayı).
-          </Text>
-          {actionablePending.map((r) => {
-            const p = getPlayer(r.playerId);
-            return (
-              <View key={r.id} style={styles.pendingRow}>
-                <Text style={styles.body}>
-                  {p?.name} — {r.type === 'goal' ? 'Gol' : 'Asist'}
-                  <Text style={styles.draftTag}> · Taslak</Text>
-                </Text>
-                <View style={styles.row}>
-                  <PillButton
-                    title="Reddet"
-                    variant="ghost"
-                    onPress={() =>
-                      void respondSelfReport(match.id, r.id, false).catch((err) =>
-                        Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
-                      )
-                    }
-                  />
-                  <PillButton
-                    title="Onayla"
-                    onPress={() =>
-                      void respondSelfReport(match.id, r.id, true).catch((err) =>
-                        Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
-                      )
-                    }
-                  />
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      ) : null}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Oyuncular</Text>
-        {attendeesSorted.map(({ a, p }) => {
-          const showPaidToggle = isOrganizer || p!.id === userId;
-          const inMatchLineup =
-            match.teamAIds.includes(a.playerId) || match.teamBIds.includes(a.playerId);
-          const rr = inMatchLineup ? ratingByPid.get(a.playerId) : undefined;
-          return (
-            <View key={a.playerId} style={styles.playerRow}>
-              <PlayerAvatar name={p!.name} uri={p!.photoUri} showPaid={a.paid} />
-              <View style={styles.playerMeta}>
-                <Text style={styles.playerName}>{p!.name}</Text>
-                <View style={styles.badgesRow}>
-                  <PositionBadge position={p!.position} />
-                  {match.status === 'finished' && inMatchLineup && motmWinnerIds.has(a.playerId) ? (
-                    <View style={styles.motmBadge}>
-                      <Text style={styles.motmBadgeTxt}>Maçın adamı</Text>
-                    </View>
-                  ) : null}
-                </View>
-                {match.status === 'finished' && inMatchLineup ? (
-                  <Text style={styles.micro}>
-                    Oy ort.:{' '}
-                    {rr && rr.votes_count > 0 && rr.avg != null ? `${rr.avg.toFixed(1)} / 100` : '—'}
-                  </Text>
-                ) : null}
-              </View>
-              {showPaidToggle ? (
-                <View style={styles.paidRow}>
-                  <Text style={styles.micro}>{a.paid ? 'Ödendi' : 'Ödenmedi'}</Text>
-                  <Switch
-                    value={a.paid}
-                    onValueChange={(v) =>
-                      void setPaid(match.id, p!.id, v, userId).catch((err) =>
-                        Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
-                      )
-                    }
-                    trackColor={{ false: colors.border, true: colors.accentMuted }}
-                    thumbColor={a.paid ? colors.accent : colors.textMuted}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.micro}>{a.paid ? 'Ödendi' : 'Ödenmedi'}</Text>
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={styles.section}>
-        <PillButton title="Katılım Durumu" onPress={openRsvp} />
-        {match.selfReportEnabled && match.status !== 'finished' ? (
-          <View style={styles.rowWrap}>
-            <PillButton
-              title="Gol Attım"
-              variant="ghost"
-              onPress={() =>
-                void addSelfReport(match.id, userId, 'goal').catch((err) =>
-                  Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
-                )
-              }
-              style={styles.flex}
-            />
-            <PillButton
-              title="Asist Yaptım"
-              variant="ghost"
-              onPress={() =>
-                void addSelfReport(match.id, userId, 'assist').catch((err) =>
-                  Alert.alert('Hata', toUserMessage(err, 'Kaydedilemedi.')),
-                )
-              }
-              style={styles.flex}
-            />
-          </View>
         ) : null}
-      </View>
+
+        {tab === 'roster' ? (
+          <MatchDetailRosterPanel
+            match={match}
+            attendeesSorted={attendeesSorted}
+            motmWinnerIds={motmWinnerIds}
+            ratingByPid={ratingByPid}
+          />
+        ) : null}
+
+        {tab === 'payment' ? (
+          <MatchDetailPaymentPanel
+            match={match}
+            showPrice={showPrice}
+            showIbanPayment={showIbanPayment}
+            showCashPayment={showCashPayment}
+            showNoteOnlyPayment={showNoteOnlyPayment}
+            ibanCopyLabel={ibanCopyLabel}
+            ibanCopied={ibanCopied}
+            onPressCopyIban={onPressCopyIban}
+            attendeesSorted={attendeesSorted}
+            isOrganizer={isOrganizer}
+            userId={userId}
+            onPressEditPaid={handlePressEditPaid}
+          />
+        ) : null}
+      </ScrollView>
 
       <BottomSheetModal
         ref={rsvpRef}
         snapPoints={snapPoints}
         backdropComponent={renderBackdrop}
-        backgroundStyle={styles.sheetBg}
-        handleIndicatorStyle={styles.handle}
+        backgroundStyle={matchDetailStyles.sheetBg}
+        handleIndicatorStyle={matchDetailStyles.handle}
       >
-        <BottomSheetView style={styles.rsvpBody}>
-          <Text style={styles.sheetTitle}>Katılım</Text>
+        <BottomSheetView style={matchDetailStyles.rsvpBody}>
+          <Text style={matchDetailStyles.sheetTitle}>Katılım</Text>
           <RsvpGoingButton
             key={rsvpGoingKey}
             onCommit={() => setRSVP(match.id, userId, 'going')}
@@ -651,8 +426,26 @@ export function MatchDetailScreen() {
             onError={(e) => Alert.alert('Hata', toUserMessage(e, 'Kaydedilemedi.'))}
             testID="match:rsvp-going:press"
           />
-          <PillButton title="Belki" variant="ghost" onPress={() => applyRsvp('maybe')} />
-          <PillButton title="Gelmiyorum" variant="ghost" onPress={() => applyRsvp('notGoing')} />
+          <PressableScale
+            onPress={() => applyRsvp('maybe')}
+            style={matchDetailStyles.rsvpSecondaryRow}
+            pressedScale={0.98}
+            testID="match:rsvp:maybe:press"
+            accessibilityLabel="Belki"
+          >
+            <Ionicons name="help-circle" size={22} color={colors.accent} />
+            <Text style={matchDetailStyles.rsvpSecondaryLabel}>Belki</Text>
+          </PressableScale>
+          <PressableScale
+            onPress={() => applyRsvp('notGoing')}
+            style={matchDetailStyles.rsvpSecondaryRow}
+            pressedScale={0.98}
+            testID="match:rsvp:not-going:press"
+            accessibilityLabel="Gelmiyorum"
+          >
+            <Ionicons name="close-circle" size={22} color={colors.danger} />
+            <Text style={matchDetailStyles.rsvpSecondaryLabel}>Gelmiyorum</Text>
+          </PressableScale>
         </BottomSheetView>
       </BottomSheetModal>
 
@@ -669,193 +462,24 @@ export function MatchDetailScreen() {
         danger
       />
 
-    </ScrollView>
+      <ConfirmationModal
+        visible={paidConfirm !== null}
+        title="Ödeme durumu"
+        message={paidConfirmMessage ?? ''}
+        confirmLabel="Kaydet"
+        cancelLabel="Vazgeç"
+        onCancel={closePaidConfirm}
+        onConfirm={onConfirmPaidChange}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  tabScroll: {
     flex: 1,
-    backgroundColor: colors.background,
   },
-  contentContainer: {
-    paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hero: {
-    padding: spacing.lg,
-    paddingVertical: spacing.xl,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  heroDate: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  heroCd: {
-    ...typography.subtitle,
-    color: colors.accent,
-    marginTop: spacing.sm,
-  },
-  heroCdCancelled: {
-    color: colors.danger,
-  },
-  cancelBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.danger,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    marginTop: spacing.xs,
-  },
-  cancelBadgeTxt: {
-    ...typography.micro,
-    color: colors.text,
-    fontWeight: '700',
-    letterSpacing: letterSpacing.wide,
-  },
-  heroScore: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  section: {
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: letterSpacing.wide,
-  },
-  body: {
-    ...typography.body,
-    color: colors.text,
-  },
-  muted: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  iban: {
-    ...typography.subtitle,
-    color: colors.text,
-    letterSpacing: letterSpacing.brand,
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  rowWrap: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  flex: {
-    flex: 1,
-    minWidth: 120,
-  },
-  mt: {
-    marginTop: spacing.sm,
-  },
-  mtXs: {
-    marginTop: spacing.xs,
-  },
-  fullRow: {
-    width: '100%',
-  },
-  code: {
-    ...typography.subtitle,
-    color: colors.accent,
-  },
-  playerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  playerMeta: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  badgesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  motmBadge: {
-    backgroundColor: colors.accentMuted,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  motmBadgeTxt: {
-    ...typography.micro,
-    color: colors.accent,
-    fontWeight: '600',
-  },
-  playerName: {
-    ...typography.body,
-    color: colors.text,
-  },
-  paidRow: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  micro: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-  peerHint: {
-    marginBottom: spacing.sm,
-  },
-  draftTag: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-  pendingRow: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'flex-end',
-  },
-  sheetBg: {
-    backgroundColor: colors.surface,
-  },
-  handle: {
-    backgroundColor: colors.border,
-  },
-  rsvpBody: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  sheetTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  emptyText: {
-    color: colors.textMuted,
+  tabScrollContent: {
+    flexGrow: 1,
   },
 });
