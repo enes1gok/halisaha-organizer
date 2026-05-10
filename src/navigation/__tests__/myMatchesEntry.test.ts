@@ -45,7 +45,7 @@ describe('resolveMyMatchesEntryScreen', () => {
   });
 
   it('routes finished + result off lineup to MatchSummary', () => {
-    const r: ScoreResult = { scoreA: 2, scoreB: 1, scorers: [], assists: [] };
+    const r: ScoreResult = { scoreA: 2, scoreB: 1, scorers: [], assists: [], ownGoals: [] };
     expect(
       resolveMyMatchesEntryScreen(
         bm({ status: 'finished', result: r, teamAIds: [], teamBIds: [] }),
@@ -56,7 +56,7 @@ describe('resolveMyMatchesEntryScreen', () => {
   });
 
   it('routes finished + result on lineup with submission to MatchSummary', () => {
-    const r: ScoreResult = { scoreA: 2, scoreB: 1, scorers: [], assists: [] };
+    const r: ScoreResult = { scoreA: 2, scoreB: 1, scorers: [], assists: [], ownGoals: [] };
     expect(
       resolveMyMatchesEntryScreen(bm({ status: 'finished', result: r }), user, {
         [remoteId]: true,
@@ -65,7 +65,7 @@ describe('resolveMyMatchesEntryScreen', () => {
   });
 
   it('routes finished + result on lineup without submission to MatchPostgame', () => {
-    const r: ScoreResult = { scoreA: 2, scoreB: 1, scorers: [], assists: [] };
+    const r: ScoreResult = { scoreA: 2, scoreB: 1, scorers: [], assists: [], ownGoals: [] };
     expect(resolveMyMatchesEntryScreen(bm({ status: 'finished', result: r }), user, {})).toBe(
       'MatchPostgame',
     );

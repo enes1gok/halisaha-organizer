@@ -11,7 +11,7 @@ export type MatchPaymentMethodRow = 'note_only' | 'iban' | 'cash';
 
 export type TeamSideRow = 'A' | 'B';
 
-export type StatLineKindRow = 'goal' | 'assist';
+export type StatLineKindRow = 'goal' | 'assist' | 'own_goal';
 
 export type SelfReportTypeRow = 'goal' | 'assist';
 

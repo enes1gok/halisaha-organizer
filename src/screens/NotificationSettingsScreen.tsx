@@ -37,6 +37,7 @@ function toJsonRecord(p: NotificationPreferences): Record<string, unknown> {
       group_match_lineup_published: p.types.group_match_lineup_published,
       group_match_payment_reminder: p.types.group_match_payment_reminder,
       group_match_post_match_rating_reminder: p.types.group_match_post_match_rating_reminder,
+      group_match_match_result: p.types.group_match_match_result,
     },
     quiet_hours: {
       enabled: p.quiet_hours.enabled,
@@ -189,6 +190,16 @@ export function NotificationSettingsScreen() {
       void persist({
         ...prefs,
         types: { ...prefs.types, group_match_post_match_rating_reminder: v },
+      });
+    },
+    [prefs, persist],
+  );
+
+  const onToggleMatchResult = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_match_result: v },
       });
     },
     [prefs, persist],
@@ -400,6 +411,21 @@ export function NotificationSettingsScreen() {
             thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_post_match_rating_reminder ? colors.accent : colors.textMuted) : undefined}
             testID="settings:notifications:type-post-match-rating:switch"
             accessibilityLabel="Maç sonu oylama bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Maç sonucu</Text>
+            <Text style={styles.caption}>Skor kaydedildiğinde maç özetini bildirir</Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_match_result}
+            onValueChange={onToggleMatchResult}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_match_result ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-match-result:switch"
+            accessibilityLabel="Maç sonucu bildirimleri"
           />
         </View>
       </View>

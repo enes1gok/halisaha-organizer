@@ -47,6 +47,8 @@ export interface ScoreResult {
   scoreB: number;
   scorers: StatLine[];
   assists: StatLine[];
+  /** Rakip takım lehine sayılan kendi kale golleri (gol krallığına dahil değil). */
+  ownGoals: StatLine[];
 }
 
 export type SelfReportType = 'goal' | 'assist';

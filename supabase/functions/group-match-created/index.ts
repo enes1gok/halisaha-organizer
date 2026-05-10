@@ -18,7 +18,8 @@ type DeliveryType =
   | 'match_cancelled'
   | 'venue_change'
   | 'lineup_published'
-  | 'post_match_rating_reminder';
+  | 'post_match_rating_reminder'
+  | 'match_result';
 
 type ClaimedDeliveryRow = {
   delivery_id: string;
@@ -32,6 +33,8 @@ type ClaimedDeliveryRow = {
   match_venue: string | null;
   group_name: string | null;
   organizer_display_name: string | null;
+  match_score_a: number | null;
+  match_score_b: number | null;
 };
 
 type ClaimedDelivery = {
@@ -46,6 +49,8 @@ type ClaimedDelivery = {
   match_venue: string | null;
   group_name: string | null;
   organizer_display_name: string | null;
+  match_score_a: number | null;
+  match_score_b: number | null;
 };
 
 type NotificationPreferences = {
@@ -58,6 +63,7 @@ type NotificationPreferences = {
     group_match_venue_change?: boolean;
     group_match_lineup_published?: boolean;
     group_match_post_match_rating_reminder?: boolean;
+    group_match_match_result?: boolean;
   };
   quiet_hours?: {
     enabled?: boolean;
@@ -80,6 +86,8 @@ function normalizeClaimed(row: ClaimedDeliveryRow): ClaimedDelivery {
     match_venue: row.match_venue ?? null,
     group_name: row.group_name ?? null,
     organizer_display_name: row.organizer_display_name ?? null,
+    match_score_a: row.match_score_a ?? null,
+    match_score_b: row.match_score_b ?? null,
   };
 }
 
@@ -99,6 +107,7 @@ const PREF_KEY_BY_DELIVERY_TYPE: Record<
   venue_change: 'group_match_venue_change',
   lineup_published: 'group_match_lineup_published',
   post_match_rating_reminder: 'group_match_post_match_rating_reminder',
+  match_result: 'group_match_match_result',
 };
 
 /** Mirrors SQL `notification_delivery_allowed` + optional quiet-hours block at send time. */
@@ -272,6 +281,14 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
       body: `${groupName} maçında Maçın Adamı ve oyuncu puanlarını ver`,
     };
   }
+  if (delivery.type === 'match_result') {
+    const sa = delivery.match_score_a ?? 0;
+    const sb = delivery.match_score_b ?? 0;
+    return {
+      title: 'Maç sonucu',
+      body: `Maç Sonucu: ${sa}–${sb}`,
+    };
+  }
   return {
     title: 'Yeni grup maçı',
     body: `${groupName} grubunda yeni maç açıldı`,
@@ -415,6 +432,8 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
        match:matches(
          starts_at,
          venue,
+         score_a,
+         score_b,
          organizer:profiles!matches_organizer_id_fkey(display_name)
        ),
        group:groups(name)`,
@@ -427,6 +446,8 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
   const match = (data as any).match as {
     starts_at: string | null;
     venue: string | null;
+    score_a: number | null;
+    score_b: number | null;
     organizer: { display_name: string | null } | null;
   } | null;
   const group = (data as any).group as { name: string | null } | null;
@@ -443,6 +464,8 @@ async function fetchSingleDelivery(deliveryId: string): Promise<ClaimedDelivery 
     match_venue: match?.venue ?? null,
     group_name: group?.name ?? null,
     organizer_display_name: match?.organizer?.display_name ?? null,
+    match_score_a: match?.score_a ?? null,
+    match_score_b: match?.score_b ?? null,
   };
 }
 

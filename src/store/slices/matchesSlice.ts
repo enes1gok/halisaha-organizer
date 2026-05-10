@@ -216,6 +216,7 @@ function respondLocalSelfReport(
             ...next,
             result: {
               ...m.result,
+              ownGoals: m.result.ownGoals ?? [],
               scorers: mergeStatLines(m.result.scorers, reqRow.playerId, 1),
             },
           };
@@ -224,6 +225,7 @@ function respondLocalSelfReport(
             ...next,
             result: {
               ...m.result,
+              ownGoals: m.result.ownGoals ?? [],
               assists: mergeStatLines(m.result.assists, reqRow.playerId, 1),
             },
           };
@@ -276,7 +278,7 @@ function submitLocalScore(set: Parameters<StateCreator<AppState>>[0], matchId: s
   set((state) => {
     const matches = state.matches.map((m) => {
       if (m.id !== matchId) return m;
-      let merged: ScoreResult = { ...result };
+      let merged: ScoreResult = { ...result, ownGoals: result.ownGoals ?? [] };
       const approved = m.selfReports.filter((r) => r.status === 'approved');
       for (const r of approved) {
         if (r.type === 'goal') {

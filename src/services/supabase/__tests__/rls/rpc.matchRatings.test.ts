@@ -26,6 +26,7 @@ describeIntegration('RPC match_peer_ratings', () => {
       p_score_b: 2,
       p_scorers: [{ player_id: org.userId, count: 1 }],
       p_assists: [],
+      p_own_goals: [],
     });
     expect(scoreErr).toBeNull();
 
@@ -81,6 +82,7 @@ describeIntegration('RPC match_peer_ratings', () => {
       p_score_b: 0,
       p_scorers: [{ player_id: org.userId, count: 1 }],
       p_assists: [],
+      p_own_goals: [],
     });
     await p1.client.rpc('upsert_match_peer_ratings', {
       p_match_id: match.id,

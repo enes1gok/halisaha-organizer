@@ -19,7 +19,9 @@ type DeliveryType =
   | 'payment_reminder'
   | 'match_cancelled'
   | 'venue_change'
-  | 'lineup_published';
+  | 'lineup_published'
+  | 'post_match_rating_reminder'
+  | 'match_result';
 
 type InAppDelivery = {
   id: string;
@@ -27,7 +29,13 @@ type InAppDelivery = {
   group_id: string;
   type: DeliveryType;
   created_at: string;
-  match: { starts_at: string | null; venue: string | null; organizer: { display_name: string | null } | null } | null;
+  match: {
+    starts_at: string | null;
+    venue: string | null;
+    score_a: number | null;
+    score_b: number | null;
+    organizer: { display_name: string | null } | null;
+  } | null;
   group: { name: string | null } | null;
 };
 
@@ -52,6 +60,8 @@ function normalizeInAppDelivery(row: InAppDeliveryRow): InAppDelivery {
       ? {
           starts_at: matchRow.starts_at,
           venue: matchRow.venue,
+          score_a: (matchRow as { score_a?: number | null }).score_a ?? null,
+          score_b: (matchRow as { score_b?: number | null }).score_b ?? null,
           organizer: organizerRow ? { display_name: organizerRow.display_name } : null,
         }
       : null,
@@ -124,6 +134,20 @@ function buildInAppMessage(delivery: InAppDelivery): { title: string; body: stri
       body: `${organizerLabel} kadroyu yayınladı • ${groupName}`,
     };
   }
+  if (delivery.type === 'post_match_rating_reminder') {
+    return {
+      title: 'Maç sonu oylaması hazır',
+      body: `${groupName} maçında Maçın Adamı ve oyuncu puanlarını ver`,
+    };
+  }
+  if (delivery.type === 'match_result') {
+    const sa = delivery.match?.score_a ?? 0;
+    const sb = delivery.match?.score_b ?? 0;
+    return {
+      title: 'Maç sonucu',
+      body: `Maç Sonucu: ${sa}–${sb}`,
+    };
+  }
   return {
     title: 'Yeni grup maçı',
     body: `${groupName} grubunda yeni maç açıldı`,
@@ -154,7 +178,7 @@ async function showPendingInAppBanners(sinceIso: string): Promise<void> {
     .from('notification_deliveries')
     .select(
       `id, match_id, group_id, type, created_at,
-       match:matches(starts_at, venue, organizer:profiles!matches_organizer_id_fkey(display_name)),
+       match:matches(starts_at, venue, score_a, score_b, organizer:profiles!matches_organizer_id_fkey(display_name)),
        group:groups(name)`,
     )
     .eq('status', 'in_app')

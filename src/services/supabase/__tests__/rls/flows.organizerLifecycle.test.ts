@@ -20,6 +20,7 @@ describeIntegration('flows organizer lifecycle', () => {
       p_score_b: 1,
       p_scorers: [{ player_id: org.userId, count: 2 }],
       p_assists: [],
+      p_own_goals: [],
     });
     expect(scoreErr).toBeNull();
 
@@ -58,6 +59,7 @@ describeIntegration('flows organizer lifecycle', () => {
       p_score_b: 4,
       p_scorers: [{ player_id: player.userId, count: 1 }],
       p_assists: [],
+      p_own_goals: [],
     });
     expect(scoreErr).toBeNull();
 

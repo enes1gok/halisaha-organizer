@@ -85,6 +85,7 @@ export async function submitMatchResultRpc(params: {
   scoreB: number;
   scorers: StatLinePayload[];
   assists: StatLinePayload[];
+  ownGoals: StatLinePayload[];
 }): Promise<void> {
   const supabase = getSupabaseClient();
   const traceId = generateTraceId();
@@ -94,6 +95,7 @@ export async function submitMatchResultRpc(params: {
     p_score_b: params.scoreB,
     p_scorers: params.scorers,
     p_assists: params.assists,
+    p_own_goals: params.ownGoals,
   });
   if (error) {
     throw mapSupabaseError(error, 'submitMatchResultRpc', {
@@ -104,6 +106,7 @@ export async function submitMatchResultRpc(params: {
         scoreB: params.scoreB,
         scorerLines: params.scorers.length,
         assistLines: params.assists.length,
+        ownGoalLines: params.ownGoals.length,
       },
     });
   }

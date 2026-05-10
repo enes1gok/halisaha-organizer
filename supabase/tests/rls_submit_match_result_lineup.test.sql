@@ -42,6 +42,7 @@ select lives_ok(
        3,
        1,
        '[{"player_id":"a0000000-0000-4000-8000-000000000001","count":2}]'::jsonb,
+       '[]'::jsonb,
        '[]'::jsonb
      ) $$,
   'lineup player may submit score'
@@ -61,6 +62,7 @@ select throws_ok(
        'b0000000-0000-4000-8000-000000000040'::uuid,
        0,
        0,
+       '[]'::jsonb,
        '[]'::jsonb,
        '[]'::jsonb
      ) $$

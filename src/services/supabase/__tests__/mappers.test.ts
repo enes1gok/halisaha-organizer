@@ -93,7 +93,22 @@ describe('rowsToMatch', () => {
         { playerId: 'p3', count: 1 },
       ],
       assists: [{ playerId: 'p1', count: 1 }],
+      ownGoals: [],
     });
+  });
+
+  it('maps own_goal stat lines into result.ownGoals', () => {
+    const row = baseMatchRow({
+      status: 'finished',
+      score_a: 1,
+      score_b: 0,
+    });
+    const statLines: MatchStatLineRow[] = [
+      { match_id: row.id, player_id: 'p9', kind: 'goal', count: 1 },
+      { match_id: row.id, player_id: 'p8', kind: 'own_goal', count: 1 },
+    ];
+    const match = rowsToMatch(row, [], [], statLines, []);
+    expect(match.result?.ownGoals).toEqual([{ playerId: 'p8', count: 1 }]);
   });
 
   it('behavior-lock: finished with partial scores yields undefined result', () => {
@@ -227,6 +242,7 @@ describe('scoreResultToRpcPayload', () => {
         { playerId: 'b', count: 1 },
       ],
       assists: [{ playerId: 'c', count: 1 }],
+      ownGoals: [{ playerId: 'd', count: 1 }],
     };
     expect(scoreResultToRpcPayload(result)).toEqual({
       scorers: [
@@ -234,6 +250,7 @@ describe('scoreResultToRpcPayload', () => {
         { player_id: 'b', count: 1 },
       ],
       assists: [{ player_id: 'c', count: 1 }],
+      own_goals: [{ player_id: 'd', count: 1 }],
     });
   });
 });

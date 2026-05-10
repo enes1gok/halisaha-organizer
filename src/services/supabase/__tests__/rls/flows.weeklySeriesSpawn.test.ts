@@ -34,6 +34,7 @@ describeIntegration('weekly series spawn after submit_match_result', () => {
       p_score_b: 0,
       p_scorers: [{ player_id: org.userId, count: 1 }],
       p_assists: [],
+      p_own_goals: [],
     });
     expect(scoreErr).toBeNull();
 
@@ -54,6 +55,7 @@ describeIntegration('weekly series spawn after submit_match_result', () => {
       p_score_b: 0,
       p_scorers: [{ player_id: org.userId, count: 2 }],
       p_assists: [],
+      p_own_goals: [],
     });
     expect(scoreErr2).toBeNull();
 
@@ -76,6 +78,7 @@ describeIntegration('weekly series spawn after submit_match_result', () => {
       p_score_b: 1,
       p_scorers: [],
       p_assists: [],
+      p_own_goals: [],
     });
     expect(scoreErr).toBeNull();
 

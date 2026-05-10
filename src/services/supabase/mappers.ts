@@ -77,11 +77,15 @@ export function rowsToMatch(
     const assists: StatLine[] = statLines
       .filter((l) => l.kind === 'assist')
       .map((l) => ({ playerId: l.player_id, count: l.count }));
+    const ownGoals: StatLine[] = statLines
+      .filter((l) => l.kind === 'own_goal')
+      .map((l) => ({ playerId: l.player_id, count: l.count }));
     result = {
       scoreA: row.score_a,
       scoreB: row.score_b,
       scorers,
       assists,
+      ownGoals,
     };
   }
 
@@ -126,6 +130,7 @@ export function scoreResultToRpcPayload(result: ScoreResult) {
   return {
     scorers: result.scorers.map((l) => ({ player_id: l.playerId, count: l.count })),
     assists: result.assists.map((l) => ({ player_id: l.playerId, count: l.count })),
+    own_goals: (result.ownGoals ?? []).map((l) => ({ player_id: l.playerId, count: l.count })),
   };
 }
 

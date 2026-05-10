@@ -40,6 +40,7 @@ select throws_ok(
        1,
        1,
        '[]'::jsonb,
+       '[]'::jsonb,
        '[]'::jsonb
      ) $$,
   'P0001',
@@ -60,6 +61,7 @@ select lives_ok(
        'c0000000-0000-4000-8000-000000000041'::uuid,
        2,
        2,
+       '[]'::jsonb,
        '[]'::jsonb,
        '[]'::jsonb
      ) $$,

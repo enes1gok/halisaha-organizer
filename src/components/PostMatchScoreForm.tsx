@@ -9,7 +9,10 @@ import type { Match, Player, ScoreResult } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
 import { showUserFacingErrorAlert } from './UserFacingErrorAlert';
 import { formatMatchDateTime } from '../utils/dates';
-import { goalsTotalMatchesScore, totalGoalsFromStatMap } from '../utils/postMatchScoreValidation';
+import {
+  scoreAndStatLinesConsistent,
+  totalGoalsFromStatMap,
+} from '../utils/postMatchScoreValidation';
 
 export function toScoreLines(map: Record<string, number>): { playerId: string; count: number }[] {
   return Object.entries(map)
@@ -35,16 +38,21 @@ function QuickSelectPlayerRow({
   segment,
   goals,
   assists,
+  ownGoals,
   bumpGoals,
   bumpAssists,
+  bumpOwnGoals,
 }: {
   player: Player;
   segment: QuickSegment;
   goals: Record<string, number>;
   assists: Record<string, number>;
+  ownGoals: Record<string, number>;
   bumpGoals: (playerId: string, delta: number) => void;
   bumpAssists: (playerId: string, delta: number) => void;
+  bumpOwnGoals: (playerId: string, delta: number) => void;
 }) {
+  const showOwnGoals = segment === 'teamA' || segment === 'teamB';
   const idPrefix =
     segment === 'teamA'
       ? 'postmatch:teamA'
@@ -55,13 +63,13 @@ function QuickSelectPlayerRow({
   return (
     <View
       style={styles.row}
-      accessibilityLabel={`${player.name}, gol ${goals[player.id] ?? 0}, asist ${assists[player.id] ?? 0}`}
+      accessibilityLabel={`${player.name}, gol ${goals[player.id] ?? 0}, asist ${assists[player.id] ?? 0}${showOwnGoals ? `, KK ${ownGoals[player.id] ?? 0}` : ''}`}
     >
       <PlayerAvatar name={player.name} uri={player.photoUri} size={32} />
       <Text style={styles.name} numberOfLines={1}>
         {player.name}
       </Text>
-      <View style={styles.statsPair}>
+      <View style={[styles.statsPair, showOwnGoals && styles.statsTripleWrap]}>
         <View style={styles.statCluster}>
           <Text style={styles.statLabel}>Gol</Text>
           <View style={styles.stepSmall}>
@@ -110,6 +118,32 @@ function QuickSelectPlayerRow({
             </Pressable>
           </View>
         </View>
+        {showOwnGoals ? (
+          <View style={styles.statCluster}>
+            <Text style={styles.statLabel}>KK</Text>
+            <View style={styles.stepSmall}>
+              <Pressable
+                onPress={() => bumpOwnGoals(player.id, -1)}
+                style={styles.stepCompact}
+                testID={`${idPrefix}:player:${player.id}:ownGoal:dec`}
+                accessibilityLabel={`${player.name}, kendi kale gol azalt`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.stepTxtSmall}>−</Text>
+              </Pressable>
+              <Text style={styles.ct}>{ownGoals[player.id] ?? 0}</Text>
+              <Pressable
+                onPress={() => bumpOwnGoals(player.id, 1)}
+                style={styles.stepCompact}
+                testID={`${idPrefix}:player:${player.id}:ownGoal:inc`}
+                accessibilityLabel={`${player.name}, kendi kale gol artır`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.stepTxtSmall}>+</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -131,6 +165,7 @@ export function PostMatchScoreForm({
   const [scoreB, setScoreB] = useState(0);
   const [goals, setGoals] = useState<Record<string, number>>({});
   const [assists, setAssists] = useState<Record<string, number>>({});
+  const [ownGoals, setOwnGoals] = useState<Record<string, number>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -139,14 +174,19 @@ export function PostMatchScoreForm({
       setScoreB(match.result.scoreB);
       const g: Record<string, number> = {};
       const a: Record<string, number> = {};
+      const og: Record<string, number> = {};
       match.result.scorers.forEach((l) => {
         g[l.playerId] = l.count;
       });
       match.result.assists.forEach((l) => {
         a[l.playerId] = l.count;
       });
+      (match.result.ownGoals ?? []).forEach((l) => {
+        og[l.playerId] = l.count;
+      });
       setGoals(g);
       setAssists(a);
+      setOwnGoals(og);
     }
   }, [match.id, match.result]);
 
@@ -180,15 +220,22 @@ export function PostMatchScoreForm({
     return { teamAPlayers, teamBPlayers, unassignedPlayers };
   }, [match.teamAIds, match.teamBIds, match.attendees, getPlayer]);
 
-  const { totalFromScore, totalFromScorers, goalsMatchScore } = useMemo(() => {
+  const { totalFromScore, totalGoalEvents, goalsMatchScore } = useMemo(() => {
     const totalFromScore = scoreA + scoreB;
-    const totalFromScorers = totalGoalsFromStatMap(goals);
+    const totalGoalEvents = totalGoalsFromStatMap(goals) + totalGoalsFromStatMap(ownGoals);
     return {
       totalFromScore,
-      totalFromScorers,
-      goalsMatchScore: goalsTotalMatchesScore(scoreA, scoreB, goals),
+      totalGoalEvents,
+      goalsMatchScore: scoreAndStatLinesConsistent(
+        scoreA,
+        scoreB,
+        match.teamAIds,
+        match.teamBIds,
+        goals,
+        ownGoals,
+      ),
     };
-  }, [scoreA, scoreB, goals]);
+  }, [scoreA, scoreB, goals, ownGoals, match.teamAIds, match.teamBIds]);
 
   const bump = (
     setter: React.Dispatch<React.SetStateAction<Record<string, number>>>,
@@ -209,6 +256,7 @@ export function PostMatchScoreForm({
       scoreB,
       scorers: toScoreLines(goals),
       assists: toScoreLines(assists),
+      ownGoals: toScoreLines(ownGoals),
     };
     try {
       await submitScore(match.id, result);
@@ -302,8 +350,10 @@ export function PostMatchScoreForm({
                 segment="teamA"
                 goals={goals}
                 assists={assists}
+                ownGoals={ownGoals}
                 bumpGoals={(id, d) => bump(setGoals, id, d)}
                 bumpAssists={(id, d) => bump(setAssists, id, d)}
+                bumpOwnGoals={(id, d) => bump(setOwnGoals, id, d)}
               />
             ))
           )}
@@ -325,8 +375,10 @@ export function PostMatchScoreForm({
                 segment="teamB"
                 goals={goals}
                 assists={assists}
+                ownGoals={ownGoals}
                 bumpGoals={(id, d) => bump(setGoals, id, d)}
                 bumpAssists={(id, d) => bump(setAssists, id, d)}
+                bumpOwnGoals={(id, d) => bump(setOwnGoals, id, d)}
               />
             ))
           )}
@@ -343,8 +395,10 @@ export function PostMatchScoreForm({
                   segment="unassigned"
                   goals={goals}
                   assists={assists}
+                  ownGoals={ownGoals}
                   bumpGoals={(id, d) => bump(setGoals, id, d)}
                   bumpAssists={(id, d) => bump(setAssists, id, d)}
+                  bumpOwnGoals={(id, d) => bump(setOwnGoals, id, d)}
                 />
               ))}
             </>
@@ -378,19 +432,21 @@ export function PostMatchScoreForm({
           {...(!goalsMatchScore ? { accessibilityRole: 'alert' as const } : {})}
           accessibilityLabel={
             goalsMatchScore
-              ? `Doğrulama: Maç skoru ${totalFromScore} gol, gol listesi ${totalFromScorers} gol, uyumlu.`
-              : `Uyarı: Girilen gol sayısı maç skoruyla eşleşmiyor. Maç skoru ${totalFromScore} gol, gol listesi ${totalFromScorers} gol.`
+              ? `Doğrulama: Maç skoru ${totalFromScore} gol etkinliği, gol ve KK toplamı ${totalGoalEvents}, takım bazında uyumlu.`
+              : `Uyarı: Gol/KK dağılımı maç skoruyla uyumsuz. Maç skoru ${totalFromScore} gol; gol+KK etkinliği ${totalGoalEvents}.`
           }
           testID="postmatch:validation:summary"
         >
           <Text style={styles.validationTitle}>Doğrulama özeti</Text>
           <Text style={styles.validationCounts}>
-            Maç skoru: {totalFromScore} gol · Gol listesi: {totalFromScorers} gol
+            Maç skoru: {totalFromScore} gol · Gol + KK etkinliği: {totalGoalEvents}
           </Text>
           {goalsMatchScore ? (
-            <Text style={styles.validationOk}>Skor ile gol listesi uyumlu.</Text>
+            <Text style={styles.validationOk}>Skor ile gol/KK dağılımı uyumlu.</Text>
           ) : (
-            <Text style={styles.validationWarn}>Girilen gol sayısı maç skoruyla eşleşmiyor.</Text>
+            <Text style={styles.validationWarn}>
+              Takım bazında gol ve KK, maç skoruyla eşleşmiyor (KK rakip takımın skoruna yazar).
+            </Text>
           )}
         </View>
       ) : null}
@@ -477,7 +533,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   name: { ...typography.body, color: colors.text, flex: 1, minWidth: 0 },
-  statsPair: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md, flexShrink: 0 },
+  statsPair: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, flexShrink: 1, flexWrap: 'wrap', justifyContent: 'flex-end' },
+  statsTripleWrap: { maxWidth: '100%' },
   statCluster: { alignItems: 'center', gap: spacing.xs },
   statLabel: { ...typography.micro, color: colors.textMuted },
   stepSmall: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },

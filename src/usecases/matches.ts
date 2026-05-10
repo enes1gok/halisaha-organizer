@@ -306,6 +306,7 @@ export async function submitScoreUseCase(
       scoreB: result.scoreB,
       scorers: payload.scorers,
       assists: payload.assists,
+      ownGoals: payload.own_goals,
     });
     const graph = await fetchMatchGraph(matchId);
     deps.mergeRemoteGraph(graph);

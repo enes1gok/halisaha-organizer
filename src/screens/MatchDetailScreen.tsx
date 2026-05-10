@@ -335,6 +335,35 @@ export function MatchDetailScreen() {
         ) : null}
       </View>
 
+      {match.status === 'finished' && match.result ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Skor detayı</Text>
+          {match.result.scorers.length === 0 &&
+          match.result.assists.length === 0 &&
+          (match.result.ownGoals ?? []).length === 0 ? (
+            <Text style={styles.muted}>Oyuncu bazlı gol kaydı yok.</Text>
+          ) : (
+            <>
+              {match.result.scorers.map((l) => (
+                <Text key={`g-${l.playerId}`} style={styles.body}>
+                  {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Gol ×{l.count}
+                </Text>
+              ))}
+              {(match.result.ownGoals ?? []).map((l) => (
+                <Text key={`og-${l.playerId}`} style={styles.body}>
+                  {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — KK ×{l.count}
+                </Text>
+              ))}
+              {match.result.assists.map((l) => (
+                <Text key={`a-${l.playerId}`} style={styles.body}>
+                  {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Asist ×{l.count}
+                </Text>
+              ))}
+            </>
+          )}
+        </View>
+      ) : null}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Organizatör</Text>
         <Text style={styles.body}>{organizer?.name ?? '—'}</Text>
