@@ -7,14 +7,19 @@ explain (analyze, buffers, verbose)
 select *
 from public.get_match_graph_for_user('00000000-0000-0000-0000-000000000001'::uuid);
 
--- List path (visibility filter + lateral body; optional limit).
+-- List path — full graph (visibility filter + lateral body; optional limit).
 explain (analyze, buffers, verbose)
 select *
-from public.list_visible_match_graphs_for_user();
+from public.list_visible_match_graphs_for_user(null);
 
 explain (analyze, buffers, verbose)
 select *
 from public.list_visible_match_graphs_for_user(50);
+
+-- List hydrate fast path — attendees + teams + profiles only (empty stat_lines / self_reports JSON).
+explain (analyze, buffers, verbose)
+select *
+from public.list_visible_match_summaries_for_user(null);
 
 -- Batch path (per-id visibility via match_graph_row wrapper).
 explain (analyze, buffers, verbose)

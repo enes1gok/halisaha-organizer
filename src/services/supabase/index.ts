@@ -55,6 +55,7 @@ export {
   fetchProfileById,
   fetchProfilesByIds,
   updateCurrentUserProfile,
+  type FetchProfilesByIdsMode,
   type ProfileUpdate,
 } from './profiles';
 export {

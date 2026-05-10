@@ -10,16 +10,31 @@ export async function ensureMyProfile(): Promise<void> {
   if (error) throw mapSupabaseError(error, 'ensureMyProfile');
 }
 
-export async function fetchProfilesByIds(ids: string[]): Promise<PublicProfileRow[]> {
+const PUBLIC_PROFILE_FULL_SELECT =
+  'id,display_name,photo_uri,position,preferred_foot,weekly_match_streak_effective_weeks,weekly_match_streak_weeks,weekly_match_last_qualifying_week_start';
+
+/** Matches `profiles_public` columns bundled in `match_graph_row` JSON (no streak fields). */
+const PUBLIC_PROFILE_GRAPH_SELECT = 'id,display_name,photo_uri,position,preferred_foot';
+
+export type FetchProfilesByIdsMode = 'full' | 'graph';
+
+export async function fetchProfilesByIds(
+  ids: string[],
+  mode: FetchProfilesByIdsMode = 'full',
+): Promise<PublicProfileRow[]> {
   const uniq = [...new Set(ids)].filter(Boolean);
   if (uniq.length === 0) return [];
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('profiles_public')
-    .select(
-      'id,display_name,photo_uri,position,preferred_foot,weekly_match_streak_effective_weeks,weekly_match_streak_weeks,weekly_match_last_qualifying_week_start',
-    )
-    .in('id', uniq);
+  const { data, error } =
+    mode === 'graph'
+      ? await supabase
+          .from('profiles_public')
+          .select(PUBLIC_PROFILE_GRAPH_SELECT)
+          .in('id', uniq)
+      : await supabase
+          .from('profiles_public')
+          .select(PUBLIC_PROFILE_FULL_SELECT)
+          .in('id', uniq);
   if (error) throw mapSupabaseError(error, 'fetchProfilesByIds');
   return (data ?? []) as PublicProfileRow[];
 }

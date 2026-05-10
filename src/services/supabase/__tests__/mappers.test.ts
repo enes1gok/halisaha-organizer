@@ -63,6 +63,16 @@ describe('rsvpFromDb / rsvpToDb', () => {
 });
 
 describe('rowsToMatch', () => {
+  it('maps graph RPC row without created_at/updated_at timestamps', () => {
+    const row: MatchRow = {
+      ...baseMatchRow(),
+    };
+    delete row.created_at;
+    delete row.updated_at;
+    const match = rowsToMatch(row, [], [], [], []);
+    expect(match.id).toBe('m1');
+  });
+
   it('maps upcoming match with empty relations', () => {
     const row = baseMatchRow();
     const match = rowsToMatch(row, [], [], [], []);
@@ -156,7 +166,6 @@ describe('rowsToMatch', () => {
         player_id: 'p1',
         type: 'goal',
         status: 'pending',
-        created_at: iso,
       },
     ];
     const match = rowsToMatch(row, [], [], [], selfReports);

@@ -149,7 +149,7 @@ async function fetchMatchGraphLegacy(matchId: string): Promise<MatchGraphPayload
       .eq('match_id', matchId),
     supabase
       .from('self_report_requests')
-      .select('id,match_id,player_id,type,status,created_at')
+      .select('id,match_id,player_id,type,status')
       .eq('match_id', matchId),
   ]);
 
@@ -169,7 +169,7 @@ async function fetchMatchGraphLegacy(matchId: string): Promise<MatchGraphPayload
   const selfReports = (selfReportsRes.data ?? []) as SelfReportRequestRow[];
 
   const profileIds = collectProfileIds(row, attendees, teamPlayers, statLines, selfReports);
-  const profiles = await fetchProfilesByIds(profileIds);
+  const profiles = await fetchProfilesByIds(profileIds, 'graph');
   const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
 
   return { match, profiles };
@@ -201,7 +201,33 @@ async function fetchMatchGraphsViaBatchRpc(matchIds: string[]): Promise<MatchGra
 export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
   const startedAt = Date.now();
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.rpc('list_visible_match_graphs_for_user');
+
+  const summaryRes = await supabase.rpc('list_visible_match_summaries_for_user', {
+    p_limit: null as number | null,
+  });
+  if (!summaryRes.error) {
+    recordListMatchGraphRpcSuccess();
+    const rows = (summaryRes.data ?? []) as MatchGraphRpcRow[];
+    const graphs = rows.map((row) => rpcRowToPayload(row));
+    listRpcSuccessLogCounter += 1;
+    if (listRpcSuccessLogCounter === 1 || listRpcSuccessLogCounter % 10 === 0) {
+      reportDiagnosticMetric(
+        'matchGraph.listRpc.success',
+        {
+          successCount: listRpcSuccessLogCounter,
+          matchCount: graphs.length,
+          durationMs: Date.now() - startedAt,
+          variant: 'summary',
+        },
+        true,
+      );
+    }
+    return graphs;
+  }
+
+  const { data, error } = await supabase.rpc('list_visible_match_graphs_for_user', {
+    p_limit: null as number | null,
+  });
   if (error) {
     recordListMatchGraphRpcFallback();
     console.warn('[matchGraph] list_visible_match_graphs_for_user failed; fallback enabled', {
@@ -261,6 +287,7 @@ export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
         successCount: listRpcSuccessLogCounter,
         matchCount: graphs.length,
         durationMs: Date.now() - startedAt,
+        variant: 'full',
       },
       true,
     );

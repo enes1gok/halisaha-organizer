@@ -27,6 +27,17 @@ describeIntegration('RPC match graph', () => {
     expect(ids).toContain(match.id);
   });
 
+  it('list_visible_match_summaries_for_user includes organizer match', async () => {
+    const org = await createAuthedUser('list_summary_org');
+    const joinCode = `SUMM${Date.now().toString(36).toUpperCase().slice(-6)}`;
+    const match = await insertMatchAsOrganizer(org.client, joinCode);
+
+    const { data, error } = await org.client.rpc('list_visible_match_summaries_for_user');
+    expect(error).toBeNull();
+    const ids = (data ?? []).map((r: { id: string }) => r.id);
+    expect(ids).toContain(match.id);
+  });
+
   it('list_visible_match_graphs_for_user respects p_limit', async () => {
     const org = await createAuthedUser('list_graph_limit');
     const joinCode = `LIM${Date.now().toString(36).toUpperCase().slice(-6)}`;

@@ -63,8 +63,10 @@ export interface MatchRow {
   status: MatchStatusRow;
   score_a: number | null;
   score_b: number | null;
-  created_at: string;
-  updated_at: string;
+  /** Omitted by match graph RPCs (payload trim); present on table-backed rows. */
+  created_at?: string;
+  /** Omitted by match graph RPCs (payload trim); present on table-backed rows. */
+  updated_at?: string;
 }
 
 export interface GroupRow {
@@ -134,7 +136,6 @@ export interface SelfReportRequestRow {
   player_id: string;
   type: SelfReportTypeRow;
   status: SelfReportStatusRow;
-  created_at: string;
 }
 
 export interface StatLinePayload {
