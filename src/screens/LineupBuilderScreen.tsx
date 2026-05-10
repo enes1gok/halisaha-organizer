@@ -43,12 +43,16 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PositionBadge } from '../components/PositionBadge';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { colors, radius, spacing, typography } from '../theme';
-import type { Player, Position } from '../types/domain';
+import type { Player } from '../types/domain';
 import { lightImpact, selectionTick } from '../utils/haptics';
 import {
   applyLineupFormationDrop,
   pickFormationZoneOrdered,
 } from '../utils/lineupFormationDrop';
+import {
+  balanceClassicTeamsByRating,
+  balanceFormationSlotsByRating,
+} from '../utils/balanceTeamsByRating';
 import { buildSlotsFromCompact, compactSlots } from '../utils/lineupSlots';
 import { hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
@@ -81,27 +85,6 @@ function arraysShallowEqual(a: string[], b: string[]): boolean {
   return a.every((v, i) => v === b[i]);
 }
 
-function autoBalance(players: Player[]): { A: string[]; B: string[] } {
-  const buckets: Record<Position, Player[]> = {
-    GK: [],
-    DEF: [],
-    MID: [],
-    FWD: [],
-  };
-  for (const p of players) buckets[p.position].push(p);
-  const teamA: string[] = [];
-  const teamB: string[] = [];
-  const keys: Position[] = ['GK', 'DEF', 'MID', 'FWD'];
-  for (const k of keys) {
-    const list = buckets[k];
-    list.forEach((p, i) => {
-      if (i % 2 === 0) teamA.push(p.id);
-      else teamB.push(p.id);
-    });
-  }
-  return { A: teamA, B: teamB };
-}
-
 function syncTeamsWithGoing(
   teamAIds: string[],
   teamBIds: string[],
@@ -115,24 +98,8 @@ function syncTeamsWithGoing(
   if (missing.length === 0) {
     return { A: nextA, B: nextB };
   }
-  const { A: addA, B: addB } = autoBalance(missing);
+  const { A: addA, B: addB } = balanceClassicTeamsByRating(missing);
   return { A: [...nextA, ...addA], B: [...nextB, ...addB] };
-}
-
-function autoFillFormationSlots(players: Player[], formation: LineupFormation) {
-  const sorted = [...players].sort((a, b) => {
-    const order: Position[] = ['GK', 'DEF', 'MID', 'FWD'];
-    return order.indexOf(a.position) - order.indexOf(b.position) || a.name.localeCompare(b.name);
-  });
-  const n = formation.playersPerTeam;
-  const slotsA: (string | null)[] = Array.from({ length: n }, () => null);
-  const slotsB: (string | null)[] = Array.from({ length: n }, () => null);
-  sorted.forEach((p, i) => {
-    const target = i % 2 === 0 ? slotsA : slotsB;
-    const j = target.findIndex((x) => x == null);
-    if (j >= 0) target[j] = p.id;
-  });
-  return { slotsA, slotsB };
 }
 
 function inside(r: DropRect | undefined, absX: number, absY: number): boolean {
@@ -526,7 +493,10 @@ export function LineupBuilderScreen() {
   const onBalance = () => {
     if (!match) return;
     if (formationMode && selectedFormation) {
-      const { slotsA: na, slotsB: nb } = autoFillFormationSlots(goingPlayers, selectedFormation);
+      const { slotsA: na, slotsB: nb } = balanceFormationSlotsByRating(
+        goingPlayers,
+        selectedFormation,
+      );
       setSlotsA(na);
       setSlotsB(nb);
       void setMatchTeams(
@@ -534,25 +504,41 @@ export function LineupBuilderScreen() {
         compactSlots(na),
         compactSlots(nb),
         resolvedFormationId ?? undefined,
-      ).catch((err) =>
+      )
+        .then(() => {
+          showToast({
+            title: 'Kadro dengelendi',
+            message: 'Takımlar reyting ortalamalarına göre oluşturuldu.',
+            variant: 'success',
+          });
+        })
+        .catch((err) =>
+          showApiErrorToast(err, {
+            uiOperation: 'LineupBuilder:balanceFormation',
+            fallbackMessage: 'Kadro kaydedilemedi.',
+            mapOperation: 'replaceMatchTeamPlayersRemote',
+          }),
+        );
+      return;
+    }
+    const { A, B } = balanceClassicTeamsByRating(goingPlayers);
+    setTeamAIds(A);
+    setTeamBIds(B);
+    void setMatchTeams(match.id, A, B)
+      .then(() => {
+        showToast({
+          title: 'Kadro dengelendi',
+          message: 'Takımlar reyting ortalamalarına göre oluşturuldu.',
+          variant: 'success',
+        });
+      })
+      .catch((err) =>
         showApiErrorToast(err, {
-          uiOperation: 'LineupBuilder:balanceFormation',
+          uiOperation: 'LineupBuilder:balanceClassic',
           fallbackMessage: 'Kadro kaydedilemedi.',
           mapOperation: 'replaceMatchTeamPlayersRemote',
         }),
       );
-      return;
-    }
-    const { A, B } = autoBalance(goingPlayers);
-    setTeamAIds(A);
-    setTeamBIds(B);
-    void setMatchTeams(match.id, A, B).catch((err) =>
-      showApiErrorToast(err, {
-        uiOperation: 'LineupBuilder:balanceClassic',
-        fallbackMessage: 'Kadro kaydedilemedi.',
-        mapOperation: 'replaceMatchTeamPlayersRemote',
-      }),
-    );
     setTimeout(measure, 50);
   };
 
@@ -941,10 +927,11 @@ export function LineupBuilderScreen() {
 
         <View style={styles.actionsBar}>
           <PillButton
-            title="Otomatik Denge"
+            title="Akıllı Denge"
             variant="ghost"
             onPress={onBalance}
             testID="lineup:balance:press"
+            accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
           />
           <PillButton
             title="Kaydet ve çık"
@@ -1037,10 +1024,11 @@ export function LineupBuilderScreen() {
 
       <View style={styles.actions}>
         <PillButton
-          title="Otomatik Denge"
+          title="Akıllı Denge"
           variant="ghost"
           onPress={onBalance}
           testID="lineup:balance:press"
+          accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
         />
         <PillButton
           title="Kaydet ve çık"
