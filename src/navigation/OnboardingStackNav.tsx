@@ -1,8 +1,11 @@
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useAppIntroCompletion } from '../hooks/useAppIntroCompletion';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { AuthWelcomeScreen } from '../screens/AuthWelcomeScreen';
+import { AppIntroScreen } from '../screens/AppIntroScreen';
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
@@ -28,6 +31,20 @@ const OnboardingTheme = {
 
 export function OnboardingNavigator() {
   const reduceMotion = useReduceMotion();
+  const { status, markCompleted } = useAppIntroCompletion();
+
+  if (status === 'loading') {
+    return (
+      <View style={gateStyles.loading}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
+  }
+
+  if (status === 'needs_intro') {
+    return <AppIntroScreen onComplete={markCompleted} />;
+  }
+
   return (
     <NavigationContainer theme={OnboardingTheme}>
       <Stack.Navigator
@@ -68,3 +85,12 @@ export function OnboardingNavigator() {
     </NavigationContainer>
   );
 }
+
+const gateStyles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
