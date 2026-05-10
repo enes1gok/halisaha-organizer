@@ -102,7 +102,7 @@ export function useMyMatchesData(): UseMyMatchesData {
     if (!slice.remoteUserId) return;
     setRefreshing(true);
     try {
-      await slice.hydrateRemoteMatches();
+      await slice.hydrateRemoteMatches({ force: true });
     } finally {
       setRefreshing(false);
     }

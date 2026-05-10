@@ -47,7 +47,7 @@ function scheduleMatchRefresh(matchId: string): void {
       const known = state.matches.some((m) => m.id === matchId);
       const task = known
         ? state.refreshRemoteMatch(matchId)
-        : state.hydrateRemoteMatches();
+        : state.hydrateRemoteMatches({ force: true });
       void Promise.resolve(task).catch((e) => {
         console.warn('Realtime maç senkronu başarısız', e);
       });
@@ -59,7 +59,7 @@ function scheduleGroupsHydrate(): void {
   if (groupsTimer) clearTimeout(groupsTimer);
   groupsTimer = setTimeout(() => {
     groupsTimer = null;
-    void useAppStore.getState().hydrateRemoteGroups().catch((e) => {
+    void useAppStore.getState().hydrateRemoteGroups({ force: true }).catch((e) => {
       console.warn('Realtime grup senkronu başarısız', e);
     });
   }, GROUP_DEBOUNCE_MS);

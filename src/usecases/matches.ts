@@ -23,8 +23,10 @@ import type { Match, MatchStatus, RSVPStatus, ScoreResult, SelfReportType } from
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import type { CreateMatchInput } from '../store/types';
+import type { RemoteHydrateOpts } from '../types/remoteHydration';
 import { AppError, createAuthRequiredError, createNotFoundError } from '../services/supabase/errors';
 import { rethrowUseCaseError } from './errors';
+import { runGatedMatchesHydration } from './remoteHydrationGate';
 
 type MatchesDeps = {
   getRemoteUserId: () => string | null;
@@ -50,15 +52,20 @@ type MatchesDeps = {
   submitLocalScore: (matchId: string, result: ScoreResult) => void;
 };
 
-export async function hydrateRemoteMatchesUseCase(deps: MatchesDeps): Promise<void> {
+export async function hydrateRemoteMatchesUseCase(
+  deps: MatchesDeps,
+  opts?: RemoteHydrateOpts,
+): Promise<void> {
   const uid = deps.getRemoteUserId();
   if (!uid) return;
-  try {
-    const graphs = await fetchMyMatchesGraph();
-    deps.mergeHydratedRemoteMatches(graphs);
-  } catch (error) {
-    rethrowUseCaseError('hydrateRemoteMatches', error, 'Maclar yenilenemedi. Lutfen tekrar deneyin.');
-  }
+  await runGatedMatchesHydration(opts, async () => {
+    try {
+      const graphs = await fetchMyMatchesGraph();
+      deps.mergeHydratedRemoteMatches(graphs);
+    } catch (error) {
+      rethrowUseCaseError('hydrateRemoteMatches', error, 'Maclar yenilenemedi. Lutfen tekrar deneyin.');
+    }
+  });
 }
 
 export async function refreshRemoteMatchUseCase(deps: MatchesDeps, matchId: string): Promise<void> {

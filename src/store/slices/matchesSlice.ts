@@ -387,7 +387,8 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
     }));
   },
 
-  hydrateRemoteMatches: () => hydrateRemoteMatchesUseCase(buildMatchesUseCaseDeps(set, get)),
+  hydrateRemoteMatches: (opts) =>
+    hydrateRemoteMatchesUseCase(buildMatchesUseCaseDeps(set, get), opts),
 
   refreshRemoteMatch: async (matchId) => {
     await refreshRemoteMatchUseCase(buildMatchesUseCaseDeps(set, get), matchId);

@@ -1,6 +1,7 @@
 import type { Attendee, Match, Player } from '../types/domain';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import type { ProfileRow, PublicProfileRow } from '../services/supabase/types';
+import { appendPhotoUriCacheBuster } from '../utils/photoUri';
 import { isRemoteMatchId } from '../utils/matchId';
 import { recomputePlayerStatsFromMatches } from '../utils/stats';
 
@@ -52,7 +53,11 @@ export function upsertProfilesIntoPlayers(players: Player[], profiles: PublicPro
     const stub: Player = {
       id: pr.id,
       name: pr.display_name.trim() || 'Oyuncu',
-      photoUri: pr.photo_uri ?? undefined,
+      photoUri:
+        appendPhotoUriCacheBuster(
+          pr.photo_uri,
+          'updated_at' in pr && typeof pr.updated_at === 'string' ? pr.updated_at : undefined,
+        ) ?? undefined,
       position: pr.position,
       preferredFoot: pr.preferred_foot,
       iban: 'iban' in pr ? (pr.iban ?? undefined) : idx >= 0 ? next[idx].iban : undefined,

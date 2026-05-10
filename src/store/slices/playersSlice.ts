@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { Player } from '../../types/domain';
 import { emptyPlayerStats, withSyncedStats } from '../helpers';
 import { storeSeed } from '../storeSeed';
+import { appendPhotoUriCacheBuster } from '../../utils/photoUri';
 import type { AppState, PlayersSlice } from '../types';
 
 export const createPlayersSlice: StateCreator<AppState, [], [], PlayersSlice> = (set, get) => ({
@@ -16,7 +17,7 @@ export const createPlayersSlice: StateCreator<AppState, [], [], PlayersSlice> = 
       const merged: Player = {
         id: row.id,
         name: row.display_name.trim() || 'Oyuncu',
-        photoUri: row.photo_uri ?? undefined,
+        photoUri: appendPhotoUriCacheBuster(row.photo_uri, row.updated_at) ?? undefined,
         position: row.position,
         preferredFoot: row.preferred_foot,
         iban: row.iban ?? undefined,

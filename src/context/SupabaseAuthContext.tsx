@@ -9,6 +9,7 @@ import { ensureThenFetchProfile } from '../services/supabase/profiles';
 import { deactivatePushToken, upsertPushToken } from '../services/supabase/pushTokens';
 import { useToast } from './ToastContext';
 import { useAppStore, useAuthStore, useGroupsStore, usePlayersStore } from '../store';
+import { resetRemoteHydrationGates } from '../usecases/remoteHydrationGate';
 import { isRemoteMatchId } from '../utils/matchId';
 
 export type SignUpResult = {
@@ -91,6 +92,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
             position: profile.position,
             preferred_foot: profile.preferred_foot,
             iban: profile.iban,
+            updated_at: profile.updated_at,
           });
         } else {
           stub();
@@ -111,7 +113,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (uid) {
         await pushProfileToStore(uid, sess?.user.email ?? null, sess?.user.user_metadata);
         try {
-          await Promise.all([useAppStore.getState().hydrateRemoteMatches(), hydrateRemoteGroups()]);
+          await Promise.all([
+            useAppStore.getState().hydrateRemoteMatches({ force: true }),
+            hydrateRemoteGroups({ force: true }),
+          ]);
         } catch (e) {
           console.warn('Maç senkronu başarısız', e);
         }
@@ -335,6 +340,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const signOut = useCallback(async () => {
     if (!configured) return;
     stopRemoteRealtimeSync();
+    resetRemoteHydrationGates();
     const supabase = getSupabaseClient();
     if (activePushToken) {
       try {

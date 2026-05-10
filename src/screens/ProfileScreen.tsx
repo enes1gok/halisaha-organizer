@@ -38,6 +38,7 @@ import { fetchMyPlayerBadgeInputs } from '../services/supabase/playerBadges';
 import { uploadProfileAvatar } from '../services/supabase/avatarUpload';
 import { updateCurrentUserProfile } from '../services/supabase/profiles';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { appendPhotoUriCacheBuster, stripUrlQueryForStorage } from '../utils/photoUri';
 import {
   computeWinStreak,
   levelLabelFromScore,
@@ -84,6 +85,7 @@ export function ProfileScreen() {
   const player = usePlayersStore((s) => s.players.find((p) => p.id === userId));
   const matches = useMatchesStore((s) => s.matches);
   const updateProfile = usePlayersStore((s) => s.updatePlayerProfile);
+  const syncPlayerFromRemoteProfile = usePlayersStore((s) => s.syncPlayerFromRemoteProfile);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const { configured, session, refreshRemoteProfile, refreshAuthSession } = useSupabaseAuth();
   const { showValidationToast, showToast } = useUserFeedback();
@@ -277,9 +279,12 @@ export function ProfileScreen() {
       );
       return;
     }
+    const rawPhoto = photoUri.trim();
+    const cleanPhoto = rawPhoto ? stripUrlQueryForStorage(rawPhoto) : '';
+
     updateProfile(player.id, {
       name: name.trim() || player.name,
-      photoUri: photoUri.trim() || undefined,
+      photoUri: appendPhotoUriCacheBuster(cleanPhoto || undefined, Date.now()) ?? undefined,
       position,
       preferredFoot: foot,
       iban: ibanNorm || undefined,
@@ -287,12 +292,21 @@ export function ProfileScreen() {
     sheetRef.current?.dismiss();
     if (configured && session?.user?.id === player.id) {
       try {
-        await updateCurrentUserProfile({
+        const saved = await updateCurrentUserProfile({
           display_name: name.trim() || player.name,
-          photo_uri: photoUri.trim() || null,
+          photo_uri: cleanPhoto || null,
           position,
           preferred_foot: foot,
           iban: ibanNorm || null,
+        });
+        syncPlayerFromRemoteProfile({
+          id: saved.id,
+          display_name: saved.display_name,
+          photo_uri: saved.photo_uri,
+          position: saved.position,
+          preferred_foot: saved.preferred_foot,
+          iban: saved.iban,
+          updated_at: saved.updated_at,
         });
       } catch {
         showToast({
@@ -318,7 +332,7 @@ export function ProfileScreen() {
       if (session) {
         await refreshAuthSession();
         await refreshRemoteProfile();
-        await hydrateRemoteMatches();
+        await hydrateRemoteMatches({ force: true });
         await loadWeeklyMatchStreak();
       }
       await loadBadgeTiles();

@@ -1,6 +1,8 @@
+import { Image } from 'expo-image';
 import React, { useMemo } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { colors, typography } from '../theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { typography } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 function initialsFromName(name: string): string {
   const p = name.trim().split(/\s+/).filter(Boolean);
@@ -17,20 +19,27 @@ type Props = {
 };
 
 export function PlayerAvatar({ name, uri, size = 40, showPaid }: Props) {
+  const { colors } = useTheme();
   const initials = useMemo(() => initialsFromName(name), [name]);
   const s = { width: size, height: size, borderRadius: size / 2 };
 
   return (
     <View style={[styles.wrap, s]}>
       {uri ? (
-        <Image source={{ uri }} style={[s, styles.img]} />
+        <Image
+          source={{ uri }}
+          style={[s, { backgroundColor: colors.surface }]}
+          cachePolicy="memory-disk"
+        />
       ) : (
-        <View style={[s, styles.fallback]}>
-          <Text style={[typography.caption, styles.initials]}>{initials}</Text>
+        <View style={[s, styles.fallback, { backgroundColor: colors.border }]}>
+          <Text style={[typography.caption, styles.initials, { color: colors.text }]}>{initials}</Text>
         </View>
       )}
       {showPaid ? (
-        <View style={styles.paidDot}>
+        <View
+          style={[styles.paidDot, { backgroundColor: colors.accent, borderColor: colors.background }]}
+        >
           <Text style={styles.check}>✓</Text>
         </View>
       ) : null}
@@ -42,16 +51,11 @@ const styles = StyleSheet.create({
   wrap: {
     position: 'relative',
   },
-  img: {
-    backgroundColor: colors.surface,
-  },
   fallback: {
-    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   initials: {
-    color: colors.text,
     fontWeight: '700',
   },
   paidDot: {
@@ -61,11 +65,9 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: colors.background,
   },
   check: {
     color: '#0A0A0A',

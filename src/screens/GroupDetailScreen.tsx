@@ -136,7 +136,7 @@ export function GroupDetailScreen() {
                 navigation.navigate('GroupsMain');
               } catch (e) {
                 try {
-                  await hydrateRemoteGroups();
+                  await hydrateRemoteGroups({ force: true });
                 } catch {
                   /* listeyi yenileyemediysek yine de kullanıcıya ilk hatayı göster */
                 }

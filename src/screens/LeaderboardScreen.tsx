@@ -185,7 +185,7 @@ export function LeaderboardScreen() {
             onRefresh={async () => {
               setRefreshing(true);
               try {
-                if (remoteUserId) await hydrateRemoteMatches();
+                if (remoteUserId) await hydrateRemoteMatches({ force: true });
               } finally {
                 setRefreshing(false);
               }

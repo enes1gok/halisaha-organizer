@@ -73,7 +73,7 @@ export function HomeScreen() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRefreshing(true);
     try {
-      if (remoteUserId) await hydrateRemoteMatches();
+      if (remoteUserId) await hydrateRemoteMatches({ force: true });
     } finally {
       setRefreshing(false);
     }

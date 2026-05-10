@@ -14,9 +14,11 @@ import {
 } from '../services/supabase/groups';
 import type { Group, GroupWeeklySeries } from '../types/domain';
 import type { CreateGroupResult } from '../store/types';
+import type { RemoteHydrateOpts } from '../types/remoteHydration';
 import { createId } from '../utils/id';
 import { isRemoteUuid } from '../utils/matchId';
 import { rethrowUseCaseError } from './errors';
+import { runGatedGroupsHydration } from './remoteHydrationGate';
 
 export type GroupsHydrationPayload = Awaited<ReturnType<typeof fetchMyGroups>>;
 
@@ -27,18 +29,23 @@ type GroupsDeps = {
   joinLocalGroup: (joinCode: string) => Group | null;
   leaveLocalGroup: (groupId: string) => void;
   deleteLocalGroupState: (groupId: string) => void;
-  hydrateRemoteMatches: () => Promise<void>;
+  hydrateRemoteMatches: (opts?: RemoteHydrateOpts) => Promise<void>;
   setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) => void;
 };
 
-export async function hydrateRemoteGroupsUseCase(deps: GroupsDeps): Promise<void> {
+export async function hydrateRemoteGroupsUseCase(
+  deps: GroupsDeps,
+  opts?: RemoteHydrateOpts,
+): Promise<void> {
   if (!deps.getRemoteUserId()) return;
-  try {
-    const payload = await fetchMyGroups();
-    deps.hydrateLocalGroups(payload);
-  } catch (error) {
-    rethrowUseCaseError('hydrateRemoteGroups', error, 'Gruplar yenilenemedi.');
-  }
+  await runGatedGroupsHydration(opts, async () => {
+    try {
+      const payload = await fetchMyGroups();
+      deps.hydrateLocalGroups(payload);
+    } catch (error) {
+      rethrowUseCaseError('hydrateRemoteGroups', error, 'Gruplar yenilenemedi.');
+    }
+  });
 }
 
 export async function createGroupUseCase(deps: GroupsDeps, name: string): Promise<CreateGroupResult> {
@@ -97,14 +104,14 @@ export async function deleteGroupUseCase(deps: GroupsDeps, groupId: string): Pro
   if (uid) {
     if (!isRemoteUuid(groupId)) {
       deps.deleteLocalGroupState(groupId);
-      await deps.hydrateRemoteMatches();
+      await deps.hydrateRemoteMatches({ force: true });
       return;
     }
     try {
       await deleteGroupRemote(groupId);
       const payload = await fetchMyGroups();
       deps.hydrateLocalGroups(payload);
-      await deps.hydrateRemoteMatches();
+      await deps.hydrateRemoteMatches({ force: true });
       return;
     } catch (error) {
       reportError({ error, operation: 'deleteGroup', extra: { groupId } });

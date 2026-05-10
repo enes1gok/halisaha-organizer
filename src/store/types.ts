@@ -15,6 +15,7 @@ import type {
   ScoreResult,
   SelfReportType,
 } from '../types/domain';
+import type { RemoteHydrateOpts } from '../types/remoteHydration';
 
 export type { MatchRatingPublicSummaryDb, PeerRatingInput };
 
@@ -37,6 +38,8 @@ export type RemoteProfileRow = {
   position: Player['position'];
   preferred_foot: Player['preferredFoot'];
   iban: string | null;
+  /** İstemci `photo_uri` önbellek bust için (Supabase `profiles.updated_at`). */
+  updated_at?: string;
 };
 
 export interface AuthSlice {
@@ -90,7 +93,7 @@ export interface MatchesSlice {
   clearMatchPendingListEntrance: (id: string) => void;
 
   /** Oturum + Supabase maçları yeniden yükler. */
-  hydrateRemoteMatches: () => Promise<void>;
+  hydrateRemoteMatches: (opts?: RemoteHydrateOpts) => Promise<void>;
   refreshRemoteMatch: (matchId: string) => Promise<void>;
 
   createMatch: (input: CreateMatchInput) => Promise<Match>;
@@ -130,7 +133,7 @@ export interface GroupsSlice {
   /** Uzak `group_weekly_series` önbelleği (persist dışı). */
   weeklySeriesByGroupId: Record<string, GroupWeeklySeries | null | undefined>;
 
-  hydrateRemoteGroups: () => Promise<void>;
+  hydrateRemoteGroups: (opts?: RemoteHydrateOpts) => Promise<void>;
 
   createGroup: (name: string) => Promise<CreateGroupResult>;
   joinGroup: (joinCode: string) => Promise<Group | null>;

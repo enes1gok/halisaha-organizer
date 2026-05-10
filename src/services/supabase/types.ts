@@ -38,6 +38,8 @@ export interface PublicProfileRow {
   photo_uri: string | null;
   position: PlayerPositionRow;
   preferred_foot: PreferredFootRow;
+  /** Avatar/cache busting için; roster görünümlerinde istemci `photo_uri` ile birleştirir. */
+  updated_at?: string;
   weekly_match_streak_weeks?: number;
   weekly_match_last_qualifying_week_start?: string | null;
   weekly_match_streak_effective_weeks?: number;

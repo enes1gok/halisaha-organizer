@@ -60,7 +60,7 @@ describe('deleteGroupUseCase', () => {
     const deps = buildDeps();
     await deleteGroupUseCase(deps, LOCAL_GROUP_ID);
     expect(deps.deleteLocalGroupState).toHaveBeenCalledWith(LOCAL_GROUP_ID);
-    expect(deps.hydrateRemoteMatches).toHaveBeenCalled();
+    expect(deps.hydrateRemoteMatches).toHaveBeenCalledWith({ force: true });
     expect(mockDeleteGroupRemote).not.toHaveBeenCalled();
     expect(deps.hydrateLocalGroups).not.toHaveBeenCalled();
   });
@@ -73,7 +73,7 @@ describe('deleteGroupUseCase', () => {
     await deleteGroupUseCase(deps, GROUP_UUID);
     expect(mockDeleteGroupRemote).toHaveBeenCalledWith(GROUP_UUID);
     expect(deps.hydrateLocalGroups).toHaveBeenCalledWith(payload);
-    expect(deps.hydrateRemoteMatches).toHaveBeenCalled();
+    expect(deps.hydrateRemoteMatches).toHaveBeenCalledWith({ force: true });
   });
 
   it('rethrows when delete_group RPC fails', async () => {

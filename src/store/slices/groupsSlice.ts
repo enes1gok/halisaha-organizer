@@ -13,6 +13,7 @@ import {
 } from '../../usecases/groups';
 import type { UpsertGroupWeeklySeriesInput } from '../../services/supabase/groupWeeklySeries';
 import type { AppState, GroupsSlice } from '../types';
+import type { RemoteHydrateOpts } from '../../types/remoteHydration';
 import { upsertProfilesIntoPlayers, withSyncedStats } from '../helpers';
 
 function hydrateGroupsState(
@@ -117,7 +118,7 @@ function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get:
     joinLocalGroup: (joinCode: string) => joinLocalGroup(set, get, joinCode),
     leaveLocalGroup: (groupId: string) => leaveLocalGroup(set, get, groupId),
     deleteLocalGroupState: (groupId: string) => deleteLocalGroupState(set, groupId),
-    hydrateRemoteMatches: () => get().hydrateRemoteMatches(),
+    hydrateRemoteMatches: (opts?: RemoteHydrateOpts) => get().hydrateRemoteMatches(opts),
     setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) =>
       set((s) => ({
         weeklySeriesByGroupId: { ...s.weeklySeriesByGroupId, [groupId]: series },
@@ -130,7 +131,7 @@ export const createGroupsSlice: StateCreator<AppState, [], [], GroupsSlice> = (s
   groupMemberships: [],
   weeklySeriesByGroupId: {},
 
-  hydrateRemoteGroups: () => hydrateRemoteGroupsUseCase(buildGroupsUseCaseDeps(set, get)),
+  hydrateRemoteGroups: (opts) => hydrateRemoteGroupsUseCase(buildGroupsUseCaseDeps(set, get), opts),
 
   createGroup: (name) => createGroupUseCase(buildGroupsUseCaseDeps(set, get), name),
 
