@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { BadgeTileVm } from '../../domain/badges';
+import { PillButton } from '../../components/PillButton';
 import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { PositionBadge } from '../../components/PositionBadge';
 import { letterSpacing, radius, spacing, typography } from '../../theme';
@@ -11,9 +12,12 @@ import { ProfileBadgesModal } from './ProfileBadgesModal';
 type Props = {
   player: Player;
   badgeTiles?: BadgeTileVm[];
+  showEditControls?: boolean;
+  emailVerified?: boolean;
+  onEditPress?: () => void;
 };
 
-export function ProfileIdentityHeader({ player, badgeTiles }: Props) {
+export function ProfileIdentityHeader({ player, badgeTiles, showEditControls, emailVerified, onEditPress }: Props) {
   const { colors } = useTheme();
   const styles = useStyles();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -30,6 +34,25 @@ export function ProfileIdentityHeader({ player, badgeTiles }: Props) {
       <View style={styles.badges}>
         <PositionBadge position={player.position} />
       </View>
+      {showEditControls ? (
+        <View style={styles.editControls}>
+          {emailVerified !== undefined && (
+            <Text
+              style={emailVerified ? styles.emailOk : styles.emailWarn}
+              testID="profile:identity:email-verification"
+            >
+              {emailVerified ? 'E-posta doğrulandı' : 'E-posta henüz doğrulanmadı'}
+            </Text>
+          )}
+          <PillButton
+            title="Profili Düzenle"
+            variant="ghost"
+            onPress={onEditPress}
+            style={styles.editBtn}
+            testID="profile:edit:press"
+          />
+        </View>
+      ) : null}
       {badgeTiles && badgeTiles.length > 0 ? (
         <>
           <ScrollView
@@ -118,6 +141,23 @@ const useStyles = makeStyles((t) =>
     allBtnTxt: {
       ...typography.micro,
       fontWeight: '600',
+    },
+    editControls: {
+      alignItems: 'center',
+      marginTop: spacing.sm,
+      gap: spacing.sm,
+    },
+    emailOk: {
+      ...typography.caption,
+      color: t.colors.accent,
+    },
+    emailWarn: {
+      ...typography.caption,
+      color: t.colors.danger,
+    },
+    editBtn: {
+      marginTop: spacing.xs,
+      minWidth: 160,
     },
   }),
 );

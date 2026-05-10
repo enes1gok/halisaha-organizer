@@ -15,6 +15,9 @@ type Props = {
   sparklinePoints: number[];
   badgeTiles?: BadgeTileVm[];
   weeklyMatchStreakEffective?: number | null;
+  showEditControls?: boolean;
+  emailVerified?: boolean;
+  onEditPress?: () => void;
 };
 
 export function ProfileStatsHero({
@@ -27,10 +30,19 @@ export function ProfileStatsHero({
   sparklinePoints,
   badgeTiles,
   weeklyMatchStreakEffective,
+  showEditControls,
+  emailVerified,
+  onEditPress,
 }: Props) {
   return (
     <>
-      <ProfileIdentityHeader player={player} badgeTiles={badgeTiles} />
+      <ProfileIdentityHeader
+        player={player}
+        badgeTiles={badgeTiles}
+        showEditControls={showEditControls}
+        emailVerified={emailVerified}
+        onEditPress={onEditPress}
+      />
       <ProfileKpiStrip
         matchesPlayed={player.stats.matchesPlayed}
         goals={player.stats.goals}

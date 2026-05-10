@@ -46,6 +46,7 @@ import {
   playerScoreTierProgress01,
   winRate,
 } from '../utils/stats';
+import { isEmailVerified } from '../utils/emailVerification';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
@@ -393,21 +394,16 @@ export function ProfileScreen() {
         weeklyMatchStreakEffective={
           configured && session?.user?.id === player.id ? weeklyMatchStreakEffective : null
         }
+        showEditControls={configured && session?.user?.id === player.id}
+        emailVerified={configured && session?.user ? isEmailVerified(session.user) : undefined}
+        onEditPress={openEdit}
       />
 
       <ProfileGlobalRankCard userId={player.id} remoteUserId={remoteUserId} refreshKey={rankRefreshKey} />
 
       <ProfileRecentMatches rows={recent} />
 
-      <ProfileAccountSection configured={configured} user={session?.user} player={player} />
-
-      <PillButton
-        title="Profili Düzenle"
-        variant="ghost"
-        onPress={openEdit}
-        style={styles.editBtn}
-        testID="profile:edit:press"
-      />
+      <ProfileAccountSection player={player} />
 
       <BottomSheetModal
         ref={sheetRef}
@@ -517,10 +513,6 @@ const useStyles = makeStyles((t) =>
     },
     skeletonGap: {
       marginTop: spacing.sm,
-    },
-    editBtn: {
-      marginHorizontal: spacing.md,
-      marginTop: spacing.md,
     },
     sheetBg: {
       backgroundColor: t.colors.surface,
