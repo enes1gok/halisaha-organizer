@@ -174,13 +174,16 @@ export function MyMatchesCalendarSkeleton() {
 export function GroupCardSkeleton() {
   return (
     <View style={styles.groupCard}>
-      <View style={styles.groupCardRow}>
-        <View style={styles.groupCardMain}>
-          <SkeletonText variant="subtitle" width="58%" />
-          <SkeletonText variant="caption" width="40%" />
-        </View>
-        <SkeletonBlock width={44} height={24} radius={8} />
+      <View style={styles.groupCardHeaderRow}>
+        <SkeletonText variant="subtitle" width="58%" />
+        <SkeletonBlock width={36} height={20} radius={radius.pill} />
       </View>
+      <View style={styles.groupCardChipsRow}>
+        <SkeletonBlock width={92} height={22} radius={radius.pill} />
+        <SkeletonBlock width={104} height={22} radius={radius.pill} />
+        <SkeletonBlock width={108} height={22} radius={radius.pill} />
+      </View>
+      <SkeletonText variant="caption" width="40%" />
     </View>
   );
 }
@@ -339,8 +342,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radius.card,
     padding: spacing.md,
+    gap: spacing.sm,
+  },
+  groupCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  groupCardChipsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   calendarShell: {
     backgroundColor: colors.surface,
@@ -376,16 +390,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 6,
-  },
-  groupCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  groupCardMain: {
-    flex: 1,
-    gap: spacing.xs,
-    minWidth: 0,
   },
 });
