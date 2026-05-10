@@ -1,17 +1,20 @@
+import * as Sharing from 'expo-sharing';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Alert, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import { MatchFinishedResultCard } from '../components/MatchFinishedResultCard';
 import { PillButton } from '../components/PillButton';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
-import { colors, letterSpacing, spacing, typography } from '../theme';
+import { colors, letterSpacing, shadows, spacing, typography } from '../theme';
 import { countGoing } from '../utils/matchRoster';
 import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
 import { formatMatchDateTime } from '../utils/dates';
 import { isRemoteMatchId } from '../utils/matchId';
 import { useShallow } from 'zustand/react/shallow';
-import { useAuthStore, useMatchesStore } from '../store';
+import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 
 type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
 type R =
@@ -25,7 +28,11 @@ export function MatchSummaryScreen() {
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
 
+  const cardRef = useRef<View>(null);
+  const [shareBusy, setShareBusy] = useState(false);
+
   const userId = useAuthStore((s) => s.getCurrentUserId());
+  const getPlayer = usePlayersStore((s) => s.getPlayer);
   const { match, hasSubmittedRatings, loadSummary, ratingSummary } = useMatchesStore(
     useShallow((s) => ({
       match: s.getMatch(matchId),
@@ -45,10 +52,57 @@ export function MatchSummaryScreen() {
     }
   }, [match?.id, match?.status, loadSummary]);
 
+  const shareSummaryText = useMemo(() => {
+    if (!match) return '';
+    const lines = [match.venue, formatMatchDateTime(match.startsAt)];
+    if (match.result) {
+      lines.push(`Skor: ${match.result.scoreA} – ${match.result.scoreB}`);
+    } else {
+      lines.push('Sonuç yok');
+    }
+    return lines.join('\n');
+  }, [match]);
+
+  const onShareCardImage = useCallback(async () => {
+    if (!match || !cardRef.current) {
+      try {
+        await Share.share({ message: shareSummaryText });
+      } catch {
+        Alert.alert('Hata', 'Paylaşılamadı.');
+      }
+      return;
+    }
+    setShareBusy(true);
+    try {
+      const uri = await captureRef(cardRef, {
+        format: 'png',
+        quality: 0.95,
+        result: 'tmpfile',
+      });
+      const available = await Sharing.isAvailableAsync();
+      if (available && uri) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Maç kartını paylaş',
+        });
+      } else {
+        await Share.share({ message: shareSummaryText });
+      }
+    } catch {
+      try {
+        await Share.share({ message: shareSummaryText });
+      } catch {
+        Alert.alert('Hata', 'Paylaşılamadı.');
+      }
+    } finally {
+      setShareBusy(false);
+    }
+  }, [match, shareSummaryText]);
+
   if (!match) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: colors.textMuted }}>Maç bulunamadı</Text>
+        <Text style={styles.emptyMsg}>Maç bulunamadı</Text>
       </View>
     );
   }
@@ -68,18 +122,20 @@ export function MatchSummaryScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}>
       <View style={styles.pad}>
-        <MatchCardStatic>
-          <Text style={[typography.subtitle, styles.venue]} numberOfLines={2}>
-            {match.venue}
-          </Text>
-          <Text style={[typography.caption, styles.date]}>{formatMatchDateTime(match.startsAt)}</Text>
-          <Text style={[typography.body, styles.resultLine]}>
-            {match.result ? `Skor: ${match.result.scoreA} – ${match.result.scoreB}` : 'Sonuç yok'}
-          </Text>
-          {lineup && myAvg != null ? (
-            <Text style={styles.miniAvg}>Oy ortalamanız: {myAvg.toFixed(1)} / 100</Text>
-          ) : null}
-        </MatchCardStatic>
+        <MatchFinishedResultCard
+          ref={cardRef}
+          match={match}
+          getPlayer={getPlayer}
+          myRatingAvg={lineup && myAvg != null ? myAvg : null}
+        />
+
+        <PillButton
+          title={shareBusy ? 'Hazırlanıyor…' : 'Görseli paylaş'}
+          variant="ghost"
+          onPress={() => void onShareCardImage()}
+          disabled={shareBusy}
+          testID="summary:share-image:press"
+        />
 
         <View style={styles.listCard}>
           <Text style={[typography.caption, styles.muted]}>Katılımcı</Text>
@@ -119,29 +175,6 @@ export function MatchSummaryScreen() {
   );
 }
 
-/** MatchCard ile aynı kutu stili ama liste gibi dokunmatik kapalı */
-function MatchCardStatic({ children }: { children: React.ReactNode }) {
-  return (
-    <View style={cardStyles.wrap}>
-      <View style={cardStyles.row}>{children}</View>
-    </View>
-  );
-}
-
-const cardStyles = StyleSheet.create({
-  wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  row: {
-    gap: spacing.xs,
-  },
-});
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   pad: { padding: spacing.md, gap: spacing.sm },
@@ -151,8 +184,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  venue: { color: colors.text },
-  date: { color: colors.textMuted },
+  emptyMsg: { color: colors.textMuted },
   goingLbl: { ...typography.subtitle, color: colors.accent, marginTop: spacing.xs },
   listCard: {
     backgroundColor: colors.surface,
@@ -160,10 +192,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
+    ...shadows.sm,
   },
   muted: { color: colors.textMuted, textTransform: 'uppercase', letterSpacing: letterSpacing.normal },
-  resultLine: { color: colors.text, marginTop: spacing.sm },
-  miniAvg: { ...typography.caption, color: colors.accent, marginTop: spacing.xs },
   banner: { ...typography.caption, color: colors.accent },
   hintMuted: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
   mt: { marginTop: spacing.sm },
