@@ -30,12 +30,12 @@ import {
   submitScoreUseCase,
 } from '../../usecases/matches';
 import { isRemoteMatchId } from '../../utils/matchId';
+import { patchPlayersStatsForMatchTransition } from '../../utils/stats';
 import {
   mergeHydratedRemoteMatches,
   mergeRemoteGraph,
   mergeStatLines,
   upsertAttendee,
-  withSyncedStats,
 } from '../helpers';
 import { storeSeed } from '../storeSeed';
 import type { AppState, CreateMatchInput, MatchesSlice, PeerRatingInput } from '../types';
@@ -123,7 +123,7 @@ function joinLocalMatchByJoinCode(
       const attendees = upsertAttendee(mm.attendees, userId, { status: 'going' });
       return { ...mm, attendees };
     });
-    return { matches, players: withSyncedStats(s.players, matches) };
+    return { matches };
   });
   return get().getMatch(found.id) ?? null;
 }
@@ -140,7 +140,7 @@ function setLocalRsvp(
       const attendees = upsertAttendee(m.attendees, playerId, { status });
       return { ...m, attendees };
     });
-    return { matches, players: withSyncedStats(state.players, matches) };
+    return { matches };
   });
 }
 
@@ -164,7 +164,7 @@ function setLocalPaid(
       const attendees = upsertAttendee(mm.attendees, playerId, { paid });
       return { ...mm, attendees };
     });
-    return { matches, players: withSyncedStats(state.players, matches) };
+    return { matches };
   });
 }
 
@@ -203,6 +203,7 @@ function respondLocalSelfReport(
   approve: boolean,
 ) {
   set((state) => {
+    const prev = state.matches.find((m) => m.id === matchId);
     const matches = state.matches.map((m) => {
       if (m.id !== matchId) return m;
       const selfReports = m.selfReports.map((r) =>
@@ -233,7 +234,9 @@ function respondLocalSelfReport(
       }
       return next;
     });
-    return { matches, players: withSyncedStats(state.players, matches) };
+    const nextMatch = matches.find((m) => m.id === matchId);
+    const players = patchPlayersStatsForMatchTransition(state.players, prev, nextMatch);
+    return { matches, players };
   });
 }
 
@@ -276,6 +279,7 @@ function setLocalMatchStatus(set: Parameters<StateCreator<AppState>>[0], matchId
 
 function submitLocalScore(set: Parameters<StateCreator<AppState>>[0], matchId: string, result: ScoreResult) {
   set((state) => {
+    const prev = state.matches.find((m) => m.id === matchId);
     const matches = state.matches.map((m) => {
       if (m.id !== matchId) return m;
       let merged: ScoreResult = { ...result, ownGoals: result.ownGoals ?? [] };
@@ -299,7 +303,9 @@ function submitLocalScore(set: Parameters<StateCreator<AppState>>[0], matchId: s
         result: merged,
       };
     });
-    return { matches, players: withSyncedStats(state.players, matches) };
+    const nextMatch = matches.find((m) => m.id === matchId);
+    const players = patchPlayersStatsForMatchTransition(state.players, prev, nextMatch);
+    return { matches, players };
   });
 }
 

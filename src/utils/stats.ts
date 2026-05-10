@@ -57,6 +57,94 @@ export function recomputePlayerStatsFromMatches(
   }));
 }
 
+/** Tek bitmiş maçın bir oyuncuya maç-türevi katkısı; `recomputePlayerStatsFromMatches` ile aynı kurallar. */
+export function matchStatContributionForPlayer(m: Match, playerId: string): {
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  goals: number;
+  assists: number;
+} {
+  const z = {
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    goals: 0,
+    assists: 0,
+  };
+  if (m.status !== 'finished' || !m.result) return z;
+  const r = m.result;
+  for (const line of r.scorers) {
+    if (line.playerId === playerId) z.goals += line.count;
+  }
+  for (const line of r.assists) {
+    if (line.playerId === playerId) z.assists += line.count;
+  }
+  const outcome = getPlayerMatchOutcome(m, playerId);
+  if (!outcome) return z;
+  z.matchesPlayed = 1;
+  if (outcome === 'W') z.wins = 1;
+  else if (outcome === 'L') z.losses = 1;
+  else z.draws = 1;
+  return z;
+}
+
+function affectedPlayerIdsForStatsMatch(m: Match): Set<string> {
+  const ids = new Set<string>();
+  if (m.status !== 'finished' || !m.result) return ids;
+  for (const id of m.teamAIds) ids.add(id);
+  for (const id of m.teamBIds) ids.add(id);
+  for (const line of m.result.scorers) ids.add(line.playerId);
+  for (const line of m.result.assists) ids.add(line.playerId);
+  return ids;
+}
+
+/**
+ * Tek maçın önceki ve yeni haline göre oyuncu maç-türevi istatistiklerini günceller.
+ * Rating / MOTM alanlarına dokunmaz.
+ */
+export function patchPlayersStatsForMatchTransition(
+  players: Player[],
+  prevMatch: Match | undefined,
+  nextMatch: Match | undefined,
+): Player[] {
+  const ids = new Set<string>();
+  if (prevMatch?.status === 'finished' && prevMatch.result) {
+    for (const id of affectedPlayerIdsForStatsMatch(prevMatch)) ids.add(id);
+  }
+  if (nextMatch?.status === 'finished' && nextMatch.result) {
+    for (const id of affectedPlayerIdsForStatsMatch(nextMatch)) ids.add(id);
+  }
+
+  const applyDelta = (
+    stats: Player['stats'],
+    delta: ReturnType<typeof matchStatContributionForPlayer>,
+    sign: 1 | -1,
+  ): Player['stats'] => ({
+    ...stats,
+    matchesPlayed: stats.matchesPlayed + sign * delta.matchesPlayed,
+    wins: stats.wins + sign * delta.wins,
+    losses: stats.losses + sign * delta.losses,
+    draws: stats.draws + sign * delta.draws,
+    goals: stats.goals + sign * delta.goals,
+    assists: stats.assists + sign * delta.assists,
+  });
+
+  return players.map((p) => {
+    if (!ids.has(p.id)) return p;
+    let stats = p.stats;
+    if (prevMatch?.status === 'finished' && prevMatch.result) {
+      stats = applyDelta(stats, matchStatContributionForPlayer(prevMatch, p.id), -1);
+    }
+    if (nextMatch?.status === 'finished' && nextMatch.result) {
+      stats = applyDelta(stats, matchStatContributionForPlayer(nextMatch, p.id), 1);
+    }
+    return { ...p, stats };
+  });
+}
+
 const emptyStats = {
   matchesPlayed: 0,
   goals: 0,

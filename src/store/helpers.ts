@@ -85,6 +85,14 @@ export function mergeRemoteGraph(
   };
 }
 
+/**
+ * Çoklu uzak maç grafiğini birleştirir ve oyuncu maç istatistiklerini tam yeniden hesaplar.
+ *
+ * Çok büyük senkronlarda JS iş parçacığını kilitleme ölçülürse, burada `InteractionManager.runAfterInteractions`
+ * ile istatistik yeniden hesaplamayı ertelemek düşünülebilir; Zustand `persist` ile birlikte ara durumun diske
+ * yazılmasını önlemek için tasarım gerekir (ör. önce `matches` yazıp istatistikleri sonraki tick’te güncellemek
+ * veya UI’da “güncelleniyor” durumu).
+ */
 export function mergeHydratedRemoteMatches(
   state: { players: Player[]; matches: Match[] },
   graphs: MatchGraphPayload[],

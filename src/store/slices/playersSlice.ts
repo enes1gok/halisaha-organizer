@@ -24,7 +24,8 @@ export const createPlayersSlice: StateCreator<AppState, [], [], PlayersSlice> = 
       };
       if (idx >= 0) players[idx] = { ...players[idx], ...merged };
       else players.unshift(merged);
-      return { players: withSyncedStats(players, state.matches) };
+      const nextPlayers = idx < 0 ? withSyncedStats(players, state.matches) : players;
+      return { players: nextPlayers };
     }),
 
   updatePlayerProfile: (playerId, patch) =>
