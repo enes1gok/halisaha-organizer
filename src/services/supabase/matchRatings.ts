@@ -98,3 +98,56 @@ export async function fetchMyMotmPickForMatch(matchId: string): Promise<string |
   const row = data as { pick_player_id: string } | null;
   return row?.pick_player_id ?? null;
 }
+
+export type MatchRatingDrafts = {
+  peerRatings: PeerRatingInput[];
+  motmPickPlayerId: string | null;
+};
+
+/** Tek RPC ile kullanıcının bu maç için peer + MOTM taslakları (görünürlük RLS ile uyumlu). */
+export async function fetchMyMatchRatingDraftsForMatch(matchId: string): Promise<MatchRatingDrafts> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc('get_my_match_rating_drafts_for_user', {
+    p_match_id: matchId,
+  });
+
+  if (error) {
+    const msg = error.message ?? '';
+    if (
+      error.code === 'PGRST202' ||
+      /could not find the function/i.test(msg) ||
+      /function .* does not exist/i.test(msg)
+    ) {
+      const [peerRatings, motmPickPlayerId] = await Promise.all([
+        fetchMyPeerRatingsForMatch(matchId),
+        fetchMyMotmPickForMatch(matchId),
+      ]);
+      return { peerRatings, motmPickPlayerId };
+    }
+    throw mapSupabaseError(error, 'fetchMyMatchRatingDraftsForMatch');
+  }
+
+  const rows = (Array.isArray(data) ? data : data ? [data] : []) as {
+    peer_scores?: unknown;
+    motm_pick?: string | null;
+  }[];
+
+  if (rows.length === 0) {
+    return { peerRatings: [], motmPickPlayerId: null };
+  }
+
+  const row = rows[0]!;
+  const peerRaw = row.peer_scores;
+  let peerRatings: PeerRatingInput[] = [];
+  if (Array.isArray(peerRaw)) {
+    peerRatings = peerRaw.map((x) => {
+      const o = x as { ratee_id: string; score: number };
+      return { ratee_id: o.ratee_id, score: Number(o.score) };
+    });
+  }
+
+  return {
+    peerRatings,
+    motmPickPlayerId: row.motm_pick ?? null,
+  };
+}

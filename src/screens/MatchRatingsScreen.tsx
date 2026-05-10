@@ -6,7 +6,7 @@ import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
-import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
+import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { colors, radius, shadows, spacing, typography } from '../theme';
 import { nearestQuickBandId, QUICK_RATING_BANDS } from '../utils/matchPeerRatingQuickBands';
 import { getMatchContribution, sortPeersByMatchContribution } from '../utils/matchPlayerContribution';
@@ -83,24 +83,25 @@ export function MatchRatingsScreen() {
     setLoaded(false);
     (async () => {
       try {
-        const [existing, motm] = await Promise.all([
-          fetchMyPeerRatingsForMatch(match.id),
-          fetchMyMotmPickForMatch(match.id),
-        ]);
+        const { peerRatings, motmPickPlayerId } = await fetchMyMatchRatingDraftsForMatch(match.id);
         if (cancel) return;
         const next: Record<string, number> = {};
         rateablePeers.forEach(({ id }) => {
-          const found = existing.find((e) => e.ratee_id === id);
+          const found = peerRatings.find((e) => e.ratee_id === id);
           next[id] = found?.score ?? DEFAULT_SCORE;
         });
         setScores(next);
-        setMotmId(motm && motmChoices.some((c) => c.id === motm) ? motm : null);
+        setMotmId(
+          motmPickPlayerId && motmChoices.some((c) => c.id === motmPickPlayerId)
+            ? motmPickPlayerId
+            : null,
+        );
       } catch (e) {
         if (!cancel) {
           showApiErrorToast(e, {
             uiOperation: 'MatchRatingsScreen:loadExisting',
             fallbackMessage: 'Veriler yüklenemedi.',
-            mapOperation: 'fetchMyPeerRatingsForMatch',
+            mapOperation: 'fetchMyMatchRatingDraftsForMatch',
           });
         }
       } finally {

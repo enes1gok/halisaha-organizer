@@ -5,21 +5,19 @@ import { ensureMyProfile, fetchProfilesByIds } from './profiles';
 import { mapGroup, mapMembership } from './mappers';
 import type { GroupMemberRow, GroupRow, PublicProfileRow } from './types';
 
-export async function fetchMyGroups(): Promise<{
+export type MyGroupsPayload = {
   groups: Group[];
   memberships: GroupMembership[];
   profiles: PublicProfileRow[];
-}> {
+};
+
+async function fetchMyGroupsViaMultiQuery(userId: string): Promise<MyGroupsPayload> {
   const supabase = getSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { groups: [], memberships: [], profiles: [] };
 
   const { data: myMembershipsRaw, error: myMembershipsError } = await supabase
     .from('group_members')
     .select('group_id')
-    .eq('player_id', user.id);
+    .eq('player_id', userId);
   if (myMembershipsError) throw mapSupabaseError(myMembershipsError, 'fetchMyGroups.myMemberships');
 
   const groupIds = [...new Set((myMembershipsRaw ?? []).map((item) => item.group_id).filter(Boolean))];
@@ -50,6 +48,43 @@ export async function fetchMyGroups(): Promise<{
     memberships,
     profiles: await fetchProfilesByIds(profileIds),
   };
+}
+
+export async function fetchMyGroups(): Promise<MyGroupsPayload> {
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { groups: [], memberships: [], profiles: [] };
+
+  const { data, error } = await supabase.rpc('get_my_groups_bundle_for_user');
+  if (!error && data != null && typeof data === 'object') {
+    const bundle = data as {
+      groups?: unknown;
+      memberships?: unknown;
+      profiles?: unknown;
+    };
+    if (
+      Array.isArray(bundle.groups) &&
+      Array.isArray(bundle.memberships) &&
+      Array.isArray(bundle.profiles)
+    ) {
+      return {
+        groups: bundle.groups.map((row) => mapGroup(row as GroupRow)),
+        memberships: bundle.memberships.map((row) => mapMembership(row as GroupMemberRow)),
+        profiles: bundle.profiles as PublicProfileRow[],
+      };
+    }
+  }
+
+  if (error) {
+    console.warn('[groups] get_my_groups_bundle_for_user failed; using multi-query path', {
+      code: error.code,
+      message: error.message,
+    });
+  }
+
+  return fetchMyGroupsViaMultiQuery(user.id);
 }
 
 export async function createGroupRemote(name: string): Promise<Group> {

@@ -23,4 +23,20 @@ describeIntegration('RPC create_group', () => {
     expect(error).not.toBeNull();
     expect(error?.message ?? '').toMatch(/Grup adı|karakter/i);
   });
+
+  it('get_my_groups_bundle_for_user returns groups and memberships json', async () => {
+    const owner = await createAuthedUser('bundle_owner');
+    const { data: grp, error: cErr } = await owner.client.rpc('create_group', { p_name: 'Bundle Test' });
+    expect(cErr).toBeNull();
+    expect(grp?.id).toBeDefined();
+
+    const { data: bundle, error: bErr } = await owner.client.rpc('get_my_groups_bundle_for_user');
+    expect(bErr).toBeNull();
+    expect(bundle && typeof bundle === 'object').toBe(true);
+    const b = bundle as { groups?: unknown[]; memberships?: unknown[]; profiles?: unknown[] };
+    expect(Array.isArray(b.groups)).toBe(true);
+    expect((b.groups ?? []).some((g) => (g as { id?: string }).id === grp!.id)).toBe(true);
+    expect(Array.isArray(b.memberships)).toBe(true);
+    expect(Array.isArray(b.profiles)).toBe(true);
+  });
 });

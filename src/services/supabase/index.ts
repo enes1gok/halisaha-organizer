@@ -21,6 +21,13 @@ export {
   type MapSupabaseErrorOptions,
 } from './errors';
 export { fetchMatchGraph, fetchMyMatchesGraph, type MatchGraphPayload } from './matchGraph';
+export {
+  getMatchGraphRpcHealthSnapshot,
+  MATCH_GRAPH_ALERT_MIN_TOTAL_SAMPLES,
+  MATCH_GRAPH_DETAIL_FALLBACK_RATIO_ALERT,
+  MATCH_GRAPH_LIST_FALLBACK_RATIO_ALERT,
+  type MatchGraphRpcHealthSnapshot,
+} from './matchGraphRpcMonitoring';
 export { fetchGroupWeeklySeries, upsertGroupWeeklySeriesRemote, type UpsertGroupWeeklySeriesInput } from './groupWeeklySeries';
 export {
   jsonArrayOrEmpty,

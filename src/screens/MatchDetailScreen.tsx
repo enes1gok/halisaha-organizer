@@ -27,7 +27,7 @@ import type { RSVPStatus } from '../types/domain';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
-import { fetchMyMotmPickForMatch, fetchMyPeerRatingsForMatch } from '../services/supabase/matchRatings';
+import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { useShallow } from 'zustand/react/shallow';
@@ -159,12 +159,12 @@ export function MatchDetailScreen() {
       let cancelled = false;
       void (async () => {
         try {
-          const [scores, motm] = await Promise.all([
-            fetchMyPeerRatingsForMatch(match.id),
-            fetchMyMotmPickForMatch(match.id),
-          ]);
+          const { peerRatings, motmPickPlayerId } = await fetchMyMatchRatingDraftsForMatch(match.id);
           if (!cancelled) {
-            setRatingHints({ peer: scores.length > 0, motm: Boolean(motm) });
+            setRatingHints({
+              peer: peerRatings.length > 0,
+              motm: Boolean(motmPickPlayerId),
+            });
           }
         } catch {
           /* pull-to-refresh veya yeniden odak için sessiz geç */

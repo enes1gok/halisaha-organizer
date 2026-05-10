@@ -42,6 +42,16 @@ describeIntegration('RPC match_peer_ratings', () => {
     });
     expect(motmErr).toBeNull();
 
+    const { data: drafts, error: draftsErr } = await p1.client.rpc('get_my_match_rating_drafts_for_user', {
+      p_match_id: match.id,
+    });
+    expect(draftsErr).toBeNull();
+    const draftRow = Array.isArray(drafts) ? drafts[0] : drafts;
+    expect(draftRow?.motm_pick).toBe(org.userId);
+    const peers = draftRow?.peer_scores as { ratee_id: string; score: number }[] | undefined;
+    expect(Array.isArray(peers)).toBe(true);
+    expect(peers?.some((p) => p.ratee_id === org.userId && p.score === 80)).toBe(true);
+
     const { data: summaryOrg, error: sumOrgErr } = await org.client.rpc('get_match_rating_public_summary', {
       p_match_id: match.id,
     });

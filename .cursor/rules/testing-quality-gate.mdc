@@ -49,6 +49,7 @@ For new or heavily modified interactives:
 - “Works on my screen” verification without explicit scenarios.
 - Skipping migration validation after persisted shape updates.
 - Shipping large refactors without regression smoke checks.
+- **Data-fetch N+1:** loading a list then `items.map((id) => fetchOne(id))` (or unbounded `Promise.all` over large lists) instead of a consolidated/batch RPC or bounded concurrency — same guidance as [`supabase-postgres-performance.mdc`](supabase-postgres-performance.mdc).
 
 ## Related
 

@@ -1,4 +1,5 @@
 import type { Match } from '../../types/domain';
+import { mapWithConcurrency } from '../../utils/asyncPool';
 import type {
   MatchAttendeeRow,
   MatchRow,
@@ -8,6 +9,12 @@ import type {
   SelfReportRequestRow,
 } from './types';
 import { fetchMatchesForCurrentUser } from './matches';
+import {
+  recordDetailMatchGraphRpcFallback,
+  recordDetailMatchGraphRpcSuccess,
+  recordListMatchGraphRpcFallback,
+  recordListMatchGraphRpcSuccess,
+} from './matchGraphRpcMonitoring';
 import { fetchProfilesByIds } from './profiles';
 import { getSupabaseClient } from '../../lib/supabase';
 import { createNotFoundError, mapSupabaseError } from './errors';
@@ -27,6 +34,14 @@ type MatchGraphRpcRow = MatchRow & {
   self_reports?: SelfReportRequestRow[] | null;
   profiles?: PublicProfileRow[] | null;
 };
+
+/** Fallback when batch RPC is unavailable: max concurrent single-match fetches. */
+const MATCH_GRAPH_FALLBACK_CONCURRENCY = 4;
+
+const DETAIL_RPC_RETRY_DELAY_MS = 200;
+
+let detailRpcSuccessLogCounter = 0;
+let listRpcSuccessLogCounter = 0;
 
 function collectProfileIds(
   row: NestedMatchRow,
@@ -49,41 +64,59 @@ export type MatchGraphPayload = {
   profiles: PublicProfileRow[];
 };
 
-let matchGraphRpcSuccessCount = 0;
-let matchGraphRpcFallbackCount = 0;
-let matchGraphDetailRpcSuccessCount = 0;
-let matchGraphDetailRpcFallbackCount = 0;
+function rpcRowToPayload(row: MatchGraphRpcRow): MatchGraphPayload {
+  const attendees = jsonArrayOrEmpty(row.attendees);
+  const teamPlayers = jsonArrayOrEmpty(row.team_players);
+  const statLines = jsonArrayOrEmpty(row.stat_lines);
+  const selfReports = jsonArrayOrEmpty(row.self_reports);
+  const profiles = jsonArrayOrEmpty(row.profiles);
+  const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
+  return { match, profiles };
+}
+
+function shouldRetryMatchGraphDetailRpc(err: { code?: string; message?: string }): boolean {
+  const msg = (err.message ?? '').toLowerCase();
+  if (msg.includes('network') || msg.includes('fetch failed') || msg.includes('failed to fetch'))
+    return true;
+  if (msg.includes('timeout') || msg.includes('timed out')) return true;
+  if (err.code === 'PGRST301' || err.code === 'PGRST302') return true;
+  return false;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayload> {
   const supabase = getSupabaseClient();
   const startedAt = Date.now();
 
-  // Prefer the consolidated single-RPC path (1 round-trip). If the RPC is
-  // not yet deployed or fails, fall back to the legacy 6-query path so we
-  // can ship the client and migration independently.
-  const { data, error } = await supabase.rpc('get_match_graph_for_user', { p_match_id: matchId });
+  const tryRpc = () =>
+    supabase.rpc('get_match_graph_for_user', { p_match_id: matchId });
+
+  let { data, error } = await tryRpc();
+  if (error && shouldRetryMatchGraphDetailRpc(error)) {
+    await sleep(DETAIL_RPC_RETRY_DELAY_MS);
+    ({ data, error } = await tryRpc());
+  }
+
   if (!error) {
-    matchGraphDetailRpcSuccessCount += 1;
+    recordDetailMatchGraphRpcSuccess();
     const row = (Array.isArray(data) ? data[0] : data) as MatchGraphRpcRow | undefined;
     if (!row) throw createNotFoundError('fetchMatchGraph', 'Maç bulunamadı');
-    const attendees = jsonArrayOrEmpty(row.attendees);
-    const teamPlayers = jsonArrayOrEmpty(row.team_players);
-    const statLines = jsonArrayOrEmpty(row.stat_lines);
-    const selfReports = jsonArrayOrEmpty(row.self_reports);
-    const profiles = jsonArrayOrEmpty(row.profiles);
-    const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
-    if (matchGraphDetailRpcSuccessCount === 1 || matchGraphDetailRpcSuccessCount % 10 === 0) {
+    const payload = rpcRowToPayload(row);
+    detailRpcSuccessLogCounter += 1;
+    if (detailRpcSuccessLogCounter === 1 || detailRpcSuccessLogCounter % 10 === 0) {
       console.info('[matchGraph] detail rpc fetch completed', {
-        successCount: matchGraphDetailRpcSuccessCount,
+        successCount: detailRpcSuccessLogCounter,
         durationMs: Date.now() - startedAt,
       });
     }
-    return { match, profiles };
+    return payload;
   }
 
-  matchGraphDetailRpcFallbackCount += 1;
-  console.warn('[matchGraph] get_match_graph_for_user failed; fallback enabled', {
-    fallbackCount: matchGraphDetailRpcFallbackCount,
+  recordDetailMatchGraphRpcFallback();
+  console.warn('[matchGraph] get_match_graph_for_user failed; legacy fallback', {
     code: error.code,
     message: error.message,
     details: error.details,
@@ -137,43 +170,88 @@ async function fetchMatchGraphLegacy(matchId: string): Promise<MatchGraphPayload
   return { match, profiles };
 }
 
+async function fetchMatchGraphsViaBatchRpc(matchIds: string[]): Promise<MatchGraphPayload[] | null> {
+  if (matchIds.length === 0) return [];
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc('list_match_graphs_for_match_ids', {
+    p_match_ids: matchIds,
+  });
+  if (error) {
+    console.warn('[matchGraph] list_match_graphs_for_match_ids failed', {
+      code: error.code,
+      message: error.message,
+    });
+    return null;
+  }
+  const rows = (data ?? []) as MatchGraphRpcRow[];
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const ordered: MatchGraphPayload[] = [];
+  for (const id of matchIds) {
+    const row = byId.get(id);
+    if (row) ordered.push(rpcRowToPayload(row));
+  }
+  return ordered;
+}
+
 export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
   const startedAt = Date.now();
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('list_visible_match_graphs_for_user');
   if (error) {
-    // Safe rollout fallback: keep existing behavior if new RPC is not yet applied in DB.
-    matchGraphRpcFallbackCount += 1;
+    recordListMatchGraphRpcFallback();
     console.warn('[matchGraph] list_visible_match_graphs_for_user failed; fallback enabled', {
-      fallbackCount: matchGraphRpcFallbackCount,
       code: error.code,
       message: error.message,
       details: error.details,
       hint: error.hint,
     });
     const summaries = await fetchMatchesForCurrentUser();
-    const graphs = await Promise.all(summaries.map((s) => fetchMatchGraph(s.id)));
-    console.info('[matchGraph] fallback fetch completed', {
+    const ids = summaries.map((s) => s.id);
+
+    const batchPayloads = await fetchMatchGraphsViaBatchRpc(ids);
+    if (batchPayloads !== null) {
+      if (batchPayloads.length === ids.length) {
+        console.info('[matchGraph] fallback batch RPC fetch completed', {
+          matchCount: batchPayloads.length,
+          durationMs: Date.now() - startedAt,
+        });
+        return batchPayloads;
+      }
+      const byId = new Map(batchPayloads.map((g) => [g.match.id, g]));
+      console.warn('[matchGraph] batch RPC partial; filling missing matches', {
+        requested: ids.length,
+        returned: batchPayloads.length,
+      });
+      const merged = await mapWithConcurrency(ids, MATCH_GRAPH_FALLBACK_CONCURRENCY, async (id) => {
+        const hit = byId.get(id);
+        if (hit) return hit;
+        return fetchMatchGraph(id);
+      });
+      console.info('[matchGraph] fallback batch+fill fetch completed', {
+        matchCount: merged.length,
+        durationMs: Date.now() - startedAt,
+      });
+      return merged;
+    }
+
+    const graphs = await mapWithConcurrency(ids, MATCH_GRAPH_FALLBACK_CONCURRENCY, (id) =>
+      fetchMatchGraph(id),
+    );
+    console.info('[matchGraph] fallback per-match fetch completed', {
       matchCount: graphs.length,
       durationMs: Date.now() - startedAt,
+      concurrency: MATCH_GRAPH_FALLBACK_CONCURRENCY,
     });
     return graphs;
   }
 
-  matchGraphRpcSuccessCount += 1;
+  recordListMatchGraphRpcSuccess();
   const rows = (data ?? []) as MatchGraphRpcRow[];
-  const graphs = rows.map((row) => {
-    const attendees = jsonArrayOrEmpty(row.attendees);
-    const teamPlayers = jsonArrayOrEmpty(row.team_players);
-    const statLines = jsonArrayOrEmpty(row.stat_lines);
-    const selfReports = jsonArrayOrEmpty(row.self_reports);
-    const profiles = jsonArrayOrEmpty(row.profiles);
-    const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
-    return { match, profiles };
-  });
-  if (matchGraphRpcSuccessCount === 1 || matchGraphRpcSuccessCount % 10 === 0) {
+  const graphs = rows.map((row) => rpcRowToPayload(row));
+  listRpcSuccessLogCounter += 1;
+  if (listRpcSuccessLogCounter === 1 || listRpcSuccessLogCounter % 10 === 0) {
     console.info('[matchGraph] rpc fetch completed', {
-      successCount: matchGraphRpcSuccessCount,
+      successCount: listRpcSuccessLogCounter,
       matchCount: graphs.length,
       durationMs: Date.now() - startedAt,
     });
