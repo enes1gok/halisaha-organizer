@@ -4,6 +4,7 @@ import {
   type MatchTemplate,
 } from '../types/domain';
 import { isValidTurkishIban } from './iban';
+import { clampEvenMatchMaxPlayers } from './matchMaxPlayers';
 import { normalizeStartsAtFromPicker } from './matchStartsAtNormalize';
 
 /** JavaScript `Date#getDay()` → ISO weekday (1 = Pazartesi … 7 = Pazar). */
@@ -104,10 +105,11 @@ export function applyMatchTemplateToFormFields(
       : '';
 
   const useProfile = template.paymentMethod === 'iban' && template.ibanUsesProfile === true;
+  const maxPlayers = clampEvenMatchMaxPlayers(template.maxPlayers);
   return {
     venue: template.venue,
-    maxPlayers: template.maxPlayers,
-    maxPlayersInputText: String(template.maxPlayers),
+    maxPlayers,
+    maxPlayersInputText: String(maxPlayers),
     selectedGroupId: template.groupId ?? null,
     startsAt,
     paymentMethod: template.paymentMethod,

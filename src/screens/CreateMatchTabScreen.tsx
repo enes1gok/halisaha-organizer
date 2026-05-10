@@ -38,10 +38,12 @@ import {
   applyMatchTemplateToFormFields,
   buildMatchTemplateFromForm,
 } from '../utils/matchTemplateApply';
+import {
+  MATCH_MAX_PLAYERS_MAX,
+  MATCH_MAX_PLAYERS_MIN,
+  clampEvenMatchMaxPlayers,
+} from '../utils/matchMaxPlayers';
 import { normalizeStartsAtFromPicker } from '../utils/matchStartsAtNormalize';
-
-const MIN_MAX_PLAYERS = 4;
-const MAX_MAX_PLAYERS = 22;
 
 const CREATE_MATCH_STEPS = [
   { label: 'Grup' },
@@ -52,10 +54,6 @@ const CREATE_MATCH_STEPS = [
 ] as const;
 
 const STEP_SCROLL_ANCHOR_OFFSET = 80;
-
-function clampMaxPlayers(n: number): number {
-  return Math.min(MAX_MAX_PLAYERS, Math.max(MIN_MAX_PLAYERS, Math.round(n)));
-}
 
 function sanitizeMaxPlayersDigits(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, 2);
@@ -296,9 +294,9 @@ export function CreateMatchTabScreen() {
   }, []);
 
   const onMaxPlayersSliderChange = useCallback((v: number) => {
-    const rounded = Math.round(v);
-    setMaxPlayers(rounded);
-    setMaxPlayersInputText(String(rounded));
+    const even = clampEvenMatchMaxPlayers(Math.round(v));
+    setMaxPlayers(even);
+    setMaxPlayersInputText(String(even));
   }, []);
 
   const onMaxPlayersInputChange = useCallback((text: string) => {
@@ -306,8 +304,14 @@ export function CreateMatchTabScreen() {
     setMaxPlayersInputText(digits);
     if (digits.length > 0) {
       const n = parseInt(digits, 10);
-      if (!Number.isNaN(n) && n >= MIN_MAX_PLAYERS && n <= MAX_MAX_PLAYERS) {
-        setMaxPlayers(n);
+      if (
+        !Number.isNaN(n) &&
+        n >= MATCH_MAX_PLAYERS_MIN &&
+        n <= MATCH_MAX_PLAYERS_MAX
+      ) {
+        const even = clampEvenMatchMaxPlayers(n);
+        setMaxPlayers(even);
+        setMaxPlayersInputText(String(even));
       }
     }
   }, []);
@@ -315,13 +319,13 @@ export function CreateMatchTabScreen() {
   const onMaxPlayersInputBlur = useCallback(() => {
     const trimmed = maxPlayersInputText.trim();
     if (trimmed === '') {
-      const c = clampMaxPlayers(maxPlayers);
+      const c = clampEvenMatchMaxPlayers(maxPlayers);
       setMaxPlayers(c);
       setMaxPlayersInputText(String(c));
       return;
     }
     const n = parseInt(trimmed, 10);
-    const c = clampMaxPlayers(Number.isNaN(n) ? maxPlayers : n);
+    const c = clampEvenMatchMaxPlayers(Number.isNaN(n) ? maxPlayers : n);
     setMaxPlayers(c);
     setMaxPlayersInputText(String(c));
   }, [maxPlayers, maxPlayersInputText]);
@@ -365,7 +369,7 @@ export function CreateMatchTabScreen() {
     }
     const trimmedPlayers = maxPlayersInputText.trim();
     const parsedPlayers = trimmedPlayers === '' ? NaN : parseInt(trimmedPlayers, 10);
-    const mp = clampMaxPlayers(Number.isNaN(parsedPlayers) ? maxPlayers : parsedPlayers);
+    const mp = clampEvenMatchMaxPlayers(Number.isNaN(parsedPlayers) ? maxPlayers : parsedPlayers);
     if (String(mp) !== maxPlayersInputText.trim()) {
       setMaxPlayers(mp);
       setMaxPlayersInputText(String(mp));
@@ -687,8 +691,8 @@ export function CreateMatchTabScreen() {
                 onBlur={onMaxPlayersInputBlur}
                 keyboardType="number-pad"
                 maxLength={2}
-                accessibilityLabel="Maksimum oyuncu sayısı, 4 ile 22 arası"
-                placeholder={`${MIN_MAX_PLAYERS}`}
+                accessibilityLabel="Maksimum oyuncu sayısı, 4 ile 22 arası çift sayı"
+                placeholder={`${MATCH_MAX_PLAYERS_MIN}`}
                 placeholderTextColor={colors.textMuted}
                 style={styles.maxPlayersInput}
               />
@@ -698,20 +702,20 @@ export function CreateMatchTabScreen() {
             </View>
             <Slider
               testID="match:create:max-players"
-              accessibilityLabel={`Maksimum oyuncu kaydırıcı, ${maxPlayers} kişi`}
+              accessibilityLabel={`Maksimum oyuncu kaydırıcı, ${maxPlayers} kişi, 4 ile 22 arası çift sayı`}
               style={styles.maxPlayersSlider}
               value={maxPlayers}
               onValueChange={onMaxPlayersSliderChange}
-              minimumValue={MIN_MAX_PLAYERS}
-              maximumValue={MAX_MAX_PLAYERS}
-              step={1}
+              minimumValue={MATCH_MAX_PLAYERS_MIN}
+              maximumValue={MATCH_MAX_PLAYERS_MAX}
+              step={2}
               minimumTrackTintColor={colors.accent}
               maximumTrackTintColor={colors.border}
               thumbTintColor={colors.accent}
             />
             <View style={styles.maxPlayersRange}>
-              <Text style={styles.ibanHint}>{MIN_MAX_PLAYERS}</Text>
-              <Text style={styles.ibanHint}>{MAX_MAX_PLAYERS}</Text>
+              <Text style={styles.ibanHint}>{MATCH_MAX_PLAYERS_MIN}</Text>
+              <Text style={styles.ibanHint}>{MATCH_MAX_PLAYERS_MAX}</Text>
             </View>
           </View>
           </View>

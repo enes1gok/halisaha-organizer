@@ -13,6 +13,7 @@ import {
   maskIban,
   normalizeIban,
 } from '../utils/iban';
+import { clampEvenMatchMaxPlayers } from '../utils/matchMaxPlayers';
 
 type Route = RouteProp<GroupsStackParamList, 'GroupWeeklySeries'>;
 
@@ -120,7 +121,7 @@ export function GroupWeeklySeriesScreen() {
       showValidationToast('Geçersiz IBAN', 'IBAN formatını kontrol edin.');
       return;
     }
-    const mp = Math.min(22, Math.max(4, parseInt(maxPlayers || '14', 10) || 14));
+    const mp = clampEvenMatchMaxPlayers(parseInt(maxPlayers || '14', 10) || 14);
     const priceNum = price.trim() ? parseFloat(price.replace(',', '.')) : null;
     setSaving(true);
     try {

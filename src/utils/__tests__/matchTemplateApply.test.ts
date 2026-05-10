@@ -47,6 +47,22 @@ describe('matchTemplateApply helpers', () => {
     expect(formatLocalTimeFromDate(d)).toBe('20:30:00');
   });
 
+  it('applyMatchTemplateToFormFields normalizes odd maxPlayers to even', () => {
+    const tpl = {
+      id: 'x',
+      name: 't',
+      venue: 'Saha',
+      maxPlayers: 13,
+      paymentMethod: 'cash' as const,
+    };
+    const patch = applyMatchTemplateToFormFields(tpl, {
+      fallbackStartsAt: new Date(2026, 4, 7, 12, 0, 0),
+      now: new Date(2026, 4, 6, 10, 0, 0),
+    });
+    expect(patch.maxPlayers).toBe(14);
+    expect(patch.maxPlayersInputText).toBe('14');
+  });
+
   it('applyMatchTemplateToFormFields snaps schedule to half-hour grid', () => {
     const tpl = {
       id: 'x',

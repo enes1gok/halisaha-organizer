@@ -3,7 +3,7 @@ import type { ErrorTranslationKey } from '../../errorTranslationKeys';
 /** Turkish user-facing strings for stable error keys (Postgres + RPC ERR_*). */
 export const trErrors: Record<ErrorTranslationKey, string> = {
   'errors.db.matches_max_players_chk':
-    'Maç için oyuncu sayısı 4 ile 22 arasında olmalı.',
+    'Maç için oyuncu sayısı 4 ile 22 arasında çift sayı olmalı.',
   'errors.db.matches_scores_consistency_chk':
     'Skor bilgisi tutarsız: her iki takım skoru birlikte ve sıfır veya pozitif olmalı.',
   'errors.db.matches_starts_at_upper_chk':
