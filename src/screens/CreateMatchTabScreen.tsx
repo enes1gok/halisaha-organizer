@@ -23,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { NativeViewGestureHandler } from 'react-native-gesture-handler';
 import { PillButton } from '../components/PillButton';
 import type { ShowToastOptions } from '../context/toastTypes';
 import { radius, shadows, spacing, typography } from '../theme';
@@ -706,19 +707,21 @@ export function CreateMatchTabScreen() {
                 kişi
               </Text>
             </View>
-            <Slider
-              testID="match:create:max-players"
-              accessibilityLabel={`Maksimum oyuncu kaydırıcı, ${maxPlayers} kişi, 4 ile 22 arası çift sayı`}
-              style={styles.maxPlayersSlider}
-              value={maxPlayers}
-              onValueChange={onMaxPlayersSliderChange}
-              minimumValue={MATCH_MAX_PLAYERS_MIN}
-              maximumValue={MATCH_MAX_PLAYERS_MAX}
-              step={2}
-              minimumTrackTintColor={colors.accent}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.accent}
-            />
+            <NativeViewGestureHandler disallowInterruption={true} shouldActivateOnStart={true}>
+              <Slider
+                testID="match:create:max-players"
+                accessibilityLabel={`Maksimum oyuncu kaydırıcı, ${maxPlayers} kişi, 4 ile 22 arası çift sayı`}
+                style={styles.maxPlayersSlider}
+                value={maxPlayers}
+                onValueChange={onMaxPlayersSliderChange}
+                minimumValue={MATCH_MAX_PLAYERS_MIN}
+                maximumValue={MATCH_MAX_PLAYERS_MAX}
+                step={2}
+                minimumTrackTintColor={colors.accent}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={colors.accent}
+              />
+            </NativeViewGestureHandler>
             <View style={styles.maxPlayersRange}>
               <Text style={styles.ibanHint}>{MATCH_MAX_PLAYERS_MIN}</Text>
               <Text style={styles.ibanHint}>{MATCH_MAX_PLAYERS_MAX}</Text>
