@@ -1,4 +1,5 @@
 -- Public profile photos: authenticated users upload only under `{auth.uid()}/…`.
+-- avatars_public_read: public bucket; SELECT allowed so profile Image URLs resolve.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
@@ -49,6 +50,3 @@ using (
   bucket_id = 'avatars'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
-
-comment on policy avatars_public_read on storage.objects is
-  'Avatar bucket is public; objects readable for Image URLs on profiles.';

@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(5);
+select plan(4);
 
 select tests.reset_session();
 
@@ -90,13 +90,15 @@ select is(
 );
 
 -- İkinci maç: maç sonucu bildirimi kapalı
+-- PG17: jsonb_set(target,'{types,key}',…) from '{}' does not nest; merge explicitly.
 update public.profiles
-set notification_preferences = jsonb_set(
-  coalesce(notification_preferences::jsonb, '{}'::jsonb),
-  '{types,group_match_match_result}',
-  'false'::jsonb,
-  true
-)
+set notification_preferences =
+  coalesce(notification_preferences, '{}'::jsonb)
+  || jsonb_build_object(
+       'types',
+       coalesce(notification_preferences->'types', '{}'::jsonb)
+       || jsonb_build_object('group_match_match_result', false)
+     )
 where id = 'f1000000-0000-4000-8000-000000000011'::uuid;
 
 insert into public.matches (
