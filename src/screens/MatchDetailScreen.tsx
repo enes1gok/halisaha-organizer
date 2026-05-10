@@ -356,6 +356,9 @@ export function MatchDetailScreen() {
     paidConfirm &&
     `${paidConfirm.playerName} için ödeme durumu “${paidConfirm.nextPaid ? 'Ödendi' : 'Ödenmedi'}” olarak kaydedilsin mi?`;
 
+  const currentUserRsvp =
+    userId && match ? (match.attendees.find((a) => a.playerId === userId)?.status ?? null) : null;
+
   return (
     <View style={matchDetailStyles.screen}>
       <MatchDetailHero match={match} countdownLabel={countdown} />
@@ -415,6 +418,7 @@ export function MatchDetailScreen() {
                 }),
               )
             }
+            currentUserRsvp={currentUserRsvp}
           />
         ) : null}
 

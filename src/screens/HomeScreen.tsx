@@ -88,6 +88,7 @@ export function HomeScreen() {
         <HomeUpcomingHeroCard
           match={nextMatch}
           goingCount={nextMatch ? countGoing(nextMatch) : 0}
+          userRsvp={userAttendee?.status ?? null}
           userHasPaid={userHasPaid}
           getPlayer={getPlayer}
           onOpenDetail={() => {

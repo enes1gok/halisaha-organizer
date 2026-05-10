@@ -143,7 +143,41 @@ export async function setRsvpUseCase(
   status: RSVPStatus,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await updateMatchAttendeeRemote(matchId, playerId, { status });
+    const uid = deps.getRemoteUserId();
+    const patch = () => updateMatchAttendeeRemote(matchId, playerId, { status });
+
+    try {
+      await patch();
+    } catch (e) {
+      if (
+        e instanceof AppError &&
+        e.code === 'NOT_FOUND' &&
+        uid &&
+        playerId === uid
+      ) {
+        const m = deps.getLocalMatch(matchId);
+        if (__DEV__) {
+          console.warn('[setRsvpUseCase] attendee row missing; attempting join heal', {
+            matchId,
+            playerId,
+            attendeePlayerIds: m?.attendees?.map((a) => a.playerId),
+          });
+        }
+        if (m?.joinCode) {
+          const mid = await joinMatchByJoinCodeRpc(m.joinCode);
+          if (mid === matchId) {
+            await patch();
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      } else {
+        throw e;
+      }
+    }
+
     const graph = await fetchMatchGraph(matchId);
     deps.mergeRemoteGraph(graph);
     return;

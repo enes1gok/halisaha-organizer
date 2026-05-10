@@ -3,10 +3,11 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Match, RSVPStatus } from '../types/domain';
 import { shadows, spacing, typography } from '../theme';
-import { makeStyles, useTheme, type ThemeColors } from '../theme/ThemeContext';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { formatMatchDateTime } from '../utils/dates';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
 import { PressableScale } from './PressableScale';
+import { rsvpStatusIcon, rsvpStatusLeftBorder } from './rsvpUserIndicator';
 
 type Props = {
   match: Match;
@@ -16,38 +17,11 @@ type Props = {
   onPress: () => void;
 };
 
-function rsvpBorderStyle(status: RSVPStatus, colors: ThemeColors) {
-  switch (status) {
-    case 'going':
-      return { borderLeftColor: colors.accent };
-    case 'maybe':
-      return { borderLeftColor: colors.position.GK };
-    case 'notGoing':
-      return { borderLeftColor: colors.danger };
-    default:
-      return {};
-  }
-}
-
-function rsvpIcon(
-  status: RSVPStatus,
-  colors: ThemeColors,
-): { name: keyof typeof Ionicons.glyphMap; color: string } {
-  switch (status) {
-    case 'going':
-      return { name: 'checkmark-circle', color: colors.accent };
-    case 'maybe':
-      return { name: 'help-circle-outline', color: colors.position.GK };
-    case 'notGoing':
-      return { name: 'close-circle-outline', color: colors.danger };
-  }
-}
-
 export function MatchCard({ match, goingCount, userRsvp, onPress }: Props) {
   const { colors } = useTheme();
   const styles = useStyles();
-  const borderExtra = userRsvp ? rsvpBorderStyle(userRsvp, colors) : undefined;
-  const icon = userRsvp ? rsvpIcon(userRsvp, colors) : null;
+  const borderExtra = userRsvp ? rsvpStatusLeftBorder(userRsvp, colors) : undefined;
+  const icon = userRsvp ? rsvpStatusIcon(userRsvp, colors) : null;
 
   return (
     <PressableScale

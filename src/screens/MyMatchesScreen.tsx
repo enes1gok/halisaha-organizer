@@ -133,6 +133,7 @@ export function MyMatchesScreen() {
         ListHeaderComponent={listHeader}
         onPressMatch={handlePressMatch}
         emptyAction={emptyAction}
+        showNotGoingEmptyHint={data.sections.length === 0 && data.hasUpcomingNotGoingAttendance}
       />
     </View>
   );

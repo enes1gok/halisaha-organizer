@@ -2,9 +2,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { Switch, Text, View } from 'react-native';
 import { PillButton } from '../../../components/PillButton';
+import { formatRsvpStatusTr } from '../../../components/rsvpUserIndicator';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../../../navigation/types';
 import { useTheme } from '../../../theme/ThemeContext';
-import type { Match, Player, SelfReportRequest } from '../../../types/domain';
+import type { Match, Player, RSVPStatus, SelfReportRequest } from '../../../types/domain';
 import { formatMatchDateTime } from '../../../utils/dates';
 import { hasAssignedLineup } from '../../../utils/matchRoster';
 import { isRemoteMatchId } from '../../../utils/matchId';
@@ -34,6 +35,8 @@ type Props = {
   onUnlockLineup: () => void;
   openCancelConfirm: () => void;
   onSetSelfReportEnabled: (enabled: boolean) => void;
+  /** Kullanıcının kendi katılım durumu; katılımcı değilse null */
+  currentUserRsvp: RSVPStatus | null;
 };
 
 export function MatchDetailSummaryPanel({
@@ -57,6 +60,7 @@ export function MatchDetailSummaryPanel({
   onUnlockLineup,
   openCancelConfirm,
   onSetSelfReportEnabled,
+  currentUserRsvp,
 }: Props) {
   const matchId = match.id;
   const { colors } = useTheme();
@@ -246,6 +250,14 @@ export function MatchDetailSummaryPanel({
       ) : null}
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Katılım durumu</Text>
+        {currentUserRsvp != null ? (
+          <Text style={styles.body}>Şu an: {formatRsvpStatusTr(currentUserRsvp)}</Text>
+        ) : (
+          <Text style={styles.muted}>
+            Bu maçta katılımcı olarak görünmüyorsun; kod ile katıldıktan sonra durumunu buradan güncelleyebilirsin.
+          </Text>
+        )}
         <PillButton title="Katılım Durumu" onPress={openRsvp} />
         {match.selfReportEnabled && match.status !== 'finished' ? (
           <View style={styles.rowWrap}>

@@ -37,6 +37,8 @@ type Props = {
   ListHeaderComponent?: React.ReactElement | null;
   onPressMatch: (match: Match) => void;
   emptyAction: EmptyAction;
+  /** Yaklaşan sekmede liste boşken «Gelmiyorum» nedeniyle filtrelendiğini anlat */
+  showNotGoingEmptyHint?: boolean;
 };
 
 const VIEWABILITY_CONFIG = {
@@ -83,6 +85,7 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
     ListHeaderComponent,
     onPressMatch,
     emptyAction,
+    showNotGoingEmptyHint,
   },
   ref,
 ) {
@@ -148,6 +151,10 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
   );
 
   const empty = EMPTY_COPY[segment];
+  const emptySubtitle =
+    segment === 'upcoming' && showNotGoingEmptyHint
+      ? '«Gelmiyorum» seçtiğin yaklaşan maçlar bu sekmede gösterilmez. Ana sayfadaki maça giderek katılımını değiştirebilirsin.'
+      : empty.subtitle;
 
   return (
     <SectionList
@@ -191,7 +198,7 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
         <EmptyState
           variant={SEGMENT_TO_EMPTY_VARIANT[segment]}
           title={empty.title}
-          subtitle={empty.subtitle}
+          subtitle={emptySubtitle}
           actionLabel={emptyAction?.label}
           onAction={emptyAction?.onPress}
           heroTestID="myMatches:agenda:empty:hero"

@@ -1,12 +1,14 @@
 import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EmptyStateHero } from './emptyIllustrations';
 import { PressableScale } from './PressableScale';
+import { rsvpStatusIcon, rsvpStatusLeftBorder } from './rsvpUserIndicator';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
-import type { Match, Player } from '../types/domain';
+import type { Match, Player, RSVPStatus } from '../types/domain';
 import { formatMatchDateTimeWithWeekday } from '../utils/dates';
 import { maskIban } from '../utils/iban';
 import { countGoalkeepersAmongGoing, rosterMissingSlots } from '../utils/matchRoster';
@@ -15,6 +17,8 @@ import { useUserFeedback } from '../utils/userFeedback';
 type Props = {
   match: Match | null;
   goingCount: number;
+  /** Kullanıcının katılım durumu; MatchCard ile aynı sol şerit ve ikon */
+  userRsvp?: RSVPStatus | null;
   /** Kullanıcı bu maç için ödeme yaptıysa ana ekranda IBAN gösterilmez */
   userHasPaid?: boolean;
   getPlayer: (id: string) => Player | undefined;
@@ -24,6 +28,7 @@ type Props = {
 export function HomeUpcomingHeroCard({
   match,
   goingCount,
+  userRsvp,
   userHasPaid,
   getPlayer,
   onOpenDetail,
@@ -81,6 +86,9 @@ export function HomeUpcomingHeroCard({
   const missing = rosterMissingSlots(match, goingCount);
   const gkCount = countGoalkeepersAmongGoing(match, getPlayer);
   const gkMissing = gkCount === 0;
+
+  const rsvpBorderExtra = userRsvp ? rsvpStatusLeftBorder(userRsvp, colors) : null;
+  const rsvpIconSpec = userRsvp ? rsvpStatusIcon(userRsvp, colors) : null;
 
   const priceFormatted =
     (match.pricePerPerson ?? 0) > 0
@@ -154,7 +162,7 @@ export function HomeUpcomingHeroCard({
 
   return (
     <View style={styles.outer}>
-      <View style={styles.card}>
+      <View style={[styles.card, rsvpBorderExtra]}>
         <View style={styles.headerSection}>
           <Text style={[typography.body, styles.tabTitle]}>Önümüzdeki maç</Text>
           {ibanLine}
@@ -166,9 +174,16 @@ export function HomeUpcomingHeroCard({
           style={styles.bodySection}
           android_ripple={{ color: colors.accentMuted }}
         >
-          <Text style={styles.venue} numberOfLines={2}>
-            {match.venue}
-          </Text>
+          <View style={styles.venueRow}>
+            {rsvpIconSpec ? (
+              <View style={styles.rsvpIconWrap}>
+                <Ionicons name={rsvpIconSpec.name} size={22} color={rsvpIconSpec.color} />
+              </View>
+            ) : null}
+            <Text style={styles.venue} numberOfLines={2}>
+              {match.venue}
+            </Text>
+          </View>
           <Text style={[typography.body, styles.dateMuted]}>
             {formatMatchDateTimeWithWeekday(match.startsAt)}
           </Text>
@@ -202,6 +217,8 @@ const useStyles = makeStyles((t) =>
       borderRadius: radius.card,
       borderWidth: 1,
       borderColor: t.colors.glassBorder,
+      borderLeftWidth: 4,
+      borderLeftColor: 'transparent',
       overflow: 'hidden',
       minHeight: 200,
       ...shadows.md,
@@ -309,6 +326,17 @@ const useStyles = makeStyles((t) =>
     },
     ibanMissing: {
       textAlign: 'left',
+    },
+    venueRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      alignSelf: 'stretch',
+    },
+    rsvpIconWrap: {
+      marginTop: 4,
+      justifyContent: 'center',
     },
     muted: {
       color: t.colors.textMuted,

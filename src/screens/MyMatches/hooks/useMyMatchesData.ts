@@ -30,6 +30,8 @@ export type UseMyMatchesData = {
   segmentCounts: SegmentCounts;
   sections: AgendaSection[];
   hasAnyMatches: boolean;
+  /** Boş «yaklaşan» liste için notGoing açıklaması göster */
+  hasUpcomingNotGoingAttendance: boolean;
   ratingsSubmission: Record<string, true | undefined>;
   userId: string;
   refresh: () => Promise<void>;
@@ -98,6 +100,17 @@ export function useMyMatchesData(): UseMyMatchesData {
     [mine, segment, today],
   );
 
+  /** Yaklaşan bir maçta (organizatör değilken) yalnızca «Gelmiyorum» ise liste filtrelendiği için boş görünebilir */
+  const hasUpcomingNotGoingAttendance = useMemo(() => {
+    const uid = slice.userId;
+    return slice.matches.some(
+      (m) =>
+        m.status === 'upcoming' &&
+        m.organizerId !== uid &&
+        m.attendees.find((a) => a.playerId === uid)?.status === 'notGoing',
+    );
+  }, [slice.matches, slice.userId]);
+
   const refresh = useCallback(async () => {
     if (!slice.remoteUserId) return;
     setRefreshing(true);
@@ -141,6 +154,7 @@ export function useMyMatchesData(): UseMyMatchesData {
     segmentCounts,
     sections,
     hasAnyMatches: mine.length > 0,
+    hasUpcomingNotGoingAttendance,
     ratingsSubmission: slice.ratingsSubmission,
     userId: slice.userId,
     refresh,

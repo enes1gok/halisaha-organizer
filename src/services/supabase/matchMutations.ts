@@ -1,6 +1,6 @@
 import type { MatchStatus, RSVPStatus, SelfReportType } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
-import { mapSupabaseError } from './errors';
+import { createNotFoundError, mapSupabaseError } from './errors';
 import type { MatchStatusRow, SelfReportStatusRow } from './types';
 import { rsvpToDb } from './mappers';
 
@@ -13,12 +13,19 @@ export async function updateMatchAttendeeRemote(
   const row: Record<string, unknown> = {};
   if (patch.status !== undefined) row.status = rsvpToDb(patch.status);
   if (patch.paid !== undefined) row.paid = patch.paid;
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('match_attendees')
     .update(row)
     .eq('match_id', matchId)
-    .eq('player_id', playerId);
+    .eq('player_id', playerId)
+    .select('player_id');
   if (error) throw mapSupabaseError(error, 'updateMatchAttendeeRemote');
+  if (!data?.length) {
+    throw createNotFoundError(
+      'updateMatchAttendeeRemote',
+      'Katılım kaydı bulunamadı veya güncellenemedi. Maça katılım koduyla yeniden katılmayı deneyin.',
+    );
+  }
 }
 
 export async function replaceMatchTeamPlayersRemote(
