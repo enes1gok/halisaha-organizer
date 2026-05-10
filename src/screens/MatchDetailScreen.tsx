@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PressableScale } from '../components/PressableScale';
-import { RsvpGoingButton } from '../components/RsvpGoingButton';
+import { RsvpOptionButton } from '../components/RsvpOptionButton';
 import { useTheme } from '../theme/ThemeContext';
 import type { RSVPStatus } from '../types/domain';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
@@ -458,39 +458,33 @@ export function MatchDetailScreen() {
       >
         <BottomSheetView style={matchDetailStyles.rsvpBody}>
           <Text style={matchDetailStyles.sheetTitle}>Katılım</Text>
-          <RsvpGoingButton
-            key={rsvpGoingKey}
-            onCommit={() => setRSVP(match.id, userId, 'going')}
-            onSuccess={() => rsvpRef.current?.dismiss()}
-            onError={(e) =>
-              showApiErrorToast(e, {
-                uiOperation: 'MatchDetail:rsvpGoing',
-                fallbackMessage: 'Kaydedilemedi.',
-                mapOperation: 'updateMatchAttendeeRemote',
-              })
-            }
+          <RsvpOptionButton
+            label="Gidiyorum"
+            iconName="checkmark-circle"
+            baseColor={colors.accent}
+            textColorOnFill={colors.textOnAccent}
+            isSelected={currentUserRsvp === 'going'}
+            onPress={() => applyRsvp('going')}
             testID="match:rsvp-going:press"
           />
-          <PressableScale
+          <RsvpOptionButton
+            label="Belki"
+            iconName="help-circle"
+            baseColor={colors.text}
+            textColorOnFill={colors.background}
+            isSelected={currentUserRsvp === 'maybe'}
             onPress={() => applyRsvp('maybe')}
-            style={matchDetailStyles.rsvpSecondaryRow}
-            pressedScale={0.98}
             testID="match:rsvp:maybe:press"
-            accessibilityLabel="Belki"
-          >
-            <Ionicons name="help-circle" size={22} color={colors.accent} />
-            <Text style={matchDetailStyles.rsvpSecondaryLabel}>Belki</Text>
-          </PressableScale>
-          <PressableScale
+          />
+          <RsvpOptionButton
+            label="Gelmiyorum"
+            iconName="close-circle"
+            baseColor={colors.danger}
+            textColorOnFill={colors.textOnAccent}
+            isSelected={currentUserRsvp === 'notGoing'}
             onPress={() => applyRsvp('notGoing')}
-            style={matchDetailStyles.rsvpSecondaryRow}
-            pressedScale={0.98}
             testID="match:rsvp:not-going:press"
-            accessibilityLabel="Gelmiyorum"
-          >
-            <Ionicons name="close-circle" size={22} color={colors.danger} />
-            <Text style={matchDetailStyles.rsvpSecondaryLabel}>Gelmiyorum</Text>
-          </PressableScale>
+          />
         </BottomSheetView>
       </BottomSheetModal>
 

@@ -208,24 +208,6 @@ function buildSheet(colors: ThemeColors) {
       color: colors.accent,
       fontWeight: '600' as const,
     },
-    rsvpSecondaryRow: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: spacing.sm,
-      minHeight: 48,
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.pill,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: 'transparent',
-    },
-    rsvpSecondaryLabel: {
-      ...typography.subtitle,
-      fontSize: 15,
-      color: colors.text,
-      flex: 1,
-    },
   });
 }
 

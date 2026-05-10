@@ -2,6 +2,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { Switch, Text, View } from 'react-native';
 import { PillButton } from '../../../components/PillButton';
+import { RsvpOptionButton } from '../../../components/RsvpOptionButton';
 import { formatRsvpStatusTr } from '../../../components/rsvpUserIndicator';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../../../navigation/types';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -258,14 +259,41 @@ export function MatchDetailSummaryPanel({
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Katılım durumu</Text>
-        {currentUserRsvp != null ? (
-          <Text style={styles.body}>Şu an: {formatRsvpStatusTr(currentUserRsvp)}</Text>
+        {currentUserRsvp === 'going' ? (
+          <RsvpOptionButton
+            label="Gidiyorum"
+            iconName="checkmark-circle"
+            baseColor={colors.accent}
+            textColorOnFill={colors.textOnAccent}
+            isSelected={true}
+            onPress={openRsvp}
+          />
+        ) : currentUserRsvp === 'maybe' ? (
+          <RsvpOptionButton
+            label="Belki"
+            iconName="help-circle"
+            baseColor={colors.text}
+            textColorOnFill={colors.background}
+            isSelected={true}
+            onPress={openRsvp}
+          />
+        ) : currentUserRsvp === 'notGoing' ? (
+          <RsvpOptionButton
+            label="Gelmiyorum"
+            iconName="close-circle"
+            baseColor={colors.danger}
+            textColorOnFill={colors.textOnAccent}
+            isSelected={true}
+            onPress={openRsvp}
+          />
         ) : (
-          <Text style={styles.muted}>
-            Bu maçta katılımcı olarak görünmüyorsun; kod ile katıldıktan sonra durumunu buradan güncelleyebilirsin.
-          </Text>
+          <>
+            <Text style={styles.muted}>
+              Bu maçta katılımcı olarak görünmüyorsun; kod ile katıldıktan sonra durumunu buradan güncelleyebilirsin.
+            </Text>
+            <PillButton title="Katılım Durumu" onPress={openRsvp} />
+          </>
         )}
-        <PillButton title="Katılım Durumu" onPress={openRsvp} />
         {match.selfReportEnabled && match.status !== 'finished' ? (
           <View style={styles.rowWrap}>
             <PillButton
