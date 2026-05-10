@@ -124,13 +124,12 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
       renderItem={({ item }) => {
         const goingCount = countGoing(item);
         const att = item.attendees.find((a) => a.playerId === userId);
-        const userGoing = att?.status === 'going';
         return (
           <MatchCardListRow matchId={item.id}>
             <MatchCard
               match={item}
               goingCount={goingCount}
-              userGoing={userGoing}
+              userRsvp={att?.status ?? null}
               onPress={() => onPressMatch(item)}
             />
           </MatchCardListRow>

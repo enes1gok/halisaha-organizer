@@ -8,7 +8,10 @@ export const TAB_BAR_FLOATING_BLOCK_HEIGHT = 78;
 /** Small top inset so the bar shadow is not clipped (no FAB). */
 export const TAB_BAR_OVERFLOW_TOP = 8;
 
-/** Green “Maça katıl / Maçı kur” strip (two columns, vertical padding). Sync with HomeActionCard. */
+/**
+ * Green “Maça katıl / Maçı kur” strip (two columns, vertical padding).
+ * Sync with [`HomeActionCard`](../components/HomeActionCard.tsx) `minHeight` / padding when changing layout.
+ */
 export const HOME_ACTION_STRIP_HEIGHT = 72;
 
 /** Gap between green strip and scroll content / inner spacing. */
@@ -20,6 +23,11 @@ export const HOME_ACTION_STRIP_GAP = 8;
  */
 export const HOME_LIST_PADDING_BOTTOM_EXTRA =
   HOME_ACTION_STRIP_HEIGHT + HOME_ACTION_STRIP_GAP + 8 + 16;
+
+/** Home liste alt dolgusu + home indicator (`useSafeAreaInsets().bottom`). */
+export function getHomeListPaddingBottom(insetsBottom: number): number {
+  return HOME_LIST_PADDING_BOTTOM_EXTRA + insetsBottom;
+}
 
 /** Bottom padding for FlatList/ScrollView on tab screens that do not pin a home action strip. */
 export const TAB_BAR_LIST_PADDING_BOTTOM = 96;

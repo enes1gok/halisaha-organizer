@@ -1,4 +1,5 @@
 import type { Match, Player } from '../types/domain';
+import { getPlayerMatchOutcome } from './matchOutcome';
 
 export function recomputePlayerStatsFromMatches(
   players: Player[],
@@ -32,13 +33,12 @@ export function recomputePlayerStatsFromMatches(
     for (const pid of seen) {
       const s = statsMap.get(pid);
       if (!s) continue;
+      const outcome = getPlayerMatchOutcome(m, pid);
+      if (!outcome) continue;
       s.matchesPlayed += 1;
-
-      const inA = m.teamAIds.includes(pid);
-      if (r.scoreA === r.scoreB) s.draws += 1;
-      else if (inA)
-        r.scoreA > r.scoreB ? (s.wins += 1) : (s.losses += 1);
-      else r.scoreB > r.scoreA ? (s.wins += 1) : (s.losses += 1);
+      if (outcome === 'D') s.draws += 1;
+      else if (outcome === 'W') s.wins += 1;
+      else s.losses += 1;
     }
 
     for (const line of r.scorers) {
@@ -112,17 +112,8 @@ export function computeWinStreak(matches: Match[], playerId: string): number {
 
   let streak = 0;
   for (const m of finished) {
-    const r = m.result!;
-    const inA = m.teamAIds.includes(playerId);
-    const inB = m.teamBIds.includes(playerId);
-    if (!inA && !inB) continue;
-    const scoreA = r.scoreA;
-    const scoreB = r.scoreB;
-    let outcome: 'W' | 'L' | 'D';
-    if (scoreA === scoreB) outcome = 'D';
-    else if (inA) outcome = scoreA > scoreB ? 'W' : 'L';
-    else outcome = scoreB > scoreA ? 'W' : 'L';
-
+    const outcome = getPlayerMatchOutcome(m, playerId);
+    if (!outcome) continue;
     if (outcome === 'W') streak++;
     else break;
   }

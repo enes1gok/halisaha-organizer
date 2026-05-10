@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { Match } from '../types/domain';
+import type { Match, RSVPStatus } from '../types/domain';
 import { colors, shadows, spacing, typography } from '../theme';
 import { formatMatchDateTime } from '../utils/dates';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
@@ -9,18 +10,51 @@ import { PressableScale } from './PressableScale';
 type Props = {
   match: Match;
   goingCount: number;
-  userGoing?: boolean;
+  /** Kullanıcının RSVP durumu; yoksa sol kenar nötr kalır. */
+  userRsvp?: RSVPStatus | null;
   onPress: () => void;
 };
 
-export function MatchCard({ match, goingCount, userGoing, onPress }: Props) {
+function rsvpBorderStyle(status: RSVPStatus) {
+  switch (status) {
+    case 'going':
+      return { borderLeftColor: colors.accent };
+    case 'maybe':
+      return { borderLeftColor: colors.position.GK };
+    case 'notGoing':
+      return { borderLeftColor: colors.danger };
+    default:
+      return {};
+  }
+}
+
+function rsvpIcon(status: RSVPStatus): { name: keyof typeof Ionicons.glyphMap; color: string } {
+  switch (status) {
+    case 'going':
+      return { name: 'checkmark-circle', color: colors.accent };
+    case 'maybe':
+      return { name: 'help-circle-outline', color: colors.position.GK };
+    case 'notGoing':
+      return { name: 'close-circle-outline', color: colors.danger };
+  }
+}
+
+export function MatchCard({ match, goingCount, userRsvp, onPress }: Props) {
+  const borderExtra = userRsvp ? rsvpBorderStyle(userRsvp) : undefined;
+  const icon = userRsvp ? rsvpIcon(userRsvp) : null;
+
   return (
     <PressableScale
       onPress={onPress}
-      style={[styles.wrap, userGoing && styles.going]}
+      style={[styles.wrap, borderExtra]}
       android_ripple={{ color: colors.accentMuted }}
     >
       <View style={styles.row}>
+        {icon ? (
+          <View style={styles.rsvpIconWrap}>
+            <Ionicons name={icon.name} size={18} color={icon.color} />
+          </View>
+        ) : null}
         <View style={styles.main}>
           <MatchHeroVenueTitle venue={match.venue} variant="list" />
           <Text style={[typography.caption, styles.date]}>{formatMatchDateTime(match.startsAt)}</Text>
@@ -47,14 +81,15 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     ...shadows.sm,
   },
-  going: {
-    borderLeftColor: colors.accent,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
+    gap: spacing.sm,
+  },
+  rsvpIconWrap: {
+    marginRight: -spacing.xs,
+    justifyContent: 'center',
   },
   main: {
     flex: 1,

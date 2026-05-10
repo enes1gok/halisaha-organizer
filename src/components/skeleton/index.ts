@@ -5,6 +5,7 @@ export {
   GroupCardSkeleton,
   HomeActionStripSkeleton,
   HomeHeroSkeleton,
+  HomeLastMatchSkeleton,
   LeaderboardRowSkeleton,
   MatchCardSkeleton,
   MyMatchesCalendarSkeleton,

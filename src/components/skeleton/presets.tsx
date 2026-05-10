@@ -19,6 +19,23 @@ export function MatchCardSkeleton() {
   );
 }
 
+/** Ana sayfa — hero altı “Son maç” kartı iskeleti. */
+export function HomeLastMatchSkeleton() {
+  return (
+    <View style={styles.lastMatchOuter}>
+      <View style={styles.lastMatchCard}>
+        <SkeletonText variant="caption" width={72} />
+        <SkeletonText variant="subtitle" width="58%" style={styles.topGap4} />
+        <SkeletonText variant="caption" width={128} style={styles.topGap4} />
+        <View style={styles.lastMatchScoreRow}>
+          <SkeletonBlock width={132} height={34} radius={8} />
+          <SkeletonBlock width={92} height={28} radius={radius.pill} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export function HomeHeroSkeleton() {
   return (
     <View style={styles.hero}>
@@ -170,6 +187,24 @@ export function GroupCardSkeleton() {
 
 const styles = StyleSheet.create({
   topGap4: { marginTop: 4 },
+  lastMatchOuter: {
+    marginTop: spacing.md,
+  },
+  lastMatchCard: {
+    backgroundColor: colors.surfaceGlass,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    padding: spacing.md,
+    gap: 4,
+  },
+  lastMatchScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+    gap: spacing.md,
+  },
   hero: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,

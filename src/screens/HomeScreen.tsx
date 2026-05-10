@@ -10,16 +10,25 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeActionCard } from '../components/HomeActionCard';
+import { HomeLastMatchCard } from '../components/HomeLastMatchCard';
 import { HomeUpcomingHeroCard } from '../components/HomeUpcomingHeroCard';
 import { MatchCard } from '../components/MatchCard';
 import { MatchCardListRow } from '../components/MatchCardListRow';
-import { HomeActionStripSkeleton, HomeHeroSkeleton, MatchCardSkeleton, SkeletonList } from '../components/skeleton';
+import {
+  HomeActionStripSkeleton,
+  HomeHeroSkeleton,
+  HomeLastMatchSkeleton,
+  MatchCardSkeleton,
+  SkeletonList,
+} from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { colors, spacing } from '../theme';
 import { countGoing } from '../utils/matchRoster';
+import { getLastFinishedMatchForPlayer } from '../utils/matchOutcome';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
-import { HOME_LIST_PADDING_BOTTOM_EXTRA } from '../navigation/tabBarLayout';
+import { getHomeListPaddingBottom } from '../navigation/tabBarLayout';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
@@ -34,6 +43,7 @@ type Nav = CompositeNavigationProp<
 
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const matches = useMatchesStore((s) => s.matches);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
@@ -41,6 +51,7 @@ export function HomeScreen() {
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const { configured, loading } = useSupabaseAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const listPaddingBottom = getHomeListPaddingBottom(insets.bottom);
 
   const upcoming = useMemo(() => {
     const list = matches.filter((m) => m.status === 'upcoming');
@@ -49,6 +60,11 @@ export function HomeScreen() {
 
   const nextMatch = upcoming[0] ?? null;
   const restUpcoming = upcoming.length > 1 ? upcoming.slice(1) : [];
+
+  const lastMatch = useMemo(
+    () => getLastFinishedMatchForPlayer(matches, userId),
+    [matches, userId],
+  );
 
   const onRefresh = useCallback(async () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -65,17 +81,26 @@ export function HomeScreen() {
 
   const listHeader = useMemo(
     () => (
-      <HomeUpcomingHeroCard
-        match={nextMatch}
-        goingCount={nextMatch ? countGoing(nextMatch) : 0}
-        userHasPaid={userHasPaid}
-        getPlayer={getPlayer}
-        onOpenDetail={() => {
-          if (nextMatch) navigation.navigate('MatchDetail', { matchId: nextMatch.id });
-        }}
-      />
+      <View>
+        <HomeUpcomingHeroCard
+          match={nextMatch}
+          goingCount={nextMatch ? countGoing(nextMatch) : 0}
+          userHasPaid={userHasPaid}
+          getPlayer={getPlayer}
+          onOpenDetail={() => {
+            if (nextMatch) navigation.navigate('MatchDetail', { matchId: nextMatch.id });
+          }}
+        />
+        {lastMatch ? (
+          <HomeLastMatchCard
+            match={lastMatch}
+            playerId={userId}
+            onPress={() => navigation.navigate('MatchDetail', { matchId: lastMatch.id })}
+          />
+        ) : null}
+      </View>
     ),
-    [getPlayer, navigation, nextMatch, userHasPaid],
+    [getPlayer, lastMatch, navigation, nextMatch, userHasPaid, userId],
   );
 
   const showInitialSkeleton = configured && loading && matches.length === 0;
@@ -83,11 +108,12 @@ export function HomeScreen() {
   if (showInitialSkeleton) {
     return (
       <View style={styles.screen}>
-        <View style={styles.list}>
+        <View style={[styles.list, { paddingBottom: listPaddingBottom }]}>
           <HomeHeroSkeleton />
+          <HomeLastMatchSkeleton />
           <SkeletonList count={3} renderItem={() => <MatchCardSkeleton />} />
         </View>
-        <View style={styles.actionStrip} pointerEvents="none">
+        <View style={[styles.actionStrip, { bottom: spacing.sm + insets.bottom }]} pointerEvents="none">
           <HomeActionStripSkeleton />
         </View>
       </View>
@@ -100,20 +126,19 @@ export function HomeScreen() {
         data={restUpcoming}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={listHeader}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: listPaddingBottom }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
         renderItem={({ item }) => {
           const goingC = countGoing(item);
           const mine = item.attendees.find((a) => a.playerId === userId);
-          const userGoing = mine?.status === 'going';
           return (
             <MatchCardListRow matchId={item.id}>
               <MatchCard
                 match={item}
                 goingCount={goingC}
-                userGoing={userGoing}
+                userRsvp={mine?.status ?? null}
                 onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
               />
             </MatchCardListRow>
@@ -122,7 +147,7 @@ export function HomeScreen() {
         ListEmptyComponent={null}
       />
 
-      <View style={styles.actionStrip} pointerEvents="box-none">
+      <View style={[styles.actionStrip, { bottom: spacing.sm + insets.bottom }]} pointerEvents="box-none">
         <HomeActionCard
           onJoinPress={() => navigation.navigate('JoinMatch')}
           onCreatePress={() => navigation.navigate('CreateTab')}
@@ -139,7 +164,6 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: spacing.md,
-    paddingBottom: HOME_LIST_PADDING_BOTTOM_EXTRA,
     flexGrow: 1,
   },
   actionStrip: {

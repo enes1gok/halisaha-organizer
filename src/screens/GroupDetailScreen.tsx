@@ -318,7 +318,9 @@ export function GroupDetailScreen() {
             <MatchCard
               match={item}
               goingCount={countGoing(item)}
-              userGoing={item.attendees.some((att) => att.playerId === userId && att.status === 'going')}
+              userRsvp={
+                item.attendees.find((att) => att.playerId === userId)?.status ?? null
+              }
               onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
             />
           </MatchCardListRow>
