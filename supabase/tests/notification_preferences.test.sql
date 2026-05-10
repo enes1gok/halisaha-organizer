@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(24);
 
 select tests.reset_session();
 
@@ -85,6 +85,81 @@ select is(
   ),
   false,
   'group_match_post_match_rating_reminder false blocks post_match_rating_reminder'
+);
+
+select is(
+  public.notification_delivery_allowed('{}'::jsonb, 'match_cancelled'),
+  true,
+  'empty prefs allow match_cancelled'
+);
+
+select is(
+  public.notification_delivery_allowed(
+    '{"types": {"group_match_cancelled": false}}'::jsonb,
+    'match_cancelled'
+  ),
+  false,
+  'group_match_cancelled false blocks match_cancelled'
+);
+
+select is(
+  public.notification_delivery_allowed('{}'::jsonb, 'venue_change'),
+  true,
+  'empty prefs allow venue_change'
+);
+
+select is(
+  public.notification_delivery_allowed(
+    '{"types": {"group_match_venue_change": false}}'::jsonb,
+    'venue_change'
+  ),
+  false,
+  'group_match_venue_change false blocks venue_change'
+);
+
+select is(
+  public.notification_delivery_allowed('{}'::jsonb, 'lineup_published'),
+  true,
+  'empty prefs allow lineup_published'
+);
+
+select is(
+  public.notification_delivery_allowed(
+    '{"types": {"group_match_lineup_published": false}}'::jsonb,
+    'lineup_published'
+  ),
+  false,
+  'group_match_lineup_published false blocks lineup_published'
+);
+
+select is(
+  public.notification_delivery_allowed('{}'::jsonb, 'match_result'),
+  true,
+  'empty prefs allow match_result'
+);
+
+select is(
+  public.notification_delivery_allowed(
+    '{"types": {"group_match_match_result": false}}'::jsonb,
+    'match_result'
+  ),
+  false,
+  'group_match_match_result false blocks match_result'
+);
+
+select is(
+  public.notification_delivery_allowed('{}'::jsonb, 'streak_at_risk'),
+  true,
+  'empty prefs allow streak_at_risk'
+);
+
+select is(
+  public.notification_delivery_allowed(
+    '{"types": {"group_match_streak_at_risk": false}}'::jsonb,
+    'streak_at_risk'
+  ),
+  false,
+  'group_match_streak_at_risk false blocks streak_at_risk'
 );
 
 -- ---------------------------------------------------------------------------
