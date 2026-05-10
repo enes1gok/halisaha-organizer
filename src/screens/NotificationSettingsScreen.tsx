@@ -1,21 +1,22 @@
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { SettingsSectionSkeleton } from '../components/skeleton';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/supabase/profiles';
 import { colors, spacing, typography } from '../theme';
@@ -25,6 +26,8 @@ import {
   isValidQuietHourTime,
   normalizeNotificationPreferences,
 } from '../types/notificationPreferences';
+import { openAppSystemSettings } from '../utils/openAppSystemSettings';
+import { formatDateToQuietHour, parseQuietHourToDate } from '../utils/quietHourTime';
 
 function toJsonRecord(p: NotificationPreferences): Record<string, unknown> {
   return {
@@ -59,6 +62,8 @@ function permissionLabel(status: Notifications.PermissionStatus): string {
   }
 }
 
+type QuietField = 'start' | 'end';
+
 export function NotificationSettingsScreen() {
   const { configured, session } = useSupabaseAuth();
   const [loading, setLoading] = useState(true);
@@ -67,6 +72,10 @@ export function NotificationSettingsScreen() {
   const [permStatus, setPermStatus] = useState<Notifications.PermissionStatus | null>(null);
   const [startInput, setStartInput] = useState(prefs.quiet_hours.start);
   const [endInput, setEndInput] = useState(prefs.quiet_hours.end);
+  const [activeQuietField, setActiveQuietField] = useState<QuietField | null>(null);
+
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
 
   const refresh = useCallback(async (silent: boolean) => {
     if (!configured || !session) {
@@ -116,6 +125,60 @@ export function NotificationSettingsScreen() {
       }
     },
     [configured, session, refresh],
+  );
+
+  const applyPickedTime = useCallback(
+    (field: QuietField, picked: Date) => {
+      const p = prefsRef.current;
+      const hhmm = formatDateToQuietHour(picked);
+      const start = field === 'start' ? hhmm : p.quiet_hours.start;
+      const end = field === 'end' ? hhmm : p.quiet_hours.end;
+      if (!isValidQuietHourTime(start) || !isValidQuietHourTime(end)) {
+        Alert.alert('Geçersiz saat', 'Saat seçilemedi. Lütfen tekrar deneyin.');
+        return;
+      }
+      if (start === p.quiet_hours.start && end === p.quiet_hours.end) return;
+      setStartInput(start);
+      setEndInput(end);
+      void persist({
+        ...p,
+        quiet_hours: { ...p.quiet_hours, start, end },
+      });
+    },
+    [persist],
+  );
+
+  const iosQuietDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleIosQuietApply = useCallback(
+    (field: QuietField, picked: Date) => {
+      if (iosQuietDebounceRef.current) clearTimeout(iosQuietDebounceRef.current);
+      iosQuietDebounceRef.current = setTimeout(() => {
+        iosQuietDebounceRef.current = null;
+        applyPickedTime(field, picked);
+      }, 350);
+    },
+    [applyPickedTime],
+  );
+
+  useEffect(
+    () => () => {
+      if (iosQuietDebounceRef.current) clearTimeout(iosQuietDebounceRef.current);
+    },
+    [],
+  );
+
+  const onAndroidQuietTimeChange = useCallback(
+    (field: QuietField, event: DateTimePickerEvent, date?: Date) => {
+      if (event.type === 'dismissed' || event.type === 'neutralButtonPressed') {
+        setActiveQuietField(null);
+        return;
+      }
+      if (event.type === 'set' && date) {
+        applyPickedTime(field, date);
+        setActiveQuietField(null);
+      }
+    },
+    [applyPickedTime],
   );
 
   const onTogglePush = useCallback(
@@ -215,22 +278,9 @@ export function NotificationSettingsScreen() {
     [prefs, persist],
   );
 
-  const commitQuietTimes = useCallback(() => {
-    const start = startInput.trim();
-    const end = endInput.trim();
-    if (!isValidQuietHourTime(start) || !isValidQuietHourTime(end)) {
-      Alert.alert('Geçersiz saat', 'Başlangıç ve bitiş için HH:MM formatında girin (ör. 22:30).');
-      setStartInput(prefs.quiet_hours.start);
-      setEndInput(prefs.quiet_hours.end);
-      return;
-    }
-    void persist({
-      ...prefs,
-      quiet_hours: { ...prefs.quiet_hours, start, end },
-    });
-  }, [startInput, endInput, prefs, persist]);
-
   const typesDisabled = !prefs.push_enabled;
+  const quietControlsDisabled = saving || typesDisabled || !prefs.quiet_hours.enabled;
+  const permDenied = permStatus === 'denied';
 
   if (!configured) {
     return (
@@ -267,23 +317,26 @@ export function NotificationSettingsScreen() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Sistem</Text>
         <Text style={styles.muted}>
           Uygulama bildirimleri: {permStatus ? permissionLabel(permStatus) : '—'}
         </Text>
-        <Text style={styles.caption}>
-          Tam kontrol için işletim sistemi bildirim ayarlarını kullanın.
+        <Text style={[styles.caption, permDenied ? styles.captionStrong : undefined]}>
+          {permDenied
+            ? 'Bildirimleri kullanmak için sistem ayarlarından izin vermeniz gerekir.'
+            : 'Tam kontrol için işletim sistemi bildirim ayarlarını kullanın.'}
         </Text>
         <Pressable
-          onPress={() => void Linking.openSettings()}
-          style={styles.linkBtn}
+          onPress={() => void openAppSystemSettings()}
+          style={[styles.linkBtn, permDenied ? styles.linkBtnCta : styles.linkBtnNeutral]}
           testID="settings:notifications:open-os-settings:press"
           accessibilityRole="button"
           accessibilityLabel="Sistem bildirim ayarlarını aç"
         >
-          <Text style={styles.linkText}>Sistem ayarlarını aç</Text>
+          <Text style={[styles.linkText, permDenied ? styles.linkTextCta : undefined]}>
+            {permDenied ? 'Ayarlara git' : 'Sistem ayarlarını aç'}
+          </Text>
         </Pressable>
       </View>
 
@@ -450,31 +503,82 @@ export function NotificationSettingsScreen() {
           />
         </View>
         <Text style={styles.label}>Başlangıç</Text>
-        <TextInput
-          style={styles.input}
-          value={startInput}
-          onChangeText={setStartInput}
-          placeholder="22:30"
-          placeholderTextColor={colors.textMuted}
-          editable={!saving && !typesDisabled && prefs.quiet_hours.enabled}
-          onEndEditing={commitQuietTimes}
-          keyboardType="numbers-and-punctuation"
-          testID="settings:notifications:quiet-start:input"
-          accessibilityLabel="Sessiz saat başlangıcı"
-        />
+        <Pressable
+          disabled={quietControlsDisabled}
+          onPress={() => {
+            if (Platform.OS === 'android') {
+              setActiveQuietField('start');
+              return;
+            }
+            setActiveQuietField((prev) => (prev === 'start' ? null : 'start'));
+          }}
+          style={[styles.input, styles.timePressable, quietControlsDisabled && styles.inputDisabled]}
+          testID="settings:notifications:quiet-start:press"
+          accessibilityRole="button"
+          accessibilityLabel="Sessiz saat başlangıcı, saat seç"
+          accessibilityHint="24 saat formatında saat seçmek için dokunun"
+        >
+          <Text style={[styles.inputText, quietControlsDisabled && styles.inputTextDisabled]}>{startInput}</Text>
+        </Pressable>
+        {Platform.OS === 'ios' && activeQuietField === 'start' ? (
+          <DateTimePicker
+            value={parseQuietHourToDate(prefs.quiet_hours.start)}
+            mode="time"
+            display="spinner"
+            themeVariant="dark"
+            onChange={(_, date) => {
+              if (date) scheduleIosQuietApply('start', date);
+            }}
+          />
+        ) : null}
+        {Platform.OS === 'android' && activeQuietField === 'start' ? (
+          <DateTimePicker
+            value={parseQuietHourToDate(prefs.quiet_hours.start)}
+            mode="time"
+            display="default"
+            is24Hour
+            onChange={(e, d) => onAndroidQuietTimeChange('start', e, d)}
+          />
+        ) : null}
+
         <Text style={styles.label}>Bitiş</Text>
-        <TextInput
-          style={styles.input}
-          value={endInput}
-          onChangeText={setEndInput}
-          placeholder="07:00"
-          placeholderTextColor={colors.textMuted}
-          editable={!saving && !typesDisabled && prefs.quiet_hours.enabled}
-          onEndEditing={commitQuietTimes}
-          keyboardType="numbers-and-punctuation"
-          testID="settings:notifications:quiet-end:input"
-          accessibilityLabel="Sessiz saat bitişi"
-        />
+        <Pressable
+          disabled={quietControlsDisabled}
+          onPress={() => {
+            if (Platform.OS === 'android') {
+              setActiveQuietField('end');
+              return;
+            }
+            setActiveQuietField((prev) => (prev === 'end' ? null : 'end'));
+          }}
+          style={[styles.input, styles.timePressable, quietControlsDisabled && styles.inputDisabled]}
+          testID="settings:notifications:quiet-end:press"
+          accessibilityRole="button"
+          accessibilityLabel="Sessiz saat bitişi, saat seç"
+          accessibilityHint="24 saat formatında saat seçmek için dokunun"
+        >
+          <Text style={[styles.inputText, quietControlsDisabled && styles.inputTextDisabled]}>{endInput}</Text>
+        </Pressable>
+        {Platform.OS === 'ios' && activeQuietField === 'end' ? (
+          <DateTimePicker
+            value={parseQuietHourToDate(prefs.quiet_hours.end)}
+            mode="time"
+            display="spinner"
+            themeVariant="dark"
+            onChange={(_, date) => {
+              if (date) scheduleIosQuietApply('end', date);
+            }}
+          />
+        ) : null}
+        {Platform.OS === 'android' && activeQuietField === 'end' ? (
+          <DateTimePicker
+            value={parseQuietHourToDate(prefs.quiet_hours.end)}
+            mode="time"
+            display="default"
+            is24Hour
+            onChange={(e, d) => onAndroidQuietTimeChange('end', e, d)}
+          />
+        ) : null}
       </View>
 
       {saving ? <ActivityIndicator color={colors.accent} style={styles.savingSpinner} /> : null}
@@ -524,6 +628,9 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
   },
+  captionStrong: {
+    color: colors.text,
+  },
   hint: {
     ...typography.caption,
     color: colors.textMuted,
@@ -546,12 +653,26 @@ const styles = StyleSheet.create({
   },
   linkBtn: {
     alignSelf: 'flex-start',
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  linkBtnCta: {
+    alignSelf: 'stretch',
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.accentMuted,
+  },
+  linkBtnNeutral: {
     paddingVertical: spacing.xs,
   },
   linkText: {
     ...typography.body,
     color: colors.accent,
     fontFamily: 'Inter_600SemiBold',
+  },
+  linkTextCta: {
+    textAlign: 'center',
   },
   label: {
     ...typography.caption,
@@ -567,5 +688,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: Platform.OS === 'ios' ? spacing.sm : spacing.xs,
     backgroundColor: colors.background,
+  },
+  timePressable: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  inputText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  inputDisabled: {
+    opacity: 0.5,
+  },
+  inputTextDisabled: {
+    color: colors.textMuted,
   },
 });
