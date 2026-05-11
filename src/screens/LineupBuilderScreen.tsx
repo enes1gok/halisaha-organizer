@@ -1,7 +1,6 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import {
   LayoutAnimation,
   LayoutChangeEvent,
@@ -9,17 +8,14 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   UIManager,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
   interpolate,
-  ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -35,7 +31,6 @@ import {
   type LineupSlotDef,
 } from '../data/lineupFormations';
 import { FormationDropZone, type DropRect, type ZoneMap } from '../components/FormationDropZone';
-import { LineupFormationThumbnail } from '../components/LineupFormationThumbnail';
 import { PitchHalfField } from '../components/PitchHalfField';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PillButton } from '../components/PillButton';
@@ -58,7 +53,7 @@ import {
 import { buildSlotsFromCompact, compactSlots } from '../utils/lineupSlots';
 import { hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
-import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { useUserFeedback } from '../utils/userFeedback';
 
@@ -75,8 +70,13 @@ const DRAG_SCALE = 1.03;
 
 const FORMATION_TOTALS = new Set([14, 16, 22]);
 
-/** BottomSheet snap points — sabit referans (her render’da yeni dizi vermemek için). */
-const BENCH_SHEET_SNAP_POINTS: Array<string | number> = ['20%', '48%'];
+// Turkish abbreviated position labels for the compact player column
+const POSITION_LABEL: Record<string, string> = {
+  GK: 'KL',
+  DEF: 'DEF',
+  MID: 'OOS',
+  FWD: 'SF',
+};
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -104,16 +104,7 @@ function syncTeamsWithGoing(
   return { A: [...nextA, ...addA], B: [...nextB, ...addB] };
 }
 
-function inside(r: DropRect | undefined, absX: number, absY: number): boolean {
-  return !!(
-    r &&
-    absX >= r.x &&
-    absX <= r.x + r.w &&
-    absY >= r.y &&
-    absY <= r.y + r.h
-  );
-}
-
+/** Horizontal card used on pitch slots and in classic mode lists. */
 function DraggableCard({
   player,
   onDragEnd,
@@ -197,6 +188,96 @@ function DraggableCard({
   );
 }
 
+/**
+ * Vertical avatar card shown in the right player column.
+ * Only rendered for bench (unplaced) players — ring is always accent green.
+ */
+function PlayerColumnItem({
+  player,
+  onDragEnd,
+  onDragActivated,
+  onDragFinalize,
+  testID,
+}: {
+  player: Player;
+  onDragEnd: (id: string, x: number, y: number) => void;
+  testID: string;
+  onDragActivated?: (playerId: string) => void;
+  onDragFinalize?: () => void;
+}) {
+  const styles = useLineupStyles();
+  const { colors } = useTheme();
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
+  const dragging = useSharedValue(0);
+
+  const pan = Gesture.Pan()
+    .activateAfterLongPress(LONG_PRESS_MS)
+    .onStart(() => {
+      if (onDragActivated) runOnJS(onDragActivated)(player.id);
+    })
+    .onUpdate((e) => {
+      dragging.value = 1;
+      tx.value = e.translationX;
+      ty.value = e.translationY;
+    })
+    .onEnd((e) => {
+      runOnJS(onDragEnd)(player.id, e.absoluteX, e.absoluteY);
+      tx.value = withSpring(0, Springs.interactive);
+      ty.value = withSpring(0, Springs.interactive);
+      dragging.value = withSpring(0, Springs.interactive);
+    })
+    .onFinalize(() => {
+      if (onDragFinalize) runOnJS(onDragFinalize)();
+      tx.value = withSpring(0, Springs.interactive);
+      ty.value = withSpring(0, Springs.interactive);
+      dragging.value = withSpring(0, Springs.interactive);
+    });
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: tx.value },
+      { translateY: ty.value },
+      { scale: interpolate(dragging.value, [0, 1], [1, DRAG_SCALE], Extrapolation.CLAMP) },
+    ],
+    zIndex: dragging.value ? 10 : 1,
+    elevation: dragging.value ? 8 : 2,
+    shadowOpacity: dragging.value ? 0.4 : 0,
+    shadowRadius: dragging.value ? 12 : 0,
+    shadowOffset: { width: 0, height: dragging.value ? 4 : 0 },
+  }));
+
+  const posColor = colors.position[player.position] ?? colors.textMuted;
+  const posLabel = POSITION_LABEL[player.position] ?? player.position;
+
+  // Fit long names inside the narrow column
+  const shortName =
+    player.name.length > 9 ? (player.name.split(' ')[0] ?? player.name) : player.name;
+
+  return (
+    <GestureDetector gesture={pan}>
+      <Animated.View
+        style={[styles.columnItem, animStyle]}
+        testID={testID}
+        accessibilityRole="button"
+        accessibilityLabel={player.name}
+        accessibilityHint="Basılı tutup sahaya sürükleyin."
+      >
+        <View style={[styles.columnAvatarWrap, { borderColor: colors.accent }]}>
+          <PlayerAvatar name={player.name} uri={player.photoUri} size={40} />
+        </View>
+        <Text style={styles.columnName} numberOfLines={2}>
+          {shortName}
+        </Text>
+        <View style={styles.columnPosRow}>
+          <View style={[styles.columnPosDot, { backgroundColor: posColor }]} />
+          <Text style={[styles.columnPosLabel, { color: posColor }]}>{posLabel}</Text>
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
 export function LineupBuilderScreen() {
   const styles = useLineupStyles();
   const { colors } = useTheme();
@@ -205,6 +286,7 @@ export function LineupBuilderScreen() {
   const { matchId } = route.params;
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
+  const groupMemberships = useGroupsStore((s) => s.groupMemberships);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const playersAll = usePlayersStore((s) => s.players);
   const { match, setMatchTeams, lockLineup } = useMatchesStore(
@@ -226,11 +308,8 @@ export function LineupBuilderScreen() {
   const rects = useRef<{ A?: DropRect; B?: DropRect }>({});
 
   const formationZonesRef = useRef<ZoneMap>(new Map());
-  const benchSheetRef = useRef<React.ElementRef<typeof BottomSheet>>(null);
 
   const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
-  const stackHalfPitches = windowWidth < 420;
 
   const measure = useCallback(() => {
     const cb =
@@ -262,10 +341,8 @@ export function LineupBuilderScreen() {
     [formationRosterTotal],
   );
 
-  /** Tam katılım: tüm slotların dolu olması zorunlu (aksi halde sadece “going” oyuncular sahada). */
   const strictFormationFill = useMemo(
-    () =>
-      !!match && formationMode && goingPlayers.length === match.maxPlayers,
+    () => !!match && formationMode && goingPlayers.length === match.maxPlayers,
     [formationMode, goingPlayers.length, match],
   );
 
@@ -275,8 +352,6 @@ export function LineupBuilderScreen() {
   const [slotsA, setSlotsA] = useState<(string | null)[]>([]);
   const [slotsB, setSlotsB] = useState<(string | null)[]>([]);
   const [formationId, setFormationId] = useState<string | null>(null);
-  const [stepMode, setStepMode] = useState(false);
-  const [lineupPhase, setLineupPhase] = useState<'beyaz' | 'siyah'>('beyaz');
 
   const formationInitKey = useRef<string>('');
   const lastPersistKey = useRef<string>('');
@@ -315,10 +390,17 @@ export function LineupBuilderScreen() {
 
   useEffect(() => {
     if (!match) return;
-    if (match.organizerId !== userId) {
+    const isOrganizer = match.organizerId === userId;
+    const myGroupMembership = groupMemberships.find(
+      (m) => m.groupId === match.groupId && m.playerId === userId,
+    );
+    const isGroupManager =
+      myGroupMembership?.role === 'owner' || myGroupMembership?.role === 'admin';
+    const canManageMatch = isOrganizer || (match.groupId != null && isGroupManager);
+    if (!canManageMatch) {
       navigation.goBack();
     }
-  }, [match, navigation, userId]);
+  }, [match, navigation, userId, groupMemberships]);
 
   useEffect(() => {
     if (!match || match.lineupLocked || formationMode) return;
@@ -424,45 +506,37 @@ export function LineupBuilderScreen() {
     (playerId: string, absX: number, absY: number) => {
       const zone = pickFormationZoneOrdered(formationZonesRef.current, absX, absY);
       if (!zone) return;
-
-      if (stepMode) {
-        if (lineupPhase === 'beyaz' && zone.startsWith('A:')) return;
-        if (lineupPhase === 'siyah' && zone.startsWith('B:')) return;
-      }
-
       const result = applyLineupFormationDrop(slotsA, slotsB, playerId, zone);
       if (!result || !result.changed) return;
-
       setSlotsA(result.slotsA);
       setSlotsB(result.slotsB);
       void lightImpact();
     },
-    [lineupPhase, slotsA, slotsB, stepMode],
+    [slotsA, slotsB],
   );
 
-  const sheetTimingConfig = useMemo(
-    () => (reduceMotion ? ({ duration: 0 } as const) : undefined),
-    [reduceMotion],
-  );
-
-  const onPitchDragActivated = useCallback((playerId: string) => {
+  const onDragActivated = useCallback((playerId: string) => {
     void selectionTick();
     setDraggingPlayerId(playerId);
   }, []);
 
-  const onBenchDragActivated = useCallback(
-    (playerId: string) => {
-      void selectionTick();
-      setDraggingPlayerId(playerId);
-      benchSheetRef.current?.snapToIndex(0, sheetTimingConfig);
-    },
-    [sheetTimingConfig],
-  );
-
   const onFormationDragFinalize = useCallback(() => {
     setDraggingPlayerId(null);
-    benchSheetRef.current?.snapToIndex(1, sheetTimingConfig);
-  }, [sheetTimingConfig]);
+  }, []);
+
+  const onResetLineup = useCallback(() => {
+    if (!selectedFormation || !match) return;
+    const empty = Array.from<string | null>({ length: selectedFormation.playersPerTeam }).fill(null);
+    setSlotsA(empty);
+    setSlotsB(empty);
+    void setMatchTeams(match.id, [], [], resolvedFormationId ?? undefined).catch((err) =>
+      showApiErrorToast(err, {
+        uiOperation: 'LineupBuilder:reset',
+        fallbackMessage: 'Kadro sıfırlanamadı.',
+        mapOperation: 'replaceMatchTeamPlayersRemote',
+      }),
+    );
+  }, [selectedFormation, match, resolvedFormationId, setMatchTeams, showApiErrorToast]);
 
   const benchPlayerIds = useMemo(() => {
     if (!formationMode || !selectedFormation) return [];
@@ -493,8 +567,21 @@ export function LineupBuilderScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: hasLineupContentForTitle ? 'Kadroyu düzenle' : 'Kadro Kur',
+      headerRight: formationMode
+        ? () => (
+            <Pressable
+              onPress={onResetLineup}
+              style={styles.resetBtn}
+              testID="lineup:reset:press"
+              accessibilityRole="button"
+              accessibilityLabel="Kadroyu sıfırla"
+            >
+              <Text style={styles.resetBtnText}>Sıfırla</Text>
+            </Pressable>
+          )
+        : undefined,
     });
-  }, [navigation, hasLineupContentForTitle]);
+  }, [navigation, hasLineupContentForTitle, formationMode, onResetLineup, styles.resetBtn, styles.resetBtnText]);
 
   const onBalance = () => {
     if (!match) return;
@@ -558,7 +645,6 @@ export function LineupBuilderScreen() {
       selectedFormation != null && selectedFormation.playersPerTeam === f.playersPerTeam;
     setFormationId(id);
     if (sameSize) {
-      setLineupPhase('beyaz');
       if (match) {
         void setMatchTeams(
           match.id,
@@ -577,7 +663,6 @@ export function LineupBuilderScreen() {
     }
     setSlotsA(Array.from({ length: f.playersPerTeam }, () => null));
     setSlotsB(Array.from({ length: f.playersPerTeam }, () => null));
-    setLineupPhase('beyaz');
     if (match) {
       void setMatchTeams(match.id, [], [], id).catch((err) =>
         showApiErrorToast(err, {
@@ -783,26 +868,27 @@ export function LineupBuilderScreen() {
     formation: LineupFormation,
     slots: (string | null)[],
     side: 'A' | 'B',
-    dimmed: boolean,
     highlightEmptySlots: boolean,
+    horizontal: boolean,
   ) => (
     <PitchHalfField
       formation={formation}
       slots={slots}
       side={side}
-      dimmed={dimmed}
+      dimmed={false}
       highlightEmptySlots={highlightEmptySlots}
       reduceMotion={reduceMotion}
       zonesRef={formationZonesRef}
       getPlayer={getPlayer}
       testID={`lineup:pitch:${side.toLowerCase()}`}
+      horizontal={horizontal}
       renderSlotContent={(slot: LineupSlotDef, p: Player | undefined, slotTestId: string) =>
         p ? (
           <View style={styles.slotInner}>
             <DraggableCard
               player={p}
               onDragEnd={handleDropFormation}
-              onDragActivated={onPitchDragActivated}
+              onDragActivated={onDragActivated}
               onDragFinalize={onFormationDragFinalize}
               testID={slotTestId}
             />
@@ -820,187 +906,124 @@ export function LineupBuilderScreen() {
 
   if (formationMode && formationsForCount.length > 0 && selectedFormation) {
     return (
+      // screenFormation is a row: leftSide (header+pitches+actions) + full-height player column
       <View style={styles.screenFormation}>
-        <View style={styles.formationTop}>
-          <Text style={styles.formationTitle}>
-            {goingPlayers.length}/{match.maxPlayers} katılımcı · {selectedFormation.playersPerTeam}’şer ·{' '}
-            {selectedFormation.label}
-          </Text>
-          {!strictFormationFill ? (
-            <Text style={styles.hintWarn} accessibilityRole="text">
-              Tam kadro değil; boş slot bırakabilirsiniz. Tüm katılımcılar sahada olmalı.
+
+        {/* ── Left side: header + pitches + action bar ── */}
+        <View style={styles.leftSide}>
+
+          {/* Compact header strip */}
+          <View style={styles.formationHeader}>
+            <Text style={styles.formationTitle}>
+              {goingPlayers.length}/{match.maxPlayers} · {selectedFormation.playersPerTeam}&apos;şer · {selectedFormation.label}
             </Text>
-          ) : null}
-          <Text style={styles.hint} accessibilityRole="text">
-            Havuzu alttan çekerek genişletin; oyuncuları yatay kaydırabilirsiniz. Oyuncuyu basılı tutup
-            slota veya havuza bırakın. Soldan sağa: Siyah, Beyaz.
-          </Text>
+            {!strictFormationFill ? (
+              <Text style={styles.hintWarn} accessibilityRole="text">
+                Tam kadro değil; boş slot bırakabilirsiniz.
+              </Text>
+            ) : null}
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipRow}
-            testID="lineup:formation:scroll"
-          >
-            {formationsForCount.map((f) => (
-              <Pressable
-                key={f.id}
-                onPress={() => onPickFormation(f.id)}
-                style={[styles.chip, resolvedFormationId === f.id && styles.chipSelected]}
-                testID={`lineup:formation:${f.id}`}
-              >
-                <Text style={[styles.chipText, resolvedFormationId === f.id && styles.chipTextSelected]}>
-                  {f.label}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+              testID="lineup:formation:scroll"
+            >
+              {formationsForCount.map((f) => (
+                <Pressable
+                  key={f.id}
+                  onPress={() => onPickFormation(f.id)}
+                  style={[styles.chip, resolvedFormationId === f.id && styles.chipSelected]}
+                  testID={`lineup:formation:${f.id}`}
+                >
+                  <Text style={[styles.chipText, resolvedFormationId === f.id && styles.chipTextSelected]}>
+                    {f.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
 
-          <LineupFormationThumbnail
-            formation={selectedFormation}
-            teamLabelB={TEAM_SIDE_LABELS.B}
-            teamLabelA={TEAM_SIDE_LABELS.A}
-            testID="lineup:formation:thumbnail"
-          />
+          {/* Pitches area — stacked vertically, horizontal (landscape) mode, no scroll */}
+          <View style={styles.pitchesArea}>
+            <View style={styles.pitchesContent}>
+              <View style={styles.pitchColumns}>
+                <View style={styles.pitchCol}>
+                  <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.B}</Text>
+                  {renderPitch(selectedFormation, slotsB, 'B', draggingPlayerId != null, true)}
+                </View>
+                <View style={styles.pitchCol}>
+                  <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.A}</Text>
+                  {renderPitch(selectedFormation, slotsA, 'A', draggingPlayerId != null, true)}
+                </View>
+              </View>
+            </View>
+          </View>
 
-          <View style={styles.stepRow}>
-            <Text style={styles.stepLabel}>Adım adım (önce Beyaz)</Text>
-            <Switch
-              testID="lineup:step-mode:switch"
-              accessibilityLabel="Adım adım kadro modu"
-              value={stepMode}
-              onValueChange={(v) => {
-                setStepMode(v);
-                if (v) setLineupPhase('beyaz');
-              }}
-              trackColor={{ false: colors.border, true: colors.accentMuted }}
-              thumbColor={stepMode ? colors.accent : colors.textMuted}
+          {/* Action bar: ghost actions row + full-width primary CTA */}
+          <View style={[styles.actionsBar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+            <View style={styles.actionsSecondaryRow}>
+              <PillButton
+                title="Dengele"
+                variant="ghost"
+                onPress={onBalance}
+                testID="lineup:balance:press"
+                accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
+                style={styles.actionBtnSecondary}
+              />
+              <PillButton
+                title="Yayınla"
+                variant="ghost"
+                onPress={() => setConfirmOpen(true)}
+                testID="lineup:publish:open"
+                accessibilityLabel="Kadroyu yayınla ve kilitle."
+                style={styles.actionBtnSecondary}
+              />
+            </View>
+            <PillButton
+              title="Kaydet ve çık"
+              onPress={() => void saveAndExit()}
+              testID="lineup:save:press"
+              style={styles.actionBtnPrimary}
             />
           </View>
-          {stepMode ? (
-            <View style={styles.phaseBanner}>
-              <Text style={styles.phaseText}>
-                {lineupPhase === 'beyaz' ? 'Beyaz takım slotları aktif' : 'Siyah takım slotları aktif'}
-              </Text>
-              {lineupPhase === 'beyaz' ? (
-                <PillButton
-                  title="Siyah takıma geç"
-                  variant="ghost"
-                  onPress={() => setLineupPhase('siyah')}
-                  testID="lineup:phase:goto-siyah"
-                />
-              ) : (
-                <PillButton
-                  title="Beyaza dön"
-                  variant="ghost"
-                  onPress={() => setLineupPhase('beyaz')}
-                  testID="lineup:phase:goto-beyaz"
-                />
-              )}
-            </View>
-          ) : null}
+
         </View>
 
-        <ScrollView
-          style={styles.pitchScroll}
-          contentContainerStyle={styles.pitchScrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        {/* ── Right player column — full screen height, bench drop zone ── */}
+        <FormationDropZone
+          zoneKey="bench"
+          zonesRef={formationZonesRef}
+          style={styles.playerColumn}
         >
-          <View style={[styles.pitchColumns, stackHalfPitches && styles.pitchColumnsStack]}>
-            <View style={styles.pitchCol}>
-              <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.B}</Text>
-              {renderPitch(
-                selectedFormation,
-                slotsB,
-                'B',
-                stepMode && lineupPhase === 'siyah',
-                draggingPlayerId != null && (!stepMode || lineupPhase === 'beyaz'),
-              )}
-            </View>
-            <View style={styles.pitchCol}>
-              <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.A}</Text>
-              {renderPitch(
-                selectedFormation,
-                slotsA,
-                'A',
-                stepMode && lineupPhase === 'beyaz',
-                draggingPlayerId != null && (!stepMode || lineupPhase === 'siyah'),
-              )}
-            </View>
-          </View>
-        </ScrollView>
-
-        <View style={styles.actionsBar}>
-          <PillButton
-            title="Akıllı Denge"
-            variant="ghost"
-            onPress={onBalance}
-            testID="lineup:balance:press"
-            accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
-          />
-          <PillButton
-            title="Kaydet ve çık"
-            onPress={() => void saveAndExit()}
-            testID="lineup:save:press"
-          />
-          <PillButton
-            title="Kadroyu yayınla"
-            variant="ghost"
-            onPress={() => setConfirmOpen(true)}
-            testID="lineup:publish:open"
-          />
-        </View>
-
-        <BottomSheet
-          ref={benchSheetRef}
-          index={1}
-          snapPoints={BENCH_SHEET_SNAP_POINTS}
-          enablePanDownToClose={false}
-          enableContentPanningGesture={false}
-          enableDynamicSizing={false}
-          animateOnMount
-          overrideReduceMotion={reduceMotion ? ReduceMotion.Always : ReduceMotion.System}
-          backgroundStyle={styles.benchSheetBg}
-          handleIndicatorStyle={styles.benchHandleIndicator}
-        >
-          <BottomSheetView
-            style={[styles.benchSheetBody, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}
+          <Text style={styles.columnHeader}>
+            {benchPlayerIds.length > 0 ? `Havuz · ${benchPlayerIds.length}` : 'Havuz'}
+          </Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.columnContent}
+            nestedScrollEnabled
+            testID="lineup:bench:scroll"
           >
-            <Text style={styles.benchSheetHeading} accessibilityRole="header">
-              Havuz
-              {benchPlayerIds.length > 0 ? ` · ${benchPlayerIds.length}` : ''}
-            </Text>
-            <FormationDropZone zoneKey="bench" zonesRef={formationZonesRef} style={styles.benchDrop}>
-              <ScrollView
-                horizontal
-                nestedScrollEnabled
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.benchScroll}
-                keyboardShouldPersistTaps="handled"
-                testID="lineup:bench:scroll"
-              >
-                {benchPlayerIds.map((id) => {
-                  const p = getPlayer(id);
-                  if (!p) return null;
-                  return (
-                    <DraggableCard
-                      key={id}
-                      player={p}
-                      onDragEnd={handleDropFormation}
-                      onDragActivated={onBenchDragActivated}
-                      onDragFinalize={onFormationDragFinalize}
-                      testID={`lineup:player-card:${id}`}
-                    />
-                  );
-                })}
-                {benchPlayerIds.length === 0 ? (
-                  <Text style={styles.benchEmpty}>Tüm oyuncular sahada</Text>
-                ) : null}
-              </ScrollView>
-            </FormationDropZone>
-          </BottomSheetView>
-        </BottomSheet>
+            {benchPlayerIds.map((id) => {
+              const p = getPlayer(id);
+              if (!p) return null;
+              return (
+                <PlayerColumnItem
+                  key={id}
+                  player={p}
+                  onDragEnd={handleDropFormation}
+                  onDragActivated={onDragActivated}
+                  onDragFinalize={onFormationDragFinalize}
+                  testID={`lineup:player-card:${id}`}
+                />
+              );
+            })}
+            {benchPlayerIds.length === 0 ? (
+              <Text style={styles.columnEmpty}>Tümü sahada</Text>
+            ) : null}
+          </ScrollView>
+        </FormationDropZone>
 
         <ConfirmationModal
           visible={confirmOpen}
@@ -1016,6 +1039,7 @@ export function LineupBuilderScreen() {
     );
   }
 
+  // ── Classic mode (non-14/16/22 player counts) ──
   return (
     <View style={styles.screen}>
       <Text style={styles.hint} accessibilityRole="text">
@@ -1065,221 +1089,273 @@ export function LineupBuilderScreen() {
 
 const useLineupStyles = makeStyles((t) =>
   StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: t.colors.background,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  screenFormation: {
-    flex: 1,
-    backgroundColor: t.colors.background,
-  },
-  formationTop: {
-    gap: spacing.sm,
-    flexShrink: 0,
-    paddingTop: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  pitchScroll: {
-    flex: 1,
-    flexGrow: 1,
-    minHeight: 120,
-  },
-  pitchScrollContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.md,
-  },
-  actionsBar: {
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    paddingHorizontal: spacing.md,
-    flexShrink: 0,
-  },
-  benchSheetBg: {
-    backgroundColor: t.colors.surface,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-  benchHandleIndicator: {
-    backgroundColor: t.colors.textMuted,
-    width: 40,
-  },
-  benchSheetBody: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  benchSheetHeading: {
-    ...typography.caption,
-    color: t.colors.textMuted,
-    fontWeight: '600',
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: t.colors.background,
-  },
-  formationTitle: {
-    ...typography.subtitle,
-    color: t.colors.text,
-  },
-  hint: {
-    ...typography.caption,
-    color: t.colors.textMuted,
-    lineHeight: 18,
-  },
-  hintWarn: {
-    ...typography.caption,
-    color: t.colors.accent,
-    lineHeight: 18,
-  },
-  chipRow: {
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    backgroundColor: t.colors.surface,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  chipSelected: {
-    borderColor: t.colors.accent,
-    backgroundColor: t.colors.accentMuted,
-  },
-  chipText: {
-    ...typography.body,
-    color: t.colors.text,
-  },
-  chipTextSelected: {
-    color: t.colors.accent,
-    fontWeight: '600',
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stepLabel: {
-    ...typography.caption,
-    color: t.colors.textMuted,
-  },
-  phaseBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-  },
-  phaseText: {
-    ...typography.caption,
-    color: t.colors.accent,
-    flex: 1,
-  },
-  pitchColumns: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  pitchColumnsStack: {
-    flexDirection: 'column',
-  },
-  pitchCol: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  pitchTeamTitle: {
-    ...typography.caption,
-    color: t.colors.textMuted,
-    textAlign: 'center',
-  },
-  slotInner: {
-    minHeight: 44,
-    justifyContent: 'center',
-    width: '100%',
-    alignItems: 'center',
-  },
-  slotEmpty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-    minWidth: 44,
-    paddingHorizontal: spacing.xs,
-  },
-  slotRole: {
-    ...typography.micro,
-    color: t.colors.textMuted,
-  },
-  benchDrop: {
-    minHeight: 56,
-  },
-  benchScroll: {
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-  },
-  benchEmpty: {
-    ...typography.caption,
-    color: t.colors.textMuted,
-    paddingVertical: spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    flex: 1,
-  },
-  zone: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    borderRadius: radius.card,
-    padding: spacing.sm,
-    backgroundColor: t.colors.surface,
-    maxHeight: 420,
-    elevation: 2,
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  zoneTitle: {
-    ...typography.caption,
-    color: t.colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-    backgroundColor: t.colors.background,
-    shadowColor: 'black',
-  },
-  cardName: {
-    ...typography.body,
-    color: t.colors.text,
-  },
-  cardMeta: {
-    flex: 1,
-  },
-  emptyText: {
-    color: t.colors.textMuted,
-  },
-  actions: {
-    gap: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-}),
+    // ── Screen shells ──
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    // formation mode: row so player column spans full height
+    screenFormation: {
+      flex: 1,
+      flexDirection: 'row',
+      backgroundColor: t.colors.background,
+    },
+
+    // ── Left side (header + pitches + actions) ──
+    leftSide: {
+      flex: 1,
+      flexDirection: 'column',
+    },
+
+    // ── Formation header strip ──
+    formationHeader: {
+      gap: spacing.xs,
+      flexShrink: 0,
+      paddingTop: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.xs,
+    },
+    formationTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+    },
+    hint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      lineHeight: 18,
+    },
+    hintWarn: {
+      ...typography.caption,
+      color: t.colors.accent,
+      lineHeight: 18,
+    },
+
+    // ── Formation chip row ──
+    chipRow: {
+      gap: spacing.sm,
+      paddingVertical: 2,
+    },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.surface,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    chipSelected: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    chipText: {
+      ...typography.body,
+      color: t.colors.text,
+    },
+    chipTextSelected: {
+      color: t.colors.accent,
+      fontWeight: '600',
+    },
+
+    // ── Pitches area ──
+    pitchesArea: {
+      flex: 1,
+      overflow: 'hidden',
+    },
+    pitchTeamTitle: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      paddingBottom: 2,
+    },
+    pitchesContent: {
+      paddingHorizontal: spacing.xs,
+      paddingBottom: spacing.xs,
+    },
+    // Pitches stacked vertically in landscape (horizontal) mode — no scroll
+    pitchColumns: {
+      flexDirection: 'column',
+      gap: spacing.sm,
+    },
+    pitchCol: {
+      gap: spacing.xs,
+    },
+
+    // ── 2-row action bar ──
+    actionsBar: {
+      flexDirection: 'column',
+      gap: spacing.xs,
+      paddingTop: spacing.xs,
+      paddingHorizontal: spacing.md,
+      flexShrink: 0,
+    },
+    actionsSecondaryRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    actionBtnSecondary: {
+      flex: 1,
+      minHeight: 40,
+      paddingVertical: 6,
+    },
+    actionBtnPrimary: {
+      minHeight: 44,
+      paddingVertical: 8,
+    },
+
+    // ── Right player column (full screen height) ──
+    playerColumn: {
+      width: 86,
+      borderLeftWidth: StyleSheet.hairlineWidth,
+      borderLeftColor: t.colors.border,
+      backgroundColor: t.colors.surface,
+      paddingTop: spacing.sm,
+    },
+    columnHeader: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      paddingBottom: spacing.xs,
+    },
+    columnContent: {
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingBottom: spacing.lg,
+      paddingHorizontal: spacing.xs,
+    },
+    columnItem: {
+      width: 70,
+      alignItems: 'center',
+      gap: 3,
+      paddingVertical: 6,
+      paddingHorizontal: 4,
+      borderRadius: radius.sm,
+      backgroundColor: t.colors.background,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+    },
+    columnAvatarWrap: {
+      borderRadius: 24,
+      borderWidth: 2,
+      padding: 2,
+    },
+    columnName: {
+      fontSize: 10,
+      fontWeight: '500',
+      color: t.colors.text,
+      textAlign: 'center',
+      lineHeight: 13,
+    },
+    columnPosRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+    columnPosDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 3,
+    },
+    columnPosLabel: {
+      fontSize: 9,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    columnEmpty: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      paddingTop: spacing.md,
+    },
+
+    // ── Slot content ──
+    slotInner: {
+      minHeight: 44,
+      justifyContent: 'center',
+      width: '100%',
+      alignItems: 'center',
+    },
+    slotEmpty: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 40,
+      minWidth: 44,
+      paddingHorizontal: spacing.xs,
+    },
+    slotRole: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+    },
+
+    // ── Classic mode ──
+    row: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      flex: 1,
+    },
+    zone: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: radius.card,
+      padding: spacing.sm,
+      backgroundColor: t.colors.surface,
+      maxHeight: 420,
+      elevation: 2,
+      shadowColor: 'black',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+    },
+    zoneTitle: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginBottom: spacing.sm,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      padding: spacing.sm,
+      marginBottom: spacing.sm,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.background,
+      shadowColor: 'black',
+    },
+    cardName: {
+      ...typography.body,
+      color: t.colors.text,
+    },
+    cardMeta: {
+      flex: 1,
+    },
+    actions: {
+      gap: spacing.sm,
+      paddingBottom: spacing.lg,
+    },
+
+    // ── Shared ──
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.colors.background,
+    },
+    emptyText: {
+      color: t.colors.textMuted,
+    },
+  }),
 );

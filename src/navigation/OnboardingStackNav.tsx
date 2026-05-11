@@ -6,7 +6,7 @@ import {
 } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React, { useMemo } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { AppLoadingScreen } from '../components/AppLoadingScreen';
 import { useAppIntroCompletion } from '../hooks/useAppIntroCompletion';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { AuthWelcomeScreen } from '../screens/AuthWelcomeScreen';
@@ -48,25 +48,8 @@ export function OnboardingNavigator() {
     [colors, reduceMotion],
   );
 
-  const gateStyles = useMemo(
-    () =>
-      StyleSheet.create({
-        loading: {
-          flex: 1,
-          backgroundColor: colors.background,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-      }),
-    [colors.background],
-  );
-
   if (status === 'loading') {
-    return (
-      <View style={gateStyles.loading}>
-        <ActivityIndicator color={colors.accent} size="large" />
-      </View>
-    );
+    return <AppLoadingScreen message="Hazırlanıyor…" />;
   }
 
   if (status === 'needs_intro') {

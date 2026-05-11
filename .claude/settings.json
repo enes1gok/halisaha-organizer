@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"\\\\.\\(sql|md\\)$\")"
+      "Bash(grep -E \"\\\\.\\(sql|md\\)$\")",
+      "Bash(npx tsc *)",
+      "Bash(git -C /Users/enesgok/Documents/github/halisaha-organizer status)",
+      "Bash(git -C /Users/enesgok/Documents/github/halisaha-organizer diff src/screens/GroupWeeklySeriesScreen.tsx)",
+      "Bash(ls ~/.claude/.mcp.json 2>/dev/null && echo \"exists\" || echo \"not found\")",
+      "Read(//Users/enesgok/.claude/**)"
     ]
   }
 }

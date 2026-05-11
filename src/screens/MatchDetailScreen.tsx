@@ -31,7 +31,7 @@ import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRati
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { useShallow } from 'zustand/react/shallow';
-import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { sortAttendeesWithPlayers } from '../store/helpers';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
@@ -114,8 +114,15 @@ export function MatchDetailScreen() {
   const countdown = useCountdown(match?.startsAt ?? new Date().toISOString());
   const { pastScheduledEnd, endsAtIso } = useMatchPostMatchWindow(match?.startsAt);
 
+  const groupMemberships = useGroupsStore((s) => s.groupMemberships);
   const organizer = match ? getPlayer(match.organizerId) : undefined;
   const isOrganizer = match?.organizerId === userId;
+  const myGroupMembership = groupMemberships.find(
+    (m) => m.groupId === match?.groupId && m.playerId === userId,
+  );
+  const isGroupManager =
+    myGroupMembership?.role === 'owner' || myGroupMembership?.role === 'admin';
+  const canManageMatch = isOrganizer || (match?.groupId != null && isGroupManager);
   const userOnMatchLineup = Boolean(
     match && (match.teamAIds.includes(userId) || match.teamBIds.includes(userId)),
   );
@@ -379,7 +386,7 @@ export function MatchDetailScreen() {
             joinCopyLabel={joinCopyLabel}
             joinCopied={joinCopied}
             onPressCopyJoin={onPressCopyJoin}
-            isOrganizer={isOrganizer}
+            isOrganizer={canManageMatch}
             userOnMatchLineup={userOnMatchLineup}
             showFinishedRatingsChrome={showFinishedRatingsChrome}
             ratingHints={ratingHints}
@@ -442,7 +449,7 @@ export function MatchDetailScreen() {
             ibanCopied={ibanCopied}
             onPressCopyIban={onPressCopyIban}
             attendeesSorted={attendeesSorted}
-            isOrganizer={isOrganizer}
+            isOrganizer={canManageMatch}
             userId={userId}
             onPressEditPaid={handlePressEditPaid}
           />

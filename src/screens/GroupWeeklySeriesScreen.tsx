@@ -186,6 +186,7 @@ export function GroupWeeklySeriesScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.accent} />
+        <Text style={styles.loadingLabel}>Seri ayarları yükleniyor…</Text>
       </View>
     );
   }
@@ -295,6 +296,7 @@ const styles = StyleSheet.create({
   scroll: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   muted: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
+  loadingLabel: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },
   lead: { ...typography.caption, color: colors.textMuted },
   label: { ...typography.subtitle, color: colors.text },
   rowBetween: {

@@ -8,7 +8,9 @@ import {
   type GroupsHydrationPayload,
   hydrateRemoteGroupsUseCase,
   joinGroupUseCase,
+  kickGroupMemberUseCase,
   leaveGroupUseCase,
+  setGroupMemberRoleUseCase,
   upsertGroupWeeklySeriesUseCase,
 } from '../../usecases/groups';
 import type { UpsertGroupWeeklySeriesInput } from '../../services/supabase/groupWeeklySeries';
@@ -121,6 +123,31 @@ function injectRemoteGroup(
   });
 }
 
+function kickMemberLocal(
+  set: Parameters<StateCreator<AppState>>[0],
+  groupId: string,
+  targetPlayerId: string,
+) {
+  set((state) => ({
+    groupMemberships: state.groupMemberships.filter(
+      (m) => !(m.groupId === groupId && m.playerId === targetPlayerId),
+    ),
+  }));
+}
+
+function setMemberRoleLocal(
+  set: Parameters<StateCreator<AppState>>[0],
+  groupId: string,
+  targetPlayerId: string,
+  role: import('../../types/domain').GroupRole,
+) {
+  set((state) => ({
+    groupMemberships: state.groupMemberships.map((m) =>
+      m.groupId === groupId && m.playerId === targetPlayerId ? { ...m, role } : m,
+    ),
+  }));
+}
+
 function deleteLocalGroupState(set: Parameters<StateCreator<AppState>>[0], groupId: string) {
   set((state) => {
     const weeklySeriesByGroupId = { ...state.weeklySeriesByGroupId };
@@ -150,6 +177,10 @@ function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get:
       set((s) => ({
         weeklySeriesByGroupId: { ...s.weeklySeriesByGroupId, [groupId]: series },
       })),
+    kickMemberLocal: (groupId: string, targetPlayerId: string) =>
+      kickMemberLocal(set, groupId, targetPlayerId),
+    setMemberRoleLocal: (groupId: string, targetPlayerId: string, role: import('../../types/domain').GroupRole) =>
+      setMemberRoleLocal(set, groupId, targetPlayerId, role),
   };
 }
 
@@ -172,4 +203,10 @@ export const createGroupsSlice: StateCreator<AppState, [], [], GroupsSlice> = (s
 
   upsertGroupWeeklySeries: (input: UpsertGroupWeeklySeriesInput) =>
     upsertGroupWeeklySeriesUseCase(buildGroupsUseCaseDeps(set, get), input),
+
+  kickGroupMember: (groupId, targetPlayerId) =>
+    kickGroupMemberUseCase(buildGroupsUseCaseDeps(set, get), groupId, targetPlayerId),
+
+  setGroupMemberRole: (groupId, targetPlayerId, role) =>
+    setGroupMemberRoleUseCase(buildGroupsUseCaseDeps(set, get), groupId, targetPlayerId, role),
 });

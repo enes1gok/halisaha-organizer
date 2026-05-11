@@ -32,8 +32,11 @@ function buildDeps(overrides: Partial<Parameters<typeof deleteGroupUseCase>[0]> 
     joinLocalGroup: jest.fn(),
     leaveLocalGroup: jest.fn(),
     deleteLocalGroupState: jest.fn(),
+    injectRemoteGroup: jest.fn(),
     hydrateRemoteMatches: jest.fn().mockResolvedValue(undefined),
     setWeeklySeriesCache: jest.fn(),
+    kickMemberLocal: jest.fn(),
+    setMemberRoleLocal: jest.fn(),
     ...overrides,
   };
 }

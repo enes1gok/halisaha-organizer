@@ -117,6 +117,49 @@ export async function leaveGroupRemote(groupId: string): Promise<void> {
   if (error) throw mapSupabaseError(error, 'leaveGroupRemote');
 }
 
+export async function kickGroupMemberRemote(groupId: string, targetPlayerId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw createAuthRequiredError('kickGroupMemberRemote');
+  const traceId = generateTraceId();
+  const { error } = await supabase.rpc('kick_group_member', {
+    p_group_id: groupId,
+    p_target_player_id: targetPlayerId,
+  });
+  if (error) {
+    throw mapSupabaseError(error, 'kickGroupMemberRemote', {
+      traceId,
+      requestPayload: { groupId, targetPlayerId },
+    });
+  }
+}
+
+export async function setGroupMemberRoleRemote(
+  groupId: string,
+  targetPlayerId: string,
+  role: 'admin' | 'member',
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw createAuthRequiredError('setGroupMemberRoleRemote');
+  const traceId = generateTraceId();
+  const { error } = await supabase.rpc('set_group_member_role', {
+    p_group_id: groupId,
+    p_target_player_id: targetPlayerId,
+    p_role: role,
+  });
+  if (error) {
+    throw mapSupabaseError(error, 'setGroupMemberRoleRemote', {
+      traceId,
+      requestPayload: { groupId, targetPlayerId, role },
+    });
+  }
+}
+
 /** Grubu `delete_group` RPC ile siler; yetki/ bulunamadı ERR_* tokenleriyle ayrışır. */
 export async function deleteGroupRemote(groupId: string): Promise<void> {
   const supabase = getSupabaseClient();

@@ -5,7 +5,7 @@ export type PreferredFoot = 'left' | 'right' | 'both';
 export type RSVPStatus = 'going' | 'maybe' | 'notGoing';
 
 export type MatchStatus = 'upcoming' | 'ongoing' | 'finished' | 'cancelled';
-export type GroupRole = 'owner' | 'member';
+export type GroupRole = 'owner' | 'admin' | 'member';
 export type MatchPaymentMethod = 'note_only' | 'iban' | 'cash';
 
 export interface PlayerStats {

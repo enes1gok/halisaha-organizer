@@ -10,9 +10,11 @@ import {
   deleteGroupRemote,
   fetchMyGroups,
   joinGroupRemote,
+  kickGroupMemberRemote,
   leaveGroupRemote,
+  setGroupMemberRoleRemote,
 } from '../services/supabase/groups';
-import type { Group, GroupWeeklySeries } from '../types/domain';
+import type { Group, GroupRole, GroupWeeklySeries } from '../types/domain';
 import type { CreateGroupResult } from '../store/types';
 import type { RemoteHydrateOpts } from '../types/remoteHydration';
 import { createId } from '../utils/id';
@@ -32,6 +34,8 @@ type GroupsDeps = {
   injectRemoteGroup: (group: Group, ownerId: string) => void;
   hydrateRemoteMatches: (opts?: RemoteHydrateOpts) => Promise<void>;
   setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) => void;
+  kickMemberLocal: (groupId: string, targetPlayerId: string) => void;
+  setMemberRoleLocal: (groupId: string, targetPlayerId: string, role: GroupRole) => void;
 };
 
 export async function hydrateRemoteGroupsUseCase(
@@ -143,6 +147,39 @@ export async function upsertGroupWeeklySeriesUseCase(
     deps.setWeeklySeriesCache(input.groupId, row);
   } catch (error) {
     rethrowUseCaseError('upsertGroupWeeklySeries', error, 'Haftalık seri kaydedilemedi.');
+  }
+}
+
+export async function kickGroupMemberUseCase(
+  deps: GroupsDeps,
+  groupId: string,
+  targetPlayerId: string,
+): Promise<void> {
+  if (!deps.getRemoteUserId()) return;
+  try {
+    await kickGroupMemberRemote(groupId, targetPlayerId);
+    deps.kickMemberLocal(groupId, targetPlayerId);
+    const payload = await fetchMyGroups();
+    deps.hydrateLocalGroups(payload);
+  } catch (error) {
+    rethrowUseCaseError('kickGroupMember', error, 'Üye gruptan atılamadı.');
+  }
+}
+
+export async function setGroupMemberRoleUseCase(
+  deps: GroupsDeps,
+  groupId: string,
+  targetPlayerId: string,
+  role: 'admin' | 'member',
+): Promise<void> {
+  if (!deps.getRemoteUserId()) return;
+  try {
+    await setGroupMemberRoleRemote(groupId, targetPlayerId, role);
+    deps.setMemberRoleLocal(groupId, targetPlayerId, role);
+    const payload = await fetchMyGroups();
+    deps.hydrateLocalGroups(payload);
+  } catch (error) {
+    rethrowUseCaseError('setGroupMemberRole', error, 'Üye rolü değiştirilemedi.');
   }
 }
 

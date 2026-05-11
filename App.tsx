@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Appearance,
   AppState,
+  Image,
   Text,
   TextInput,
   View,
@@ -22,6 +23,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
 import { ToastProvider } from './src/context/ToastContext';
+import { AppLoadingScreen } from './src/components/AppLoadingScreen';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { SetNewPasswordScreen } from './src/screens/SetNewPasswordScreen';
@@ -123,10 +125,10 @@ function AppShell() {
 
   if (configured && loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.accent} size="large" />
+      <>
+        <AppLoadingScreen message="Oturum kontrol ediliyor…" />
         <StatusBar style={statusBarStyle} />
-      </View>
+      </>
     );
   }
 
@@ -190,8 +192,22 @@ export default function App() {
   if (!fontsLoaded || !hydrated) {
     const boot = bootstrapPalette();
     return (
-      <View style={{ flex: 1, backgroundColor: boot.background, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: boot.background, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
+        <Image
+          source={require('./assets/splash-icon.png')}
+          style={{ width: 72, height: 72, borderRadius: 16, marginBottom: 16 }}
+          resizeMode="contain"
+        />
+        <Text style={{ fontSize: 22, fontWeight: '700', color: boot.text, letterSpacing: 0.5, marginBottom: 4 }}>
+          Halısaha
+        </Text>
+        <Text style={{ fontSize: 13, color: boot.textMuted, marginBottom: 32 }}>
+          Maç Organize Et
+        </Text>
         <ActivityIndicator color={boot.accent} size="large" />
+        <Text style={{ fontSize: 15, color: boot.textMuted, marginTop: 12 }}>
+          Yükleniyor…
+        </Text>
       </View>
     );
   }

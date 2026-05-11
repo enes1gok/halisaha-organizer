@@ -15,7 +15,7 @@ import { makeStyles, useThemeColors } from '../theme/ThemeContext';
 import type { Player } from '../types/domain';
 import { FormationDropZone, type ZoneMap } from './FormationDropZone';
 
-/** Chip merkezini anchor’a hizalamak için yarı boyutlar (px). */
+/** Chip merkezini anchor'a hizalamak için yarı boyutlar (px). */
 const SLOT_CENTER_OFFSET_X = 40;
 const SLOT_CENTER_OFFSET_Y = 28;
 
@@ -35,6 +35,8 @@ type Props = {
     testID: string,
   ) => React.ReactNode;
   testID?: string;
+  /** Sahanın yatay (landscape) modda gösterilmesi — GK solda, FW sağda. */
+  horizontal?: boolean;
 };
 
 function SlotDropHighlight({
@@ -97,11 +99,33 @@ function SlotDropHighlight({
   );
 }
 
-function PitchMarkings() {
+function PitchMarkings({ horizontal }: { horizontal?: boolean }) {
   const styles = usePitchStyles();
   const { pitch } = useThemeColors();
   const line = pitch.line;
   const strong = pitch.lineStrong;
+
+  if (horizontal) {
+    return (
+      <>
+        {/* Kale çizgisi (sol kenar — GK tarafı) */}
+        <View style={[styles.hMarkLeft, { backgroundColor: strong }]} />
+        {/* Orta saha çizgisi (sağ kenar) */}
+        <View style={[styles.hMarkRight, { backgroundColor: strong }]} />
+        {/* Yatay orta çizgi */}
+        <View style={[styles.hMarkCenterH, { backgroundColor: line }]} />
+        {/* Ceza sahası alt çizgisi */}
+        <View style={[styles.hPenaltyBottom, { backgroundColor: line }]} />
+        {/* Ceza sahası üst çizgisi */}
+        <View style={[styles.hPenaltyTop, { backgroundColor: line }]} />
+        {/* Ceza sahası sağ duvarı */}
+        <View style={[styles.hPenaltyRight, { backgroundColor: line }]} />
+        {/* Penaltı yayı (sağa bakan yarım daire) */}
+        <View style={[styles.hHalfCircle, { borderColor: line }]} />
+      </>
+    );
+  }
+
   return (
     <>
       <View style={[styles.markTop, { backgroundColor: strong }]} />
@@ -118,6 +142,7 @@ function PitchMarkings() {
 /**
  * Taktik yarı saha: çim gradient, saha çizgileri, slot halkaları.
  * Koordinatlar normalize anchor ile View boyutuna göre yüzde konumlanır.
+ * `horizontal=true` ile 90° CW döndürülmüş landscape mod (GK solda, FW sağda).
  */
 export function PitchHalfField({
   formation,
@@ -130,13 +155,19 @@ export function PitchHalfField({
   getPlayer,
   renderSlotContent,
   testID,
+  horizontal = false,
 }: Props) {
   const styles = usePitchStyles();
   const { pitch } = useThemeColors();
 
+  // aspectRatio ve minHeight yatay modda override edilir
+  const containerOverride = horizontal
+    ? ({ aspectRatio: 4 / 3, minHeight: 120 } as const)
+    : ({ aspectRatio: 3 / 4, minHeight: 200 } as const);
+
   return (
     <View
-      style={[styles.pitchOuter, dimmed && styles.pitchDimmed]}
+      style={[styles.pitchOuter, containerOverride, dimmed && styles.pitchDimmed]}
       pointerEvents={dimmed ? 'none' : 'auto'}
       testID={testID}
     >
@@ -147,7 +178,7 @@ export function PitchHalfField({
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.grassNoise} pointerEvents="none" />
-      <PitchMarkings />
+      <PitchMarkings horizontal={horizontal} />
       <View style={styles.slotLayer}>
         {formation.slots.map((slot) => {
           const { xNorm, yNorm } = resolveSlotAnchor(slot, formation);
@@ -156,20 +187,28 @@ export function PitchHalfField({
           const zoneKey = `${side}:${slot.index}`;
           const slotTestId = `lineup:slot:${side.toLowerCase()}:${slot.index}`;
           const empty = pid == null;
+
+          // 90° CW rotasyon: portrait-bottom → horizontal-left, portrait-left → horizontal-top
+          const slotPositionStyle = horizontal
+            ? ({
+                left: `${yNorm * 100}%`,
+                top: `${xNorm * 100}%`,
+                marginLeft: -SLOT_CENTER_OFFSET_X,
+                marginTop: -SLOT_CENTER_OFFSET_Y,
+              } as const)
+            : ({
+                left: `${xNorm * 100}%`,
+                bottom: `${yNorm * 100}%`,
+                marginLeft: -SLOT_CENTER_OFFSET_X,
+                marginBottom: -SLOT_CENTER_OFFSET_Y,
+              } as const);
+
           return (
             <FormationDropZone
               key={slot.index}
               zoneKey={zoneKey}
               zonesRef={zonesRef}
-              style={[
-                styles.slotAbs,
-                {
-                  left: `${xNorm * 100}%`,
-                  bottom: `${yNorm * 100}%`,
-                  marginLeft: -SLOT_CENTER_OFFSET_X,
-                  marginBottom: -SLOT_CENTER_OFFSET_Y,
-                },
-              ]}
+              style={[styles.slotAbs, slotPositionStyle]}
             >
               <SlotDropHighlight
                 empty={empty}
@@ -210,6 +249,8 @@ const usePitchStyles = makeStyles((t) =>
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(0,0,0,0.06)',
     },
+
+    // ── Portrait markings ──
     markTop: {
       position: 'absolute',
       top: 0,
@@ -272,6 +313,78 @@ const usePitchStyles = makeStyles((t) =>
       borderBottomWidth: 0,
       opacity: 0.55,
     },
+
+    // ── Horizontal (landscape) markings — 90° CW mapped from portrait ──
+    hMarkLeft: {
+      // portrait markBottom → GK tarafı sol kenar
+      position: 'absolute',
+      left: 0,
+      top: spacing.sm,
+      bottom: spacing.sm,
+      width: 2,
+      opacity: 0.95,
+    },
+    hMarkRight: {
+      // portrait markTop → uzak taraf sağ kenar
+      position: 'absolute',
+      right: 0,
+      top: spacing.sm,
+      bottom: spacing.sm,
+      width: 2,
+      opacity: 0.95,
+    },
+    hMarkCenterH: {
+      // portrait markCenterV → yatay orta çizgi
+      position: 'absolute',
+      top: '50%',
+      left: '12%',
+      right: '12%',
+      height: 1,
+      marginTop: -0.5,
+      opacity: 0.65,
+    },
+    hPenaltyBottom: {
+      // portrait penaltyVLeft → ceza sahası alt sınırı
+      position: 'absolute',
+      bottom: '14%',
+      left: 0,
+      width: '32%',
+      height: 1,
+      opacity: 0.85,
+    },
+    hPenaltyTop: {
+      // portrait penaltyVRight → ceza sahası üst sınırı
+      position: 'absolute',
+      top: '14%',
+      left: 0,
+      width: '32%',
+      height: 1,
+      opacity: 0.85,
+    },
+    hPenaltyRight: {
+      // portrait penaltyTop → ceza sahası sağ duvarı
+      position: 'absolute',
+      top: '14%',
+      bottom: '14%',
+      left: '32%',
+      width: 1,
+      opacity: 0.85,
+    },
+    hHalfCircle: {
+      // portrait halfCircle → sağa bakan penaltı yayı
+      position: 'absolute',
+      left: '28%',
+      top: '50%',
+      marginTop: -28,
+      width: 28,
+      height: 56,
+      borderTopRightRadius: 28,
+      borderBottomRightRadius: 28,
+      borderWidth: 1,
+      borderLeftWidth: 0,
+      opacity: 0.55,
+    },
+
     slotLayer: {
       ...StyleSheet.absoluteFillObject,
     },

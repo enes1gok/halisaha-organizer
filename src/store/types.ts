@@ -142,6 +142,9 @@ export interface GroupsSlice {
 
   fetchGroupWeeklySeries: (groupId: string) => Promise<void>;
   upsertGroupWeeklySeries: (input: UpsertGroupWeeklySeriesInput) => Promise<void>;
+
+  kickGroupMember: (groupId: string, targetPlayerId: string) => Promise<void>;
+  setGroupMemberRole: (groupId: string, targetPlayerId: string, role: 'admin' | 'member') => Promise<void>;
 }
 
 export type AppState = AuthSlice &
