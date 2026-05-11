@@ -95,6 +95,32 @@ function leaveLocalGroup(
   }));
 }
 
+function injectRemoteGroup(
+  set: Parameters<StateCreator<AppState>>[0],
+  get: Parameters<StateCreator<AppState>>[1],
+  group: Group,
+  ownerId: string,
+): void {
+  set((state) => {
+    const alreadyInGroups = state.groups.some((g) => g.id === group.id);
+    const alreadyMember = state.groupMemberships.some(
+      (m) => m.groupId === group.id && m.playerId === ownerId,
+    );
+    const membership: GroupMembership = {
+      groupId: group.id,
+      playerId: ownerId,
+      role: 'owner',
+      createdAt: group.createdAt,
+    };
+    return {
+      groups: alreadyInGroups ? state.groups : [group, ...state.groups],
+      groupMemberships: alreadyMember
+        ? state.groupMemberships
+        : [membership, ...state.groupMemberships],
+    };
+  });
+}
+
 function deleteLocalGroupState(set: Parameters<StateCreator<AppState>>[0], groupId: string) {
   set((state) => {
     const weeklySeriesByGroupId = { ...state.weeklySeriesByGroupId };
@@ -118,6 +144,7 @@ function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get:
     joinLocalGroup: (joinCode: string) => joinLocalGroup(set, get, joinCode),
     leaveLocalGroup: (groupId: string) => leaveLocalGroup(set, get, groupId),
     deleteLocalGroupState: (groupId: string) => deleteLocalGroupState(set, groupId),
+    injectRemoteGroup: (group: Group, ownerId: string) => injectRemoteGroup(set, get, group, ownerId),
     hydrateRemoteMatches: (opts?: RemoteHydrateOpts) => get().hydrateRemoteMatches(opts),
     setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) =>
       set((s) => ({

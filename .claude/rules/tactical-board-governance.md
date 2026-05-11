@@ -1,0 +1,32 @@
+# Tactical board governance
+
+## Coordinates and layout
+
+1. **Normalized anchors:** Slot positions use `xNorm` / `yNorm` in `0…1` (see [src/data/lineupFormations.ts](../../src/data/lineupFormations.ts) and `resolveSlotAnchor`). They are expressed as **percent of the pitch View** (`left` / `bottom` percentages), so they scale with `onLayout` / resize.
+
+2. **Drop hit testing:** `FormationDropZone` registers rects via `measureInWindow` on `onLayout`. Do not rely on static screen coordinates without re-measuring after layout or scroll.
+
+3. **Zone priority:** When rects overlap (e.g. bench vs slot), use [`pickFormationZoneOrdered`](../../src/utils/lineupFormationDrop.ts) so **pitch slots win over bench**.
+
+## Persistence contract
+
+4. **Source of truth:** Assigned players are **`teamAIds` / `teamBIds` order** plus optional **`lineupFormationId`**. Slot index `i` maps to array index `i` for that team. Do not persist pixel coordinates to the server.
+
+5. **Template mode gating:** Tactical templates apply when `match.maxPlayers` is **14, 16, or 22** (7 / 8 / 11 per side). Roster strictness (all slots filled) applies when `going` count equals `maxPlayers`.
+
+## Interaction and feedback
+
+6. **Haptics:** Use [`selectionTick`](../../src/utils/haptics.ts) when drag activates; light impact on successful drop. No haptics on web (`expo-haptics` no-ops).
+
+7. **Reduce motion:** When `useReduceMotion` is true, avoid pulsing glow; use a **static** highlighted ring (see [src/components/PitchHalfField.tsx](../../src/components/PitchHalfField.tsx)).
+
+8. **Swap behavior:** Drops onto an occupied slot use [`applyLineupFormationDrop`](../../src/utils/lineupFormationDrop.ts) (swap or displace to bench). Extend that helper and add Jest coverage when changing rules.
+
+## Performance
+
+9. **Glow / Reanimated:** Keep heavy work out of gesture worklets; drive slot highlight from shared values only where needed.
+
+## Cross-links
+
+- Motion presets: [motion-governance.md](motion-governance.md)
+- Touch targets: [modern-ui-standards.md](modern-ui-standards.md)

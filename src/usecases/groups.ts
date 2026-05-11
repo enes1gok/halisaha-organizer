@@ -29,6 +29,7 @@ type GroupsDeps = {
   joinLocalGroup: (joinCode: string) => Group | null;
   leaveLocalGroup: (groupId: string) => void;
   deleteLocalGroupState: (groupId: string) => void;
+  injectRemoteGroup: (group: Group, ownerId: string) => void;
   hydrateRemoteMatches: (opts?: RemoteHydrateOpts) => Promise<void>;
   setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) => void;
 };
@@ -57,6 +58,7 @@ export async function createGroupUseCase(deps: GroupsDeps, name: string): Promis
     } catch (error) {
       rethrowUseCaseError('createGroup', error, 'Grup olusturulamadi.');
     }
+    deps.injectRemoteGroup(group, uid);
     try {
       const payload = await fetchMyGroups();
       deps.hydrateLocalGroups(payload);
