@@ -46,6 +46,7 @@ export type GroupsStackParamList = {
   LineupBuilder: { matchId: string };
   MatchSummary: { matchId: string };
   MatchRatingFlow: { matchId: string };
+  GroupSettings: { groupId: string };
 };
 
 export type RootTabParamList = {

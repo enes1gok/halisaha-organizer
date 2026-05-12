@@ -12,6 +12,7 @@ import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { MatchFinalScreen } from '../screens/MatchFinalScreen';
 import { MatchRatingFlowScreen } from '../screens/MatchRatingFlowScreen';
+import { GroupSettingsScreen } from '../screens/GroupSettingsScreen';
 import { getDefaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
 import type { GroupsStackParamList } from './types';
 
@@ -47,6 +48,11 @@ export function GroupsStackNav() {
         name="MatchRatingFlow"
         component={MatchRatingFlowScreen}
         options={{ title: 'Oyuncuları Derecelendir' }}
+      />
+      <Stack.Screen
+        name="GroupSettings"
+        component={GroupSettingsScreen}
+        options={{ title: 'Grup Ayarları' }}
       />
     </Stack.Navigator>
   );
