@@ -2,7 +2,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   LayoutAnimation,
   Linking,
   Platform,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { Card } from '../components/Card';
 import { PillButton } from '../components/PillButton';
+import { SettingsSectionSkeleton } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { readDeleteAccountUrl } from '../lib/publicConfig';
@@ -178,7 +178,7 @@ export function SettingsScreen() {
             Metro’yu yeniden başlatın.
           </Text>
         ) : authLoading ? (
-          <ActivityIndicatorTinted />
+          <SettingsSectionSkeleton rows={2} />
         ) : session ? (
           <>
             <Text style={styles.label}>Oturum açık</Text>
@@ -326,10 +326,6 @@ export function SettingsScreen() {
   );
 }
 
-function ActivityIndicatorTinted() {
-  const styles = useStyles();
-  return <ActivityIndicator color={styles.indicatorTint.color} />;
-}
 
 const useStyles = makeStyles((t) =>
   StyleSheet.create({
@@ -393,9 +389,6 @@ const useStyles = makeStyles((t) =>
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: t.colors.border,
       paddingTop: spacing.sm,
-    },
-    indicatorTint: {
-      color: t.colors.accent,
     },
   }),
 );

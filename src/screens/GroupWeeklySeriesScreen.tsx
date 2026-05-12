@@ -1,8 +1,9 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { LayoutAnimation, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { PillButton } from '../components/PillButton';
+import { WeeklySeriesFormSkeleton } from '../components/skeleton';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useUserFeedback } from '../utils/userFeedback';
 import { useAuthStore, useGroupsStore } from '../store';
@@ -174,6 +175,12 @@ export function GroupWeeklySeriesScreen() {
 
   const maskedIban = useMemo(() => maskIban(iban), [iban]);
 
+  useEffect(() => {
+    if (!loading) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
+  }, [loading]);
+
   if (!group || !isOwner) {
     return (
       <View style={styles.centered}>
@@ -184,10 +191,9 @@ export function GroupWeeklySeriesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.accent} />
-        <Text style={styles.loadingLabel}>Seri ayarları yükleniyor…</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scroll} pointerEvents="none">
+        <WeeklySeriesFormSkeleton />
+      </ScrollView>
     );
   }
 

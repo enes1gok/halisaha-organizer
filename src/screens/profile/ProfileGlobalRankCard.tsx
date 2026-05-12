@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutAnimation, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../../components/Card';
+import { SkeletonBlock, SkeletonText } from '../../components/skeleton';
 import type { RootTabParamList } from '../../navigation/types';
 import { fetchPlayerLeaderboardStats } from '../../services/supabase/leaderboard';
 import { spacing, typography } from '../../theme';
@@ -42,6 +43,7 @@ export function ProfileGlobalRankCard({ userId, remoteUserId, refreshKey }: Prop
       })
       .finally(() => {
         if (cancelled) return;
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setLoading(false);
       });
     return () => {
@@ -62,9 +64,9 @@ export function ProfileGlobalRankCard({ userId, remoteUserId, refreshKey }: Prop
       <Card variant="glass" style={styles.card}>
         <Text style={styles.title}>Genel gol sıralaması</Text>
         {loading ? (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={themeColors.accent} />
-            <Text style={styles.loadingTxt}>Sıra yükleniyor…</Text>
+          <View style={styles.skeletonRow}>
+            <SkeletonText variant="body" width="62%" />
+            <SkeletonBlock width={56} height={20} radius={6} />
           </View>
         ) : rank != null ? (
           <>
@@ -119,14 +121,11 @@ const useGlobalRankStyles = makeStyles((t) =>
       ...typography.caption,
       color: t.colors.textMuted,
     },
-    loadingRow: {
+    skeletonRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       gap: spacing.sm,
-    },
-    loadingTxt: {
-      ...typography.caption,
-      color: t.colors.textMuted,
     },
     cta: {
       flexDirection: 'row',

@@ -13,4 +13,5 @@ export {
   ProfileStatsGridSkeleton,
   ProfileStatsHeroSkeleton,
   SettingsSectionSkeleton,
+  WeeklySeriesFormSkeleton,
 } from './presets';

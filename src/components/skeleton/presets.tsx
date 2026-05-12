@@ -181,6 +181,32 @@ export function MyMatchesCalendarSkeleton() {
   );
 }
 
+export function WeeklySeriesFormSkeleton() {
+  const styles = useSkeletonPresetStyles();
+  return (
+    <View style={styles.weeklySeriesForm}>
+      <SkeletonText variant="caption" width="90%" />
+      <SkeletonText variant="caption" width="70%" style={styles.topGap4} />
+      <View style={styles.weeklySeriesRow}>
+        <SkeletonText variant="body" width="52%" />
+        <SkeletonBlock width={48} height={28} radius={14} />
+      </View>
+      <SkeletonText variant="caption" width={64} />
+      <View style={styles.weeklySeriesChips}>
+        {Array.from({ length: 5 }, (_, i) => (
+          <SkeletonBlock key={i} width={44} height={36} radius={radius.pill} />
+        ))}
+      </View>
+      <SkeletonText variant="caption" width={48} />
+      <SkeletonBlock width={72} height={36} radius={radius.pill} />
+      <SkeletonText variant="caption" width={40} />
+      <SkeletonBlock width="100%" height={44} radius={8} />
+      <SkeletonText variant="caption" width={72} />
+      <SkeletonBlock width="100%" height={44} radius={8} />
+    </View>
+  );
+}
+
 export function GroupCardSkeleton() {
   const styles = useSkeletonPresetStyles();
   return (
@@ -402,6 +428,20 @@ const useSkeletonPresetStyles = makeStyles((t) =>
     flex: 1,
     alignItems: 'center',
     paddingVertical: 6,
+  },
+  weeklySeriesForm: {
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  weeklySeriesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  weeklySeriesChips: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
 }),
 );
