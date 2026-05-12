@@ -4,6 +4,23 @@
 --   payment_morning_reminder  — maç günü sabahı nakit/not ödeme hatırlatması
 --   payment_unpaid_summary_organizer — maçtan 2 gün önce IBAN borçlu özeti (organizatöre)
 
+-- ── 0. public.match_payment_method type ──────────────────────────────────────
+
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'match_payment_method') then
+    create type public.match_payment_method as enum ('note_only', 'iban', 'cash');
+  end if;
+end $$;
+
+alter table public.matches
+  drop constraint if exists matches_payment_method_chk;
+
+alter table public.matches
+  alter column payment_method drop default,
+  alter column payment_method type public.match_payment_method using payment_method::public.match_payment_method,
+  alter column payment_method set default 'iban'::public.match_payment_method;
+
 -- ── 1. notification_deliveries_type_check ────────────────────────────────────
 
 alter table public.notification_deliveries
@@ -37,14 +54,15 @@ alter table public.notification_deliveries
     (
       type in (
         'initial', 'match_cancelled', 'venue_change', 'lineup_published',
-        'post_match_rating_reminder', 'match_result', 'streak_at_risk'
+        'match_result'
       )
       and reminder_date is null
     )
     or (
       type in (
-        'reminder', 'payment_reminder',
-        'payment_morning_reminder', 'payment_unpaid_summary_organizer'
+        'reminder', 'payment_reminder', 'post_match_rating_reminder',
+        'streak_at_risk', 'payment_morning_reminder',
+        'payment_unpaid_summary_organizer'
       )
       and reminder_date is not null
     )
@@ -87,6 +105,12 @@ as $$
       p_prefs->'types'->'group_match_payment_morning_reminder', true)
     when p_delivery_type = 'payment_unpaid_summary_organizer' then public.coalesce_notification_pref_bool(
       p_prefs->'types'->'group_match_payment_unpaid_summary_organizer', true)
+    when p_delivery_type = 'post_match_rating_reminder' then public.coalesce_notification_pref_bool(
+      p_prefs->'types'->'group_match_post_match_rating_reminder', true)
+    when p_delivery_type = 'match_result' then public.coalesce_notification_pref_bool(
+      p_prefs->'types'->'group_match_match_result', true)
+    when p_delivery_type = 'streak_at_risk' then public.coalesce_notification_pref_bool(
+      p_prefs->'types'->'group_match_streak_at_risk', true)
     else true
   end;
 $$;
