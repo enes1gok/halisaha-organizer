@@ -1010,8 +1010,10 @@ export function LineupBuilderScreen() {
       getPlayer={getPlayer}
       testID={`lineup:pitch:${side.toLowerCase()}`}
       horizontal={horizontal}
-      renderSlotContent={(slot: LineupSlotDef, p: Player | undefined, slotTestId: string) =>
-        p ? (
+      teamTint={side === 'B' ? 'light' : 'dark'}
+      renderSlotContent={(slot: LineupSlotDef, p: Player | undefined, slotTestId: string) => {
+        const roleTextColor = '#FFFFFF';
+        return p ? (
           <View style={styles.slotInner}>
             <DraggableCard
               player={p}
@@ -1025,11 +1027,11 @@ export function LineupBuilderScreen() {
         ) : (
           <View style={styles.slotInner}>
             <View style={styles.slotEmpty} testID={slotTestId}>
-              <Text style={styles.slotRole}>{slot.roleLabel}</Text>
+              <Text style={[styles.slotRole, { color: roleTextColor }]}>{slot.roleLabel}</Text>
             </View>
           </View>
-        )
-      }
+        );
+      }}
     />
   );
 

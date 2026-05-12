@@ -43,6 +43,8 @@ type Props = {
   testID?: string;
   /** Sahanın yatay (landscape) modda gösterilmesi — GK solda, FW sağda. */
   horizontal?: boolean;
+  /** Takım rengine göre saha: 'light' = bembeyaz zemin, 'dark' = simsiyah zemin; her ikisinde çizgiler ve çerçeve yeşil. */
+  teamTint?: 'light' | 'dark';
 };
 
 function SlotDropHighlight({
@@ -50,12 +52,14 @@ function SlotDropHighlight({
   dragActive,
   hovered,
   reduceMotion,
+  teamTint,
   children,
 }: {
   empty: boolean;
   dragActive: boolean;
   hovered: boolean;
   reduceMotion: boolean;
+  teamTint?: 'light' | 'dark';
   children: React.ReactNode;
 }) {
   const styles = usePitchStyles();
@@ -82,13 +86,22 @@ function SlotDropHighlight({
     }
   }, [dragActive, hovered, empty, reduceMotion, idlePulse, hoverGlow]);
 
+  // Takım sahasına göre halka renkleri
+  const teamRing = teamTint === 'light'
+    ? { border: 'rgba(30,30,30,0.80)', fill: 'rgba(50,50,50,0.72)' }
+    : teamTint === 'dark'
+    ? { border: 'rgba(190,190,190,0.75)', fill: 'rgba(140,140,140,0.55)' }
+    : null;
+
   const ringStyle = useAnimatedStyle(() => {
+    const baseBorder = teamRing ? teamRing.border : colors.pitch.slotRing;
+    const hoverBorder = teamRing ? teamRing.border : colors.pitch.slotRingHover;
     if (!dragActive || !empty) {
-      return { borderColor: colors.pitch.slotRing, shadowOpacity: 0 };
+      return { borderColor: baseBorder, shadowOpacity: 0 };
     }
     if (reduceMotion) {
       return {
-        borderColor: hovered ? colors.pitch.slotRingHover : colors.pitch.slotRing,
+        borderColor: hovered ? hoverBorder : baseBorder,
         shadowOpacity: hovered ? 0.60 : 0.20,
         borderWidth: hovered ? 2.5 : 2,
       };
@@ -96,17 +109,25 @@ function SlotDropHighlight({
     const h = hoverGlow.value;
     const p = idlePulse.value;
     return {
-      borderColor: h > 0.5 ? colors.pitch.slotRingHover : colors.pitch.slotRing,
+      borderColor: h > 0.5 ? hoverBorder : baseBorder,
       shadowOpacity: 0.08 + p * 0.12 + h * 0.45,
       borderWidth: 2 + h * 1,
     };
   });
 
+  const filledStyle = teamRing
+    ? { borderColor: teamRing.border, backgroundColor: teamRing.fill, shadowOpacity: 0 as const }
+    : styles.slotRingFilled;
+
+  const teamFillOverride = teamRing && empty
+    ? { backgroundColor: teamRing.fill }
+    : undefined;
+
   return (
     <Animated.View
       style={[
         styles.slotRing,
-        empty ? ringStyle : styles.slotRingFilled,
+        empty ? [ringStyle, teamFillOverride] : filledStyle,
       ]}
     >
       {children}
@@ -114,11 +135,21 @@ function SlotDropHighlight({
   );
 }
 
-function PitchMarkings({ horizontal }: { horizontal?: boolean }) {
+const TEAM_LINE_GREEN = '#3DDC6A';
+
+function PitchMarkings({
+  horizontal,
+  lineColor,
+  strongColor,
+}: {
+  horizontal?: boolean;
+  lineColor?: string;
+  strongColor?: string;
+}) {
   const styles = usePitchStyles();
   const { pitch } = useThemeColors();
-  const line = pitch.line;
-  const strong = pitch.lineStrong;
+  const line = lineColor ?? pitch.line;
+  const strong = strongColor ?? pitch.lineStrong;
 
   if (horizontal) {
     return (
@@ -173,6 +204,7 @@ export function PitchHalfField({
   renderSlotContent,
   testID,
   horizontal = false,
+  teamTint,
 }: Props) {
   const styles = usePitchStyles();
   const { pitch } = useThemeColors();
@@ -184,20 +216,35 @@ export function PitchHalfField({
       : ({ aspectRatio: 4 / 3, minHeight: 120 } as const)
     : ({ aspectRatio: 3 / 4, minHeight: 200 } as const);
 
+  const teamBorderStyle = teamTint
+    ? ({ borderColor: TEAM_LINE_GREEN } as const)
+    : undefined;
+  const teamBgStyle = teamTint
+    ? ({ backgroundColor: teamTint === 'light' ? '#FFFFFF' : '#000000' } as const)
+    : undefined;
+
   return (
     <View
-      style={[styles.pitchOuter, containerOverride, dimmed && styles.pitchDimmed]}
+      style={[styles.pitchOuter, containerOverride, dimmed && styles.pitchDimmed, teamBorderStyle]}
       pointerEvents={dimmed ? 'none' : 'auto'}
       testID={testID}
     >
-      <LinearGradient
-        colors={[pitch.grassDeep, pitch.grassMid, pitch.grassLight]}
-        start={{ x: 0.2, y: 1 }}
-        end={{ x: 0.85, y: 0 }}
-        style={StyleSheet.absoluteFill}
+      {teamTint ? (
+        <View style={[StyleSheet.absoluteFill, teamBgStyle]} />
+      ) : (
+        <LinearGradient
+          colors={[pitch.grassDeep, pitch.grassMid, pitch.grassLight]}
+          start={{ x: 0.2, y: 1 }}
+          end={{ x: 0.85, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
+      {!teamTint && <View style={styles.grassNoise} pointerEvents="none" />}
+      <PitchMarkings
+        horizontal={horizontal}
+        lineColor={teamTint ? TEAM_LINE_GREEN : undefined}
+        strongColor={teamTint ? TEAM_LINE_GREEN : undefined}
       />
-      <View style={styles.grassNoise} pointerEvents="none" />
-      <PitchMarkings horizontal={horizontal} />
       <View style={styles.slotLayer}>
         {formation.slots.map((slot) => {
           const { xNorm, yNorm } = resolveSlotAnchor(slot, formation);
@@ -234,6 +281,7 @@ export function PitchHalfField({
                 dragActive={highlightEmptySlots}
                 hovered={hoveredZoneKey === zoneKey}
                 reduceMotion={reduceMotion}
+                teamTint={teamTint}
               >
                 {renderSlotContent(slot, p, slotTestId)}
               </SlotDropHighlight>
