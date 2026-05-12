@@ -1,5 +1,6 @@
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
 import {
+  ActivityIndicator,
   RefreshControl,
   SectionList,
   type SectionListData,
@@ -39,6 +40,9 @@ type Props = {
   emptyAction: EmptyAction;
   /** Yaklaşan sekmede liste boşken «Gelmiyorum» nedeniyle filtrelendiğini anlat */
   showNotGoingEmptyHint?: boolean;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
+  hasMore?: boolean;
 };
 
 const VIEWABILITY_CONFIG = {
@@ -86,6 +90,9 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
     onPressMatch,
     emptyAction,
     showNotGoingEmptyHint,
+    onLoadMore,
+    loadingMore = false,
+    hasMore = false,
   },
   ref,
 ) {
@@ -204,6 +211,11 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
           heroTestID="myMatches:agenda:empty:hero"
         />
       }
+      onEndReached={hasMore ? onLoadMore : undefined}
+      onEndReachedThreshold={0.3}
+      ListFooterComponent={
+        loadingMore ? <LoadMoreFooter /> : hasMore ? <View style={styles.footerSpacer} /> : null
+      }
       onScrollToIndexFailed={() => {
         // fall back silently
       }}
@@ -212,6 +224,16 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
     />
   );
 });
+
+function LoadMoreFooter() {
+  const colors = useThemeColors();
+  const styles = useAgendaStyles();
+  return (
+    <View style={styles.loadMoreFooter}>
+      <ActivityIndicator color={colors.accent} size="small" />
+    </View>
+  );
+}
 
 type SectionHeaderProps = {
   section: SectionListData<Match, AgendaSection>;
@@ -293,6 +315,13 @@ const useAgendaStyles = makeStyles((t) =>
     },
     sectionSubtitleActive: {
       color: t.colors.textOnAccent,
+    },
+    loadMoreFooter: {
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+    },
+    footerSpacer: {
+      height: spacing.md,
     },
   }),
 );

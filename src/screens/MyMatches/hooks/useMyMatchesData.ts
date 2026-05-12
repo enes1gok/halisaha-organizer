@@ -38,6 +38,9 @@ export type UseMyMatchesData = {
   refreshing: boolean;
   showInitialSkeleton: boolean;
   fetchError: boolean;
+  loadMore: () => void;
+  loadingMore: boolean;
+  hasMoreMatches: boolean;
 };
 
 export function useMyMatchesData(): UseMyMatchesData {
@@ -47,6 +50,8 @@ export function useMyMatchesData(): UseMyMatchesData {
       userId: s.getCurrentUserId(),
       remoteUserId: s.remoteUserId,
       hydrateRemoteMatches: s.hydrateRemoteMatches,
+      loadMoreRemoteMatches: s.loadMoreRemoteMatches,
+      hasMoreRemoteMatches: s.hasMoreRemoteMatches,
       ratingsSubmission: s.matchRatingsSubmissionByMatchId,
     })),
   );
@@ -59,6 +64,7 @@ export function useMyMatchesData(): UseMyMatchesData {
   const [monthAnchor, setMonthAnchorRaw] = useState<Date>(() => startOfMonth(today));
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [skeletonExpired, setSkeletonExpired] = useState(false);
 
@@ -135,6 +141,12 @@ export function useMyMatchesData(): UseMyMatchesData {
     }
   }, [slice.hydrateRemoteMatches, slice.remoteUserId]);
 
+  const loadMore = useCallback(() => {
+    if (loadingMore || !slice.hasMoreRemoteMatches) return;
+    setLoadingMore(true);
+    void slice.loadMoreRemoteMatches().finally(() => setLoadingMore(false));
+  }, [loadingMore, slice.hasMoreRemoteMatches, slice.loadMoreRemoteMatches]);
+
   const handleSetSelectedDateKey = useCallback(
     (key: string | null) => {
       setSelectedDateKey(key);
@@ -175,6 +187,9 @@ export function useMyMatchesData(): UseMyMatchesData {
     refreshing,
     showInitialSkeleton: configured && loading && slice.matches.length === 0 && !skeletonExpired,
     fetchError,
+    loadMore,
+    loadingMore,
+    hasMoreMatches: slice.hasMoreRemoteMatches,
   };
 }
 

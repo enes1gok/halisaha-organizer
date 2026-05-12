@@ -9,7 +9,8 @@ import type {
   SelfReportRequest,
   SelfReportType,
 } from '../../types/domain';
-import type { MatchGraphPayload } from '../../services/supabase/matchGraph';
+import type { MatchGraphPageCursor, MatchGraphPayload } from '../../services/supabase/matchGraph';
+import { fetchMyMatchesGraphPage, MATCH_PAGE_SIZE } from '../../services/supabase/matchGraph';
 import { createId } from '../../utils/id';
 import {
   addSelfReportUseCase,
@@ -33,6 +34,7 @@ import {
 import { isRemoteMatchId } from '../../utils/matchId';
 import { patchPlayersStatsForMatchTransition } from '../../utils/stats';
 import {
+  appendRemoteMatchPage,
   mergeHydratedRemoteMatches,
   mergeRemoteGraph,
   mergeStatLines,
@@ -341,6 +343,8 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
     restoreMatchesSnapshot: (snapshot: Match[]) => set({ matches: snapshot }),
     getPlayersSnapshot: () => get().players,
     restorePlayersSnapshot: (snapshot: Player[]) => set({ players: snapshot }),
+    onHydrationPage: (nextCursor: MatchGraphPageCursor | null, hasMore: boolean) =>
+      set({ remoteMatchesCursor: nextCursor, hasMoreRemoteMatches: hasMore }),
   };
 }
 
@@ -356,6 +360,10 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
   matchRatingsSubmissionByMatchId: {},
 
   matchIdsPendingListEntrance: [],
+
+  hasMoreRemoteMatches: false,
+
+  remoteMatchesCursor: null as MatchGraphPageCursor | null,
 
   markMatchPendingListEntrance: (id) =>
     set((s) => ({
@@ -394,6 +402,24 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
 
   hydrateRemoteMatches: (opts) =>
     hydrateRemoteMatchesUseCase(buildMatchesUseCaseDeps(set, get), opts),
+
+  loadMoreRemoteMatches: async () => {
+    const state = get();
+    if (!state.remoteUserId || !state.hasMoreRemoteMatches || !state.remoteMatchesCursor) return;
+    try {
+      const { graphs, nextCursor } = await fetchMyMatchesGraphPage(
+        state.remoteMatchesCursor,
+        MATCH_PAGE_SIZE,
+      );
+      set((s) => ({
+        ...appendRemoteMatchPage(s, graphs),
+        remoteMatchesCursor: nextCursor,
+        hasMoreRemoteMatches: nextCursor !== null,
+      }));
+    } catch (error) {
+      console.warn('[loadMoreRemoteMatches] failed', error);
+    }
+  },
 
   refreshRemoteMatch: async (matchId) => {
     await refreshRemoteMatchUseCase(buildMatchesUseCaseDeps(set, get), matchId);

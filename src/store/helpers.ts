@@ -123,6 +123,35 @@ export function mergeHydratedRemoteMatches(
   };
 }
 
+/**
+ * Sayfalama: yeni sayfa graph'larını mevcut listeye ekler.
+ * İlk sayfadaki kayıtlarla çakışma olursa sunucu versiyonu kazanır.
+ */
+export function appendRemoteMatchPage(
+  state: { players: Player[]; matches: Match[] },
+  graphs: MatchGraphPayload[],
+): { players: Player[]; matches: Match[] } {
+  if (graphs.length === 0) return state;
+  const existingIds = new Set(state.matches.map((m) => m.id));
+  const prevById = new Map(state.matches.map((m) => [m.id, m]));
+  const newRemote = graphs
+    .filter((g) => !existingIds.has(g.match.id))
+    .map((g) => preserveLocalLineupMeta(prevById.get(g.match.id), g.match));
+  const profileMap = new Map<string, PublicProfileRow>();
+  for (const g of graphs) {
+    for (const p of g.profiles) profileMap.set(p.id, p);
+  }
+  const profiles = [...profileMap.values()];
+  const mergedMatches = [...state.matches, ...newRemote].sort(
+    (a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime(),
+  );
+  const players = upsertProfilesIntoPlayers(state.players, profiles);
+  return {
+    matches: mergedMatches,
+    players: withSyncedStats(players, mergedMatches),
+  };
+}
+
 /** Oyuncu store'da yokken maç detayında satır kaybetmemek için minimal Player. */
 export function stubPlayerForUnknownAttendee(playerId: string): Player {
   return {

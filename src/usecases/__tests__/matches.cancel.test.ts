@@ -83,6 +83,7 @@ function buildDeps(overrides: Partial<Parameters<typeof cancelMatchUseCase>[0]> 
     restoreMatchesSnapshot: jest.fn(),
     getPlayersSnapshot: jest.fn().mockReturnValue([]),
     restorePlayersSnapshot: jest.fn(),
+    onHydrationPage: jest.fn(),
     ...overrides,
   };
 }

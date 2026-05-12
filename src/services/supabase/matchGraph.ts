@@ -39,6 +39,19 @@ type MatchGraphRpcRow = MatchRow & {
 /** Fallback when batch RPC is unavailable: max concurrent single-match fetches. */
 const MATCH_GRAPH_FALLBACK_CONCURRENCY = 4;
 
+export const MATCH_PAGE_SIZE = 20;
+
+export type MatchGraphPageCursor = {
+  startsAt: string;
+  id: string;
+};
+
+export type MatchGraphPage = {
+  graphs: MatchGraphPayload[];
+  /** Next page cursor, null when this is the last page. */
+  nextCursor: MatchGraphPageCursor | null;
+};
+
 const DETAIL_RPC_RETRY_DELAY_MS = 200;
 
 let detailRpcSuccessLogCounter = 0;
@@ -198,13 +211,24 @@ async function fetchMatchGraphsViaBatchRpc(matchIds: string[]): Promise<MatchGra
   return ordered;
 }
 
-export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
+/**
+ * Fetch a page of match graphs with optional keyset cursor.
+ * cursor = null → first page (most recent matches first).
+ * limit = null → no limit (fetch all, used for backward compat / full hydration).
+ */
+export async function fetchMyMatchesGraphPage(
+  cursor: MatchGraphPageCursor | null = null,
+  limit: number | null = null,
+): Promise<MatchGraphPage> {
   const startedAt = Date.now();
   const supabase = getSupabaseClient();
+  const rpcParams = {
+    p_limit: limit,
+    p_after_starts_at: cursor?.startsAt ?? null,
+    p_after_id: cursor?.id ?? null,
+  };
 
-  const summaryRes = await supabase.rpc('list_visible_match_summaries_for_user', {
-    p_limit: null as number | null,
-  });
+  const summaryRes = await supabase.rpc('list_visible_match_summaries_for_user', rpcParams);
   if (!summaryRes.error) {
     recordListMatchGraphRpcSuccess();
     const rows = (summaryRes.data ?? []) as MatchGraphRpcRow[];
@@ -222,12 +246,10 @@ export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
         true,
       );
     }
-    return graphs;
+    return buildPage(graphs, limit);
   }
 
-  const { data, error } = await supabase.rpc('list_visible_match_graphs_for_user', {
-    p_limit: null as number | null,
-  });
+  const { data, error } = await supabase.rpc('list_visible_match_graphs_for_user', rpcParams);
   if (error) {
     recordListMatchGraphRpcFallback();
     console.warn('[matchGraph] list_visible_match_graphs_for_user failed; fallback enabled', {
@@ -236,44 +258,23 @@ export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
       details: error.details,
       hint: error.hint,
     });
+    // Fallback: fetch IDs then batch-fetch graphs. Only used when both list RPCs fail.
     const summaries = await fetchMatchesForCurrentUser();
     const ids = summaries.map((s) => s.id);
-
     const batchPayloads = await fetchMatchGraphsViaBatchRpc(ids);
     if (batchPayloads !== null) {
-      if (batchPayloads.length === ids.length) {
-        console.info('[matchGraph] fallback batch RPC fetch completed', {
-          matchCount: batchPayloads.length,
-          durationMs: Date.now() - startedAt,
-        });
-        return batchPayloads;
-      }
-      const byId = new Map(batchPayloads.map((g) => [g.match.id, g]));
-      console.warn('[matchGraph] batch RPC partial; filling missing matches', {
-        requested: ids.length,
-        returned: batchPayloads.length,
-      });
-      const merged = await mapWithConcurrency(ids, MATCH_GRAPH_FALLBACK_CONCURRENCY, async (id) => {
-        const hit = byId.get(id);
-        if (hit) return hit;
-        return fetchMatchGraph(id);
-      });
-      console.info('[matchGraph] fallback batch+fill fetch completed', {
-        matchCount: merged.length,
-        durationMs: Date.now() - startedAt,
-      });
-      return merged;
+      const graphs = batchPayloads.length === ids.length
+        ? batchPayloads
+        : await mapWithConcurrency(ids, MATCH_GRAPH_FALLBACK_CONCURRENCY, async (id) => {
+            const hit = batchPayloads.find((g) => g.match.id === id);
+            return hit ?? fetchMatchGraph(id);
+          });
+      return buildPage(graphs, null);
     }
-
     const graphs = await mapWithConcurrency(ids, MATCH_GRAPH_FALLBACK_CONCURRENCY, (id) =>
       fetchMatchGraph(id),
     );
-    console.info('[matchGraph] fallback per-match fetch completed', {
-      matchCount: graphs.length,
-      durationMs: Date.now() - startedAt,
-      concurrency: MATCH_GRAPH_FALLBACK_CONCURRENCY,
-    });
-    return graphs;
+    return buildPage(graphs, null);
   }
 
   recordListMatchGraphRpcSuccess();
@@ -292,5 +293,20 @@ export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
       true,
     );
   }
+  return buildPage(graphs, limit);
+}
+
+function buildPage(graphs: MatchGraphPayload[], limit: number | null): MatchGraphPage {
+  const hasMore = limit !== null && graphs.length === limit;
+  const lastMatch = hasMore ? graphs[graphs.length - 1]?.match : undefined;
+  const nextCursor: MatchGraphPageCursor | null = lastMatch
+    ? { startsAt: lastMatch.startsAt, id: lastMatch.id }
+    : null;
+  return { graphs, nextCursor };
+}
+
+/** Backward-compat: fetch all match graphs (no pagination). */
+export async function fetchMyMatchesGraph(): Promise<MatchGraphPayload[]> {
+  const { graphs } = await fetchMyMatchesGraphPage(null, null);
   return graphs;
 }

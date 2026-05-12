@@ -158,6 +158,9 @@ export function MyMatchesScreen() {
         onPressMatch={handlePressMatch}
         emptyAction={emptyAction}
         showNotGoingEmptyHint={data.sections.length === 0 && data.hasUpcomingNotGoingAttendance}
+        onLoadMore={data.loadMore}
+        loadingMore={data.loadingMore}
+        hasMore={data.hasMoreMatches}
       />
     </View>
   );

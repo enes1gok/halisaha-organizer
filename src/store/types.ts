@@ -16,6 +16,7 @@ import type {
   SelfReportType,
 } from '../types/domain';
 import type { RemoteHydrateOpts } from '../types/remoteHydration';
+import type { MatchGraphPageCursor } from '../services/supabase/matchGraph';
 
 export type { MatchRatingPublicSummaryDb, PeerRatingInput };
 
@@ -94,6 +95,12 @@ export interface MatchesSlice {
 
   /** Oturum + Supabase maçları yeniden yükler. */
   hydrateRemoteMatches: (opts?: RemoteHydrateOpts) => Promise<void>;
+  /** Sayfalama: bir sonraki sayfayı mevcut listeye ekler. */
+  loadMoreRemoteMatches: () => Promise<void>;
+  /** Sonraki sayfa varsa true (persist dışı). */
+  hasMoreRemoteMatches: boolean;
+  /** Persist dışı: son sayfa cursor'u. */
+  remoteMatchesCursor: MatchGraphPageCursor | null;
   refreshRemoteMatch: (matchId: string) => Promise<void>;
 
   createMatch: (input: CreateMatchInput) => Promise<Match>;

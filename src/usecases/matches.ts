@@ -6,7 +6,7 @@ import {
   updateMatchOrganizerFieldsRemote,
   updateSelfReportStatusRemote,
 } from '../services/supabase/matchMutations';
-import { fetchMatchGraph, fetchMyMatchesGraph } from '../services/supabase/matchGraph';
+import { fetchMatchGraph, fetchMyMatchesGraphPage, MATCH_PAGE_SIZE } from '../services/supabase/matchGraph';
 import { scoreResultToRpcPayload } from '../services/supabase/mappers';
 import {
   fetchMatchRatingPublicSummary,
@@ -55,6 +55,7 @@ type MatchesDeps = {
   restoreMatchesSnapshot: (snapshot: Match[]) => void;
   getPlayersSnapshot: () => Player[];
   restorePlayersSnapshot: (snapshot: Player[]) => void;
+  onHydrationPage: (nextCursor: import('../services/supabase/matchGraph').MatchGraphPageCursor | null, hasMore: boolean) => void;
 };
 
 export async function hydrateRemoteMatchesUseCase(
@@ -65,8 +66,9 @@ export async function hydrateRemoteMatchesUseCase(
   if (!uid) return;
   await runGatedMatchesHydration(opts, async () => {
     try {
-      const graphs = await fetchMyMatchesGraph();
+      const { graphs, nextCursor } = await fetchMyMatchesGraphPage(null, MATCH_PAGE_SIZE);
       deps.mergeHydratedRemoteMatches(graphs);
+      deps.onHydrationPage(nextCursor, nextCursor !== null);
     } catch (error) {
       rethrowUseCaseError('hydrateRemoteMatches', error, 'Maclar yenilenemedi. Lutfen tekrar deneyin.');
     }
