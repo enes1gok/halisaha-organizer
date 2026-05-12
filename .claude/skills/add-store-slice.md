@@ -16,7 +16,16 @@ description: Güçlü selector desenleri ve migration-güvenli persistence ile Z
 1. Define or update domain contracts in `src/types/domain.ts` when model changes.
 2. Create pure helpers in `src/store/helpers.ts` or `src/utils/` if logic is reusable.
 3. Add slice file in `src/store/slices/` with explicit `state`, `actions`, `selectors`.
-4. Compose/export through `src/store/useAppStore.ts` and `src/store/index.ts`.
+4. **Compose and export:**
+   - Add the slice type to `AppState` in `src/store/types.ts`.
+   - Spread the slice initializer in the `create(...)` call in `src/store/useAppStore.ts`.
+   - In `src/store/index.ts`, add a typed-selector domain hook following the existing pattern:
+     ```ts
+     export function useXxxStore<T>(selector: (state: XxxSlice) => T): T {
+       return useAppStore((s) => selector(s));
+     }
+     ```
+   - UI code imports this hook — not `useAppStore` directly.
 5. Evaluate persistence impact (version bump + migrate if persisted shape changes).
 6. Update seed data when demo/bootstrap behavior depends on new fields.
 

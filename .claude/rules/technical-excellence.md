@@ -23,7 +23,7 @@ function assertNever(x: never): never {
 
 ## Zustand state access
 
-Use **atomic selectors** with **`useShallow`** from `zustand/react/shallow` when selecting multiple fields. Prefer domain hooks from [src/store/index.ts](../../src/store/index.ts): **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`**. Use **`useAppStore`** only when you need the full store API (e.g. `useAppStore.persist`, `getState()`, `setState()`).
+Use **atomic selectors** with **`useShallow`** from `zustand/react/shallow` when selecting multiple fields. Prefer domain hooks from [src/store/index.ts](../../src/store/index.ts): **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`**, **`usePreferencesStore`**, **`useMatchTemplatesStore`**. Use **`useAppStore`** only when you need the full store API (e.g. `useAppStore.persist`, `getState()`, `setState()`).
 
 ```ts
 import { useShallow } from 'zustand/react/shallow';

@@ -9,16 +9,18 @@ description: Halisaha Organizer domain mantığını genişletir — maçlar, oy
 
 | Concern | Primary locations |
 |---------|-------------------|
-| Types (`Player`, `Match`, `ScoreResult`, …) | [src/types/domain.ts](src/types/domain.ts) |
-| CRUD + business rules + persistence | [src/store/useAppStore.ts](src/store/useAppStore.ts) (composer), [src/store/slices/](src/store/slices/), [src/store/helpers.ts](src/store/helpers.ts); UI imports domain hooks from [src/store/index.ts](src/store/index.ts) |
-| Derived stats (goals, assists, W/L/D) | [src/utils/stats.ts](src/utils/stats.ts) (`recomputePlayerStatsFromMatches`, etc.) |
-| Leaderboard ordering / display helpers | [src/utils/leaderboard.ts](src/utils/leaderboard.ts) |
-| Roster / team split helpers | [src/utils/matchRoster.ts](src/utils/matchRoster.ts) |
-| IDs / join codes | [src/utils/id.ts](src/utils/id.ts) |
-| Demo / bootstrap data | [src/data/seed.ts](src/data/seed.ts) |
-| UI by flow | [src/screens/](src/screens/) — e.g. `CreateMatchTabScreen`, `MatchDetailScreen`, `LineupBuilderScreen`, `ScoreEntryScreen`, `LeaderboardScreen`, `ProfileScreen` |
+| Types (`Player`, `Match`, `ScoreResult`, …) | [../../src/types/domain.ts](../../src/types/domain.ts) |
+| CRUD + business rules + persistence | [../../src/store/useAppStore.ts](../../src/store/useAppStore.ts) (composer), [../../src/store/slices/](../../src/store/slices/), [../../src/store/helpers.ts](../../src/store/helpers.ts); UI imports domain hooks from [../../src/store/index.ts](../../src/store/index.ts) |
+| Remote orchestration (hydrate, create, join, RSVP, score, ratings, group ops) | [../../src/usecases/matches.ts](../../src/usecases/matches.ts), [../../src/usecases/groups.ts](../../src/usecases/groups.ts) — receives `*Deps` injected by slices |
+| Pure domain rules (badge-style: typed inputs → view model, no React/Zustand) | [../../src/domain/](../../src/domain/) — e.g. `badges/catalog.ts`, `computeBadgeViewModel` |
+| Derived stats (goals, assists, W/L/D) | [../../src/utils/stats.ts](../../src/utils/stats.ts) (`recomputePlayerStatsFromMatches`, etc.) |
+| Leaderboard ordering / display helpers | [../../src/utils/leaderboard.ts](../../src/utils/leaderboard.ts) |
+| Roster / team split helpers | [../../src/utils/matchRoster.ts](../../src/utils/matchRoster.ts) |
+| IDs / join codes | [../../src/utils/id.ts](../../src/utils/id.ts) |
+| Demo / bootstrap data | [../../src/data/seed.ts](../../src/data/seed.ts) |
+| UI by flow | [../../src/screens/](../../src/screens/) — e.g. `CreateMatchTabScreen`, `MatchDetailScreen`, `LineupBuilderScreen`, `MatchPostgameScreen`, `MatchSummaryScreen`, `MatchRatingsScreen`, `LeaderboardScreen`, `ProfileScreen` |
 
-There is no `src/features/` split: **store (slices + helpers + composer) + types + screens** carry the product.
+There is no `src/features/` split: **store (slices + helpers + composer) + types + usecases + domain + screens** carry the product.
 
 ## Pre-flight
 
@@ -36,8 +38,10 @@ There is no `src/features/` split: **store (slices + helpers + composer) + types
 
 | Kind | Put it in |
 |------|-----------|
-| Pure rules (no React) | `src/utils/` or [src/store/helpers.ts](src/store/helpers.ts) for merge/stats helpers shared by slices |
-| AsyncStorage / persist / migrations | [src/store/useAppStore.ts](src/store/useAppStore.ts) `persist` options |
+| Pure rules, no React/Zustand, reused across multiple features | `src/domain/{concern}/` (badge-style: catalog + compute + types + index) |
+| Pure utility/helper shared by slices or utils | `src/utils/` or [../../src/store/helpers.ts](../../src/store/helpers.ts) |
+| Remote orchestration calling multiple services, needs DI for tests | `src/usecases/matches.ts` or `src/usecases/groups.ts` (via `*Deps` injection) |
+| AsyncStorage / persist / migrations | [../../src/store/useAppStore.ts](../../src/store/useAppStore.ts) `persist` options |
 | React components used in one flow | `src/screens/` (or screen subfolder) |
 | Reusable UI | `src/components/` |
 
@@ -54,4 +58,6 @@ There is no `src/features/` split: **store (slices + helpers + composer) + types
 
 ## Related
 
-- New route shell → [.claude/skills/add-screen.md](.claude/skills/add-screen.md)
+- New route shell → [../skills/add-screen.md](../skills/add-screen.md)
+- Groups-specific domain feature → [../skills/add-group-feature.md](../skills/add-group-feature.md)
+- New Zustand slice → [../skills/add-store-slice.md](../skills/add-store-slice.md)

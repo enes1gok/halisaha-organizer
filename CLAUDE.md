@@ -17,7 +17,7 @@ Authoritative static context for this repo. Read this file every conversation.
 - **Runtime**: Expo ~54, React 19, React Native ~0.81, TypeScript.
 - **Navigation**: **React Navigation** v7 — root **bottom tabs** + per-tab **stack** navigators. Entry: [AppNavigator.tsx](src/navigation/AppNavigator.tsx). Param lists: [types.ts](src/navigation/types.ts).
 - **Styling**: **Design tokens** in [src/theme/index.ts](src/theme/index.ts) (`colors`, `spacing`, `typography`, `radius`, `shadows`) + **`StyleSheet`** in components. No NativeWind / Expo Router.
-- **State**: Single **Zustand** store with **persist** (`AsyncStorage`), composed from domain **slices** under [src/store/](src/store/) — entry [useAppStore.ts](src/store/useAppStore.ts), barrel [index.ts](src/store/index.ts) exports **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`** (prefer these in UI over raw `useAppStore`). Prefer **atomic selectors** and `useShallow` when selecting multiple fields — avoid subscribing to the full store object in new components.
+- **State**: Single **Zustand** store with **persist** (`AsyncStorage`), composed from domain **slices** under [src/store/](src/store/) — entry [useAppStore.ts](src/store/useAppStore.ts), barrel [index.ts](src/store/index.ts) exports **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`**, **`usePreferencesStore`**, **`useMatchTemplatesStore`** (prefer these in UI over raw `useAppStore`). Prefer **atomic selectors** and `useShallow` when selecting multiple fields — avoid subscribing to the full store object in new components.
 - **Domain model**: [src/types/domain.ts](src/types/domain.ts) — `Player`, `Match`, `Attendee`, `ScoreResult`, enums (`Position`, `RSVPStatus`, `MatchStatus`, …). Do not duplicate these shapes elsewhere.
 - **Data / seed**: [src/data/seed.ts](src/data/seed.ts) (and related) for demo/bootstrap data; `resetToSeed` on the store restores it.
 
@@ -44,6 +44,31 @@ Full-screen components (e.g. `HomeScreen`, `MatchDetailScreen`, `LineupBuilderSc
 
 Reusable pieces (`Card`, `PillButton`, `MatchCard`, modals, empty states, …).
 
+**Domain logic** — [src/domain/](src/domain/)
+
+Pure business rule modules with no React or Zustand dependency.
+
+| Directory | Role |
+|-----------|------|
+| `badges/` | Badge catalog (`BADGE_CATALOG`), view-model computation (`computeBadgeViewModel`), local input extraction (`localBadgeInputs`). Consumed by profile screens. Types in `types.ts`, public API via `index.ts`. |
+
+**Use-case layer** — [src/usecases/](src/usecases/)
+
+Orchestration layer between store slices and Supabase services. Receives injected deps for testability.
+
+| File | Role |
+|------|------|
+| `matches.ts` | All match domain operations (hydrate, create, join, RSVP, lineup, score, ratings). Receives `MatchesDeps` injected by `matchesSlice`. |
+| `groups.ts` | All group domain operations (hydrate, create, join, leave, delete, kick, role). Receives `GroupsDeps` injected by `groupsSlice`. |
+| `remoteHydrationGate.ts` | Client-side TTL gate (60 s per domain) + inflight dedup + 12 s timeout. `resetRemoteHydrationGates()` called on sign-out. |
+| `errors.ts` | `rethrowUseCaseError` — converts service-layer throws to typed `AppError` instances. |
+
+**React context** — [src/context/](src/context/)
+
+| File | Role |
+|------|------|
+| `SupabaseAuthContext.tsx` | Session lifecycle orchestrator (433 lines): bootstrap with 15 s timeout, PKCE deep-link exchange, profile sync, initial hydration, push token upsert/deactivate, realtime start/stop, sign-out teardown. Exposes `useSupabaseAuth()`. |
+
 **Other** — [src/hooks/](src/hooks/), [src/utils/](src/utils/) (e.g. `id`, `stats`), [src/store/](src/store/).
 
 ## Architectural invariants
@@ -51,7 +76,7 @@ Reusable pieces (`Card`, `PillButton`, `MatchCard`, modals, empty states, …).
 1. **Navigation types**: Adding a stack screen requires updating the matching `*StackParamList` in [types.ts](src/navigation/types.ts) and registering `Stack.Screen` in the correct navigator.
 2. **Single source of truth**: Match and player mutations go through store actions (via domain hooks or **`useAppStore`**); after model changes, keep **`recomputePlayerStatsFromMatches`** / score merge logic consistent with [helpers.ts](src/store/helpers.ts) / [useAppStore.ts](src/store/useAppStore.ts).
 3. **Persistence**: Store shape is versioned (`STORE_VERSION`, migrate in `persist`). Changing persisted fields requires a migration or bump strategy.
-4. **Copy**: User-visible strings are currently **Turkish inline** in UI; there is no i18n layer yet. Keep tone consistent with existing screens until i18n is introduced.
+4. **Copy/i18n**: User-visible strings are currently **Turkish inline** in UI. Error tokens are localized via `src/i18n/` (`ErrorTranslationKey` union → `locales/tr/errors.ts` → `translateError.ts`; see [error-handling-governance.md](.claude/rules/error-handling-governance.md)). General UI strings remain inline until a broader i18n layer is introduced.
 
 ## Operational governance
 
@@ -86,6 +111,8 @@ Reusable pieces (`Card`, `PillButton`, `MatchCard`, modals, empty states, …).
 | Push queue / `notification_deliveries`, notification Edge Functions, enqueue/drain RPCs, notification pgTAP | [.claude/rules/notification-governance.md](.claude/rules/notification-governance.md) |
 | Taktik tahta / Kadro Kur: pitch koordinatları, drop zone ölçümü, swap, haptics, reduce-motion | [.claude/rules/tactical-board-governance.md](.claude/rules/tactical-board-governance.md) |
 | Oturum öncesi App Intro, OnboardingNavigator, AuthWelcome, tanıtım görselleri | [.claude/rules/onboarding-governance.md](.claude/rules/onboarding-governance.md) |
+| `GroupsStackNav`, `GroupRole` transitions, kick/promote members, `GroupWeeklySeries` spawn lifecycle, group admin permissions | [.claude/rules/groups-and-series-governance.md](.claude/rules/groups-and-series-governance.md) |
+| `startRemoteRealtimeSync`, `stopRemoteRealtimeSync`, `remoteCatchUp`, `remoteHydrationGate`, session lifecycle ordering, background sync | [.claude/rules/realtime-sync-governance.md](.claude/rules/realtime-sync-governance.md) |
 
 ## Skills
 
@@ -104,6 +131,7 @@ Skills live in `.claude/skills/{name}.md`. Invoke with `/skill-name` or read the
 | `add-notification-flow` | New `notification_deliveries` type, enqueue trigger/cron, Edge `buildMessage`, notification pgTAP |
 | `evolve-postgres-function` | Postgres function signature/return-type change in a migration; 42P13 / DROP+recreate + grants |
 | `add-formation-logic` | New `LineupFormation` in `lineupFormations.ts`, anchors, tests, tactical board behavior |
+| `add-group-feature` | New route in `GroupsStackNav`, `GroupRole` logic, `GroupWeeklySeries` change, group-scoped RPC |
 
 ## Maintenance contract
 

@@ -22,10 +22,11 @@ Do not use vague names like `handleData`, `process`, `doStuff`.
 
 ## Selector usage in UI
 
-- Prefer domain hooks from `src/store/index.ts` (`useMatchesStore`, `useGroupsStore`, etc.).
+- Prefer domain hooks from `src/store/index.ts` (`useAuthStore`, `useMatchesStore`, `useGroupsStore`, `usePlayersStore`, `usePreferencesStore`, `useMatchTemplatesStore`).
 - Use atomic selectors (`(s) => s.getMatch(id)`) to reduce re-renders.
 - When selecting multiple fields from one slice, use `useShallow`.
 - Avoid broad subscriptions to entire store objects in new code.
+- For code examples with `useShallow` and the full hook list, see [technical-excellence.md](technical-excellence.md).
 
 ## Persistence and migrations
 

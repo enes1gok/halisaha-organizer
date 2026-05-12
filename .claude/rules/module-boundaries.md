@@ -9,6 +9,8 @@ Keep modules decoupled: place code by responsibility and keep dependencies flowi
 | UI | `src/screens/`, `src/components/` | Rendering, interaction, navigation wiring |
 | Hooks | `src/hooks/` | Reusable view-model logic and screen orchestration |
 | State | `src/store/` | Domain state, mutations, persistence boundaries |
+| Use cases | `src/usecases/` | Orchestration between store and services; receives injected `*Deps` for testability |
+| Domain logic | `src/domain/` | Pure business rules with no React/Zustand dependency (e.g. badge catalog, view-model computation) |
 | Domain helpers | `src/store/helpers.ts`, `src/utils/` | Pure calculations, merge logic, data transforms |
 | Types | `src/types/` | Shared contracts and enums |
 
@@ -16,10 +18,11 @@ Keep modules decoupled: place code by responsibility and keep dependencies flowi
 
 Allowed direction (high-level):
 
-`screens/components -> hooks -> store -> helpers/utils -> types`
+`screens/components -> hooks -> store -> usecases -> services/domain/helpers/utils -> types`
 
 Additional allowed edges:
 - `screens/components -> store` (when hooks abstraction is unnecessary)
+- `screens/components -> domain` (for view-model computation, e.g. `computeBadgeViewModel`)
 - `hooks -> utils/types`
 - `store -> types`
 
@@ -27,12 +30,15 @@ Forbidden edges:
 - `utils` importing React, React Native, navigation, or UI components
 - `store` importing from `src/screens/` or `src/components/`
 - `types` importing from runtime modules
+- `src/domain/` importing React, React Native, Zustand, or navigation
+- `src/usecases/` importing from `src/screens/` or `src/components/`
 
 ## Placement decisions
 
 - If code needs React hooks or lifecycle, keep it in `screens/` or `hooks/`.
 - If logic mutates domain state or persistence, keep it in `store/`.
-- If logic is pure and testable with plain inputs/outputs, keep it in `utils/` or `store/helpers.ts`.
+- If logic orchestrates multiple service calls and needs dependency injection for testability, keep it in `usecases/`.
+- If logic is pure and testable with plain inputs/outputs and **used across features**, keep it in `src/domain/{concern}/` (badge-style) or `utils/` / `store/helpers.ts` (utility-style).
 - If a helper is only meaningful for one screen, colocate near that screen until reused twice.
 
 ## Red flags

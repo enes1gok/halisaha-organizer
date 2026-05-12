@@ -4,7 +4,11 @@
 
 - Prefer **`public.raise_app_error(p_token text, p_payload jsonb default '{}')`** (see migration `raise_app_error_protocol`) instead of ad-hoc `raise exception '...'` prose. Message body stays a stable **`ERR_*`** token; optional structured fields go in **`DETAIL`** as JSON (`p_payload`).
 - Authorization for match mutations should continue to use helpers such as **`public.is_match_organizer`** (and related helpers) rather than duplicating policy logic in prose errors.
-- New **`ERR_*`** tokens require **`ERR_REGISTRY`** + **`ErrorTranslationKey`** + locale strings (see `src/i18n/`).
+- New **`ERR_*`** tokens require a 4-step update:
+  1. Add the token string to the Postgres `ERR_REGISTRY` constant in the migration (see the `raise_app_error_protocol` migration for format).
+  2. Add the corresponding key to the **`ErrorTranslationKey`** union in [src/i18n/errorTranslationKeys.ts](../../src/i18n/errorTranslationKeys.ts).
+  3. Add the Turkish string (with any interpolation slots) to [src/i18n/locales/tr/errors.ts](../../src/i18n/locales/tr/errors.ts).
+  4. The key is automatically resolved via [src/i18n/translateError.ts](../../src/i18n/translateError.ts) — no further wiring required.
 
 ## Client services
 

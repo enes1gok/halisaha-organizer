@@ -38,3 +38,4 @@ Apply this rule when changing the push delivery pipeline: `notification_deliveri
 - [supabase-governance.md](supabase-governance.md) — RLS, migrations, privileged roles
 - [supabase-schema-evolution.md](supabase-schema-evolution.md) — DDL conventions
 - [atomic-mutation-policy.md](atomic-mutation-policy.md) — multi-table atomic writes where relevant
+- [../skills/add-notification-flow.md](../skills/add-notification-flow.md) — end-to-end workflow for new delivery types

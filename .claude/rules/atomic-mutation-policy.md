@@ -13,3 +13,4 @@
 ## Related
 
 - Schema and triggers for migrated tables: [supabase-schema-evolution.md](supabase-schema-evolution.md).
+- New or upgraded RPC workflow: [../skills/add-atomic-rpc.md](../skills/add-atomic-rpc.md).

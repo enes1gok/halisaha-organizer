@@ -1,5 +1,7 @@
 # Supabase governance
 
+> **Policy reference.** For the task workflow (RLS playbooks, test commands, CI): [../skills/supabase-governance.md](../skills/supabase-governance.md).
+
 Apply this rule whenever a task touches Supabase auth, database, RLS policies, migrations, storage access, or server-side Supabase clients.
 
 ## Security guardrails

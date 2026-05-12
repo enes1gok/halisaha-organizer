@@ -30,3 +30,10 @@ Apply this rule when writing SQL, reviewing slow endpoints, defining indexes, or
 - [ ] EXPLAIN ANALYZE reviewed for critical queries
 - [ ] No obvious N+1 data access in touched flow
 ```
+
+## Related
+
+- RLS, migrations, security: [supabase-governance.md](supabase-governance.md)
+- Schema changes and new indexes in migrations: [supabase-schema-evolution.md](supabase-schema-evolution.md)
+- Test commands and CI for SQL tests: [../skills/supabase-governance.md](../skills/supabase-governance.md)
+- Test quality gates (when query regressions need integration test coverage): [testing-quality-gate.md](testing-quality-gate.md)
