@@ -1,6 +1,6 @@
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   LayoutAnimation,
@@ -16,6 +16,7 @@ import { HomeLastMatchCard } from '../components/HomeLastMatchCard';
 import { HomeUpcomingHeroCard } from '../components/HomeUpcomingHeroCard';
 import { MatchCard } from '../components/MatchCard';
 import { MatchCardListRow } from '../components/MatchCardListRow';
+import { EmptyState } from '../components/EmptyState';
 import {
   HomeActionStripSkeleton,
   HomeHeroSkeleton,
@@ -54,7 +55,17 @@ export function HomeScreen() {
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
   const { configured, loading } = useSupabaseAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [skeletonExpired, setSkeletonExpired] = useState(false);
   const listPaddingBottom = getHomeListPaddingBottom(insets.bottom);
+
+  useEffect(() => {
+    if (!showInitialSkeleton) return;
+    const timer = setTimeout(() => setSkeletonExpired(true), 8_000);
+    return () => clearTimeout(timer);
+  }, [configured, loading, matches.length]);
+
+  const showInitialSkeleton = configured && loading && matches.length === 0 && !skeletonExpired;
 
   const upcoming = useMemo(() => {
     const list = matches.filter((m) => m.status === 'upcoming');
@@ -72,8 +83,12 @@ export function HomeScreen() {
   const onRefresh = useCallback(async () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRefreshing(true);
+    setFetchError(false);
     try {
       if (remoteUserId) await hydrateRemoteMatches({ force: true });
+    } catch (e) {
+      console.warn('HomeScreen refresh failed', e);
+      setFetchError(true);
     } finally {
       setRefreshing(false);
     }
@@ -106,8 +121,6 @@ export function HomeScreen() {
     ),
     [getPlayer, lastMatch, navigation, nextMatch, userHasPaid, userId],
   );
-
-  const showInitialSkeleton = configured && loading && matches.length === 0;
 
   if (showInitialSkeleton) {
     return (
@@ -148,7 +161,17 @@ export function HomeScreen() {
             </MatchCardListRow>
           );
         }}
-        ListEmptyComponent={null}
+        ListEmptyComponent={
+          fetchError && matches.length === 0 ? (
+            <EmptyState
+              variant="connection-error"
+              title="Bağlantı hatası"
+              subtitle="Veriler yüklenemedi. İnternet bağlantınızı kontrol edin."
+              actionLabel="Tekrar dene"
+              onAction={onRefresh}
+            />
+          ) : null
+        }
       />
 
       <View style={[styles.actionStrip, { bottom: spacing.sm + insets.bottom }]} pointerEvents="box-none">

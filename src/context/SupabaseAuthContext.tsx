@@ -40,6 +40,18 @@ export type SupabaseAuthContextValue = {
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextValue | null>(null);
 
+const APPLY_SESSION_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
 function turkishAuthCallbackErrorMessage(error_code?: string, error_description?: string): string {
   const decoded = error_description
     ? error_description.replace(/\+/g, ' ')
@@ -65,6 +77,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [activePushToken, setActivePushToken] = useState<string | null>(null);
   const [needsPasswordRecovery, setNeedsPasswordRecovery] = useState(false);
   const lastHandledAuthUrlRef = useRef<string | null>(null);
+  const applyingSessionRef = useRef(false);
 
   const pushProfileToStore = useCallback(
     async (userId: string, fallbackEmail?: string | null, meta?: User['user_metadata']) => {
@@ -134,6 +147,19 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     [hydrateRemoteGroups, pushProfileToStore, setRemoteUserId],
   );
 
+  const applySessionWithTimeout = useCallback(
+    async (sess: Session | null) => {
+      try {
+        await withTimeout(applySession(sess), APPLY_SESSION_TIMEOUT_MS, 'applySession');
+      } catch (e) {
+        console.warn('applySession timed out or failed', e);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applySession],
+  );
+
   useEffect(() => {
     if (!configured) {
       setLoading(false);
@@ -147,9 +173,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       .getSession()
       .then(({ data: { session: initial } }) => {
         if (cancelled) return;
-        void applySession(initial).finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+        void applySessionWithTimeout(initial);
       })
       .catch(() => {
         if (!cancelled) setLoading(false);
@@ -161,14 +185,19 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       if (event === 'PASSWORD_RECOVERY') {
         setNeedsPasswordRecovery(true);
       }
-      void applySession(next);
+      if (!applyingSessionRef.current) {
+        applyingSessionRef.current = true;
+        void applySessionWithTimeout(next).finally(() => {
+          applyingSessionRef.current = false;
+        });
+      }
     });
 
     return () => {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [configured, applySession]);
+  }, [configured, applySessionWithTimeout]);
 
   useEffect(() => {
     if (!configured || !session?.user?.id) {

@@ -32,4 +32,8 @@ export const EMPTY_STATE_VISUALS: Record<EmptyStateVariant, EmptyStateVisual> = 
     icon: 'people-circle-outline',
     accessibilityLabel: 'Grup yok — kişiler ikonu',
   },
+  'connection-error': {
+    icon: 'alert-circle-outline',
+    accessibilityLabel: 'Bağlantı hatası — uyarı ikonu',
+  },
 };

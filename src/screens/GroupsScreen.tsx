@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../components/Card';
 import { EmptyStateHero } from '../components/emptyIllustrations';
@@ -94,6 +94,14 @@ export function GroupsScreen() {
   const memberships = useGroupsStore((s) => s.groupMemberships);
   const matches = useMatchesStore((s) => s.matches);
   const { configured, loading } = useSupabaseAuth();
+  const [skeletonExpired, setSkeletonExpired] = useState(false);
+
+  useEffect(() => {
+    const showInitialSkeleton = configured && loading && groups.length === 0 && memberships.length === 0;
+    if (!showInitialSkeleton) return;
+    const timer = setTimeout(() => setSkeletonExpired(true), 8_000);
+    return () => clearTimeout(timer);
+  }, [configured, loading, groups.length, memberships.length]);
 
   const myGroups = useMemo(
     () =>
@@ -168,7 +176,7 @@ export function GroupsScreen() {
     return result;
   }, [matches, memberships, myGroups]);
 
-  const showInitialSkeleton = configured && loading && groups.length === 0 && memberships.length === 0;
+  const showInitialSkeleton = configured && loading && groups.length === 0 && memberships.length === 0 && !skeletonExpired;
   const showCenteredEmptyCTAs = !showInitialSkeleton && myGroups.length === 0;
 
   if (showCenteredEmptyCTAs) {

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useReduceMotion } from '../hooks/useReduceMotion';
@@ -14,12 +14,18 @@ export function AppLoadingScreen({ message, subtitle }: AppLoadingScreenProps) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const opacity = useSharedValue(reduceMotion ? 1 : 0);
+  const [showHint, setShowHint] = useState(false);
 
   useEffect(() => {
     if (!reduceMotion) {
       opacity.value = withTiming(1, { duration: 300 });
     }
   }, [opacity, reduceMotion]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowHint(true), 12_000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
@@ -72,6 +78,13 @@ export function AppLoadingScreen({ message, subtitle }: AppLoadingScreenProps) {
       textAlign: 'center',
       opacity: 0.7,
     },
+    hintText: {
+      ...typography.caption,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: spacing.md,
+      maxWidth: 280,
+    },
   });
 
   return (
@@ -90,6 +103,9 @@ export function AppLoadingScreen({ message, subtitle }: AppLoadingScreenProps) {
         <ActivityIndicator color={colors.accent} size="large" />
         <Text style={styles.message}>{message}</Text>
         {subtitle ? <Text style={styles.subtitleText}>{subtitle}</Text> : null}
+        {showHint ? (
+          <Text style={styles.hintText}>Bağlantı yavaş. Lütfen bekleyin veya uygulamayı yeniden başlatın.</Text>
+        ) : null}
       </View>
     </Animated.View>
   );

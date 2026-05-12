@@ -189,6 +189,15 @@ export default function App() {
     return unsub;
   }, []);
 
+  useEffect(() => {
+    if (hydrated) return;
+    const watchdogTimer = setTimeout(() => {
+      console.warn('App store hydration timeout (10s) — forcing hydrated=true');
+      setHydrated(true);
+    }, 10_000);
+    return () => clearTimeout(watchdogTimer);
+  }, [hydrated]);
+
   if (!fontsLoaded || !hydrated) {
     const boot = bootstrapPalette();
     return (

@@ -8,6 +8,17 @@ import type { RemoteHydrateOpts } from '../types/remoteHydration';
  */
 const MATCH_TTL_MS = 60_000;
 const GROUP_TTL_MS = 60_000;
+const HYDRATION_TIMEOUT_MS = 12_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
 
 let lastMatchesSuccessAt = 0;
 let lastGroupsSuccessAt = 0;
@@ -38,8 +49,10 @@ export async function runGatedMatchesHydration(
   }
   matchesInflight = (async () => {
     try {
-      await execute();
+      await withTimeout(execute(), HYDRATION_TIMEOUT_MS, 'hydrateRemoteMatches');
       lastMatchesSuccessAt = Date.now();
+    } catch (error) {
+      console.warn('hydrateRemoteMatches failed or timed out', error);
     } finally {
       matchesInflight = null;
     }
@@ -59,8 +72,10 @@ export async function runGatedGroupsHydration(
   }
   groupsInflight = (async () => {
     try {
-      await execute();
+      await withTimeout(execute(), HYDRATION_TIMEOUT_MS, 'hydrateRemoteGroups');
       lastGroupsSuccessAt = Date.now();
+    } catch (error) {
+      console.warn('hydrateRemoteGroups failed or timed out', error);
     } finally {
       groupsInflight = null;
     }

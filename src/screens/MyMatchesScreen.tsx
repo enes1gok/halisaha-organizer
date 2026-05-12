@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { EmptyState } from '../components/EmptyState';
 import { MatchCardSkeleton, MyMatchesCalendarSkeleton, SkeletonList } from '../components/skeleton';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import { resolveMyMatchesEntryScreen } from '../navigation/myMatchesEntry';
@@ -90,6 +91,29 @@ export function MyMatchesScreen() {
     );
   }
 
+  if (data.fetchError && data.sections.length === 0) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.headerStack}>
+          <MyMatchesSegmentControl
+            value={data.segment}
+            onChange={data.setSegment}
+            counts={data.segmentCounts}
+          />
+        </View>
+        <View style={styles.errorStateWrap}>
+          <EmptyState
+            variant="connection-error"
+            title="Bağlantı hatası"
+            subtitle="Veriler yüklenemedi. İnternet bağlantınızı kontrol edin."
+            actionLabel="Tekrar dene"
+            onAction={data.refresh}
+          />
+        </View>
+      </View>
+    );
+  }
+
   const listHeader = (
     <View style={styles.calendarWrap}>
       <MyMatchesCalendar
@@ -159,6 +183,11 @@ const useStyles = makeStyles((t) =>
     },
     skeletonGap: {
       height: spacing.md,
+    },
+    errorStateWrap: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
     },
   }),
 );

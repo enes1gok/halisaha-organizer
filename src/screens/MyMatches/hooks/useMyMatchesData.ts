@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { startOfDay, startOfMonth } from 'date-fns';
 import { useShallow } from 'zustand/react/shallow';
 import type { Match } from '../../../types/domain';
@@ -37,6 +37,7 @@ export type UseMyMatchesData = {
   refresh: () => Promise<void>;
   refreshing: boolean;
   showInitialSkeleton: boolean;
+  fetchError: boolean;
 };
 
 export function useMyMatchesData(): UseMyMatchesData {
@@ -58,6 +59,15 @@ export function useMyMatchesData(): UseMyMatchesData {
   const [monthAnchor, setMonthAnchorRaw] = useState<Date>(() => startOfMonth(today));
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [skeletonExpired, setSkeletonExpired] = useState(false);
+
+  useEffect(() => {
+    const showInitialSkeleton = configured && loading && slice.matches.length === 0;
+    if (!showInitialSkeleton) return;
+    const timer = setTimeout(() => setSkeletonExpired(true), 8_000);
+    return () => clearTimeout(timer);
+  }, [configured, loading, slice.matches.length]);
 
   const setMonthAnchor = useCallback((date: Date) => {
     setMonthAnchorRaw(startOfMonth(date));
@@ -114,8 +124,12 @@ export function useMyMatchesData(): UseMyMatchesData {
   const refresh = useCallback(async () => {
     if (!slice.remoteUserId) return;
     setRefreshing(true);
+    setFetchError(false);
     try {
       await slice.hydrateRemoteMatches({ force: true });
+    } catch (e) {
+      console.warn('MyMatches refresh failed', e);
+      setFetchError(true);
     } finally {
       setRefreshing(false);
     }
@@ -159,7 +173,8 @@ export function useMyMatchesData(): UseMyMatchesData {
     userId: slice.userId,
     refresh,
     refreshing,
-    showInitialSkeleton: configured && loading && slice.matches.length === 0,
+    showInitialSkeleton: configured && loading && slice.matches.length === 0 && !skeletonExpired,
+    fetchError,
   };
 }
 

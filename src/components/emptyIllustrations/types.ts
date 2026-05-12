@@ -7,4 +7,5 @@ export type EmptyStateVariant =
   | 'matches_upcoming'
   | 'matches_past'
   | 'stats'
-  | 'groups';
+  | 'groups'
+  | 'connection-error';
