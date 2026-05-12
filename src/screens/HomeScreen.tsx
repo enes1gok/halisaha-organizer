@@ -30,7 +30,12 @@ import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { countGoing } from '../utils/matchRoster';
 import { getLastFinishedMatchForPlayer } from '../utils/matchOutcome';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
-import { getHomeActionStripBottom, getHomeListPaddingBottom } from '../navigation/tabBarLayout';
+import {
+  HOME_ACTION_STRIP_GAP,
+  HOME_ACTION_STRIP_HEIGHT,
+  TAB_BAR_FLOAT_MARGIN_BOTTOM,
+  TAB_BAR_FLOATING_BLOCK_HEIGHT,
+} from '../navigation/tabBarLayout';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
@@ -57,7 +62,6 @@ export function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [skeletonExpired, setSkeletonExpired] = useState(false);
-  const listPaddingBottom = getHomeListPaddingBottom(insets.bottom);
 
   useEffect(() => {
     if (!showInitialSkeleton) return;
@@ -97,6 +101,10 @@ export function HomeScreen() {
   const userAttendee = nextMatch?.attendees.find((a) => a.playerId === userId);
   const userHasPaid = userAttendee?.paid === true;
 
+  // Calculate padding to account for the action card + tab bar at bottom
+  const actionCardWithTabBarHeight = HOME_ACTION_STRIP_HEIGHT + HOME_ACTION_STRIP_GAP + TAB_BAR_FLOATING_BLOCK_HEIGHT + TAB_BAR_FLOAT_MARGIN_BOTTOM + Math.max(insets.bottom, 8);
+  const adjustedListPaddingBottom = actionCardWithTabBarHeight + 16;
+
   const listHeader = useMemo(
     () => (
       <View>
@@ -125,12 +133,23 @@ export function HomeScreen() {
   if (showInitialSkeleton) {
     return (
       <View style={styles.screen}>
-        <View style={[styles.list, { paddingBottom: listPaddingBottom }]}>
+        <View style={[styles.list, { paddingBottom: adjustedListPaddingBottom }]}>
           <HomeHeroSkeleton />
           <HomeLastMatchSkeleton />
           <SkeletonList count={3} renderItem={() => <MatchCardSkeleton />} />
         </View>
-        <View style={[styles.actionStrip, { bottom: getHomeActionStripBottom(insets.bottom) }]} pointerEvents="none">
+        <View
+          style={[
+            styles.actionStrip,
+            {
+              bottom:
+                TAB_BAR_FLOATING_BLOCK_HEIGHT +
+                TAB_BAR_FLOAT_MARGIN_BOTTOM +
+                Math.max(insets.bottom, 8),
+            },
+          ]}
+          pointerEvents="none"
+        >
           <HomeActionStripSkeleton />
         </View>
       </View>
@@ -143,7 +162,7 @@ export function HomeScreen() {
         data={restUpcoming}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={listHeader}
-        contentContainerStyle={[styles.list, { paddingBottom: listPaddingBottom }]}
+        contentContainerStyle={[styles.list, { paddingBottom: adjustedListPaddingBottom }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
@@ -174,7 +193,18 @@ export function HomeScreen() {
         }
       />
 
-      <View style={[styles.actionStrip, { bottom: getHomeActionStripBottom(insets.bottom) }]} pointerEvents="box-none">
+      <View
+        style={[
+          styles.actionStrip,
+          {
+            bottom:
+              TAB_BAR_FLOATING_BLOCK_HEIGHT +
+              TAB_BAR_FLOAT_MARGIN_BOTTOM +
+              Math.max(insets.bottom, 8),
+          },
+        ]}
+        pointerEvents="box-none"
+      >
         <HomeActionCard
           onJoinPress={() => navigation.navigate('JoinMatch')}
           onCreatePress={() => navigation.navigate('CreateTab')}

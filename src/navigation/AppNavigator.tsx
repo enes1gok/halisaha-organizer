@@ -128,7 +128,7 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
   };
 
   return (
-    <View style={[styles.shell, { marginHorizontal: TAB_BAR_FLOAT_MARGIN_H, marginBottom: bottomInset }]}>
+    <View style={[styles.shell, { marginHorizontal: TAB_BAR_FLOAT_MARGIN_H, bottom: bottomInset }]}>
       <View style={styles.pill}>
         <View style={styles.row}>
           {visibleRoutes.map((route) => {
@@ -233,6 +233,9 @@ export function AppNavigator() {
 const useTabBarStyles = makeStyles((t) =>
   StyleSheet.create({
     shell: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
       overflow: 'visible',
       paddingTop: TAB_BAR_OVERFLOW_TOP,
     },
