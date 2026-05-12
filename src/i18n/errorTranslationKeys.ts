@@ -32,4 +32,5 @@ export type ErrorTranslationKey =
   | 'errors.rpc.motmCannotVote'
   | 'errors.rpc.motmInvalidPick'
   | 'errors.rpc.motmFinishedOnly'
-  | 'errors.rpc.motmPlayerNotOnField';
+  | 'errors.rpc.motmPlayerNotOnField'
+  | 'errors.rpc.ratingWindowClosed';

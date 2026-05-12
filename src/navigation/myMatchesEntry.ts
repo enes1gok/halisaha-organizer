@@ -1,7 +1,7 @@
 import type { Match } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
 
-export type MyMatchesEntryScreen = 'MatchPostgame' | 'MatchSummary' | 'MatchDetail';
+export type MyMatchesEntryScreen = 'MatchRatingFlow' | 'MatchSummary' | 'MatchDetail';
 
 /**
  * Remote maçlar için Maçlarım satır hedef ekranı. Yerel (seed/demo) maçlar her zaman detaydadır.
@@ -22,12 +22,18 @@ export function resolveMyMatchesEntryScreen(
   }
 
   if (!match.result) {
-    return 'MatchPostgame';
+    // Skor girilmemiş — organizatör MatchDetail'da skor girebilir
+    return 'MatchDetail';
   }
 
   if (!onLineup || ratingsSubmittedByMatchId[match.id]) {
     return 'MatchSummary';
   }
 
-  return 'MatchPostgame';
+  // Puanlama penceresi kapandıysa final ekrana git
+  if (match.ratingWindowEndsAt && new Date(match.ratingWindowEndsAt).getTime() < Date.now()) {
+    return 'MatchSummary';
+  }
+
+  return 'MatchRatingFlow';
 }

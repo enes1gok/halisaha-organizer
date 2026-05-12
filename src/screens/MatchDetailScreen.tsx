@@ -26,7 +26,7 @@ import { useTheme } from '../theme/ThemeContext';
 import type { RSVPStatus } from '../types/domain';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
-import { useMatchPostMatchWindow } from '../hooks/useMatchPostMatchWindow';
+import { useEffectiveMatchStatus } from '../hooks/useEffectiveMatchStatus';
 import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
@@ -112,7 +112,7 @@ export function MatchDetailScreen() {
   const [cancelling, setCancelling] = useState(false);
 
   const countdown = useCountdown(match?.startsAt ?? new Date().toISOString());
-  const { pastScheduledEnd, endsAtIso } = useMatchPostMatchWindow(match?.startsAt);
+  const { effective: effectiveStatus, pastScheduledEnd } = useEffectiveMatchStatus(match);
 
   const groupMemberships = useGroupsStore((s) => s.groupMemberships);
   const organizer = match ? getPlayer(match.organizerId) : undefined;
@@ -368,7 +368,7 @@ export function MatchDetailScreen() {
 
   return (
     <View style={matchDetailStyles.screen}>
-      <MatchDetailHero match={match} countdownLabel={countdown} />
+      <MatchDetailHero match={match} countdownLabel={countdown} effectiveStatus={effectiveStatus} />
       <View style={matchDetailStyles.segmentWrap}>
         <MatchDetailSegmentControl value={tab} onChange={setTab} />
       </View>
@@ -413,8 +413,8 @@ export function MatchDetailScreen() {
               );
             }}
             pastScheduledEnd={pastScheduledEnd}
-            endsAtIso={endsAtIso}
             onUnlockLineup={onUnlockLineup}
+            effectiveStatus={effectiveStatus}
             openCancelConfirm={openCancelConfirm}
             onSetSelfReportEnabled={(v) =>
               void setSelfReportEnabled(match.id, v).catch((err) =>

@@ -136,6 +136,8 @@ export interface Match {
   status: MatchStatus;
   result?: ScoreResult;
   selfReports: SelfReportRequest[];
+  /** ISO timestamp: puanlama penceresinin kapanış zamanı. submit_match_result tarafından doldurulur. */
+  ratingWindowEndsAt?: string;
 }
 
 export interface Group {

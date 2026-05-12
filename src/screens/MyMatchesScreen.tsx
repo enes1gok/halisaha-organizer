@@ -57,7 +57,7 @@ export function MyMatchesScreen() {
     (match: Match) => {
       const dest = resolveMyMatchesEntryScreen(match, data.userId, data.ratingsSubmission);
       const params = { matchId: match.id };
-      if (dest === 'MatchPostgame') navigation.navigate('MatchPostgame', params);
+      if (dest === 'MatchRatingFlow') navigation.navigate('MatchRatingFlow', params);
       else if (dest === 'MatchSummary') navigation.navigate('MatchSummary', params);
       else navigation.navigate('MatchDetail', params);
     },

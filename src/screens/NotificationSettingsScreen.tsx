@@ -288,6 +288,26 @@ export function NotificationSettingsScreen() {
     [prefs, persist],
   );
 
+  const onTogglePaymentMorningReminder = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_payment_morning_reminder: v },
+      });
+    },
+    [prefs, persist],
+  );
+
+  const onToggleRosterFullOrganizer = useCallback(
+    (v: boolean) => {
+      void persist({
+        ...prefs,
+        types: { ...prefs.types, group_match_roster_full_organizer: v },
+      });
+    },
+    [prefs, persist],
+  );
+
   const onToggleQuiet = useCallback(
     (v: boolean) => {
       void persist({
@@ -516,6 +536,36 @@ export function NotificationSettingsScreen() {
             thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_streak_at_risk ? colors.accent : colors.textMuted) : undefined}
             testID="settings:notifications:type-streak-at-risk:switch"
             accessibilityLabel="Haftalık seri hatırlatıcı bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Nakit/Not maç sabahı</Text>
+            <Text style={styles.caption}>Nakit veya not ödemeli maç günü sabahı hatırlatma gönderilir</Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_payment_morning_reminder}
+            onValueChange={onTogglePaymentMorningReminder}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_payment_morning_reminder ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-payment-morning:switch"
+            accessibilityLabel="Nakit/Not maç sabahı bildirimleri"
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>Kadro doldu (Organizatör)</Text>
+            <Text style={styles.caption}>Maç kadrosu tamamlandığında organizatöre bildirim gönderilir</Text>
+          </View>
+          <Switch
+            value={prefs.types.group_match_roster_full_organizer}
+            onValueChange={onToggleRosterFullOrganizer}
+            disabled={saving || typesDisabled}
+            trackColor={{ false: colors.border, true: colors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_roster_full_organizer ? colors.accent : colors.textMuted) : undefined}
+            testID="settings:notifications:type-roster-full:switch"
+            accessibilityLabel="Kadro doldu organizatör bildirimleri"
           />
         </View>
       </View>

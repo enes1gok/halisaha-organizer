@@ -2,12 +2,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { Switch, Text, View } from 'react-native';
 import { PillButton } from '../../../components/PillButton';
+import { PostMatchScoreForm } from '../../../components/PostMatchScoreForm';
 import { RsvpOptionButton } from '../../../components/RsvpOptionButton';
-import { formatRsvpStatusTr } from '../../../components/rsvpUserIndicator';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../../../navigation/types';
 import { useTheme } from '../../../theme/ThemeContext';
 import type { Match, Player, RSVPStatus, SelfReportRequest } from '../../../types/domain';
-import { formatMatchDateTime } from '../../../utils/dates';
+import type { EffectiveStatus } from '../../../utils/matchEffectiveStatus';
 import { hasAssignedLineup } from '../../../utils/matchRoster';
 import { isRemoteMatchId } from '../../../utils/matchId';
 import { useMatchDetailStyles } from '../matchDetailStyles';
@@ -32,12 +32,12 @@ type Props = {
   openRsvp: () => void;
   onAddSelfReport: (kind: 'goal' | 'assist') => void;
   pastScheduledEnd: boolean;
-  endsAtIso: string;
   onUnlockLineup: () => void;
   openCancelConfirm: () => void;
   onSetSelfReportEnabled: (enabled: boolean) => void;
   /** Kullanıcının kendi katılım durumu; katılımcı değilse null */
   currentUserRsvp: RSVPStatus | null;
+  effectiveStatus: EffectiveStatus;
 };
 
 export function MatchDetailSummaryPanel({
@@ -57,15 +57,22 @@ export function MatchDetailSummaryPanel({
   openRsvp,
   onAddSelfReport,
   pastScheduledEnd,
-  endsAtIso,
   onUnlockLineup,
   openCancelConfirm,
   onSetSelfReportEnabled,
   currentUserRsvp,
+  effectiveStatus,
 }: Props) {
   const matchId = match.id;
   const { colors } = useTheme();
   const styles = useMatchDetailStyles();
+
+  const isOngoing = effectiveStatus === 'ongoing';
+  const showInlineScore =
+    isOrganizer &&
+    isRemoteMatchId(match.id) &&
+    (isOngoing || pastScheduledEnd) &&
+    match.status !== 'finished';
 
   return (
     <>
@@ -117,25 +124,14 @@ export function MatchDetailSummaryPanel({
         </View>
       </View>
 
-      {isRemoteMatchId(match.id) && userOnMatchLineup && !isOrganizer ? (
+      {showInlineScore ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Saha</Text>
-          <Text style={styles.muted}>
-            Skoru girmek veya takım arkadaşlarını değerlendirmek için maç sonrası ekranını kullanın.
-          </Text>
-          <PillButton
-            title="Maç sonrası"
-            onPress={() => navigation.navigate('MatchPostgame', { matchId })}
-            style={styles.mt}
-            disabled={!pastScheduledEnd}
-            accessibilityState={{ disabled: !pastScheduledEnd }}
-            testID="match:detail:postgame:player"
+          <Text style={styles.sectionTitle}>Skor Girişi</Text>
+          <PostMatchScoreForm
+            match={match}
+            canEditScore={true}
+            showSelfReportToggle={false}
           />
-          {!pastScheduledEnd ? (
-            <Text style={[styles.muted, styles.mtXs]}>
-              Tahmini bitiş ({formatMatchDateTime(endsAtIso)}) sonrası açılır.
-            </Text>
-          ) : null}
         </View>
       ) : null}
 
@@ -160,24 +156,6 @@ export function MatchDetailSummaryPanel({
                 testID="match:lineup:builder:press"
               />
             ) : null}
-            {match.status !== 'finished' ? (
-              <>
-                <PillButton
-                  title="Maç sonrası"
-                  onPress={() => navigation.navigate('MatchPostgame', { matchId })}
-                  variant="ghost"
-                  style={styles.flex}
-                  disabled={!pastScheduledEnd}
-                  accessibilityState={{ disabled: !pastScheduledEnd }}
-                  testID="match:detail:postgame:organizer"
-                />
-                {!pastScheduledEnd ? (
-                  <Text style={[styles.muted, styles.fullRow, styles.mtXs]}>
-                    Tahmini bitiş ({formatMatchDateTime(endsAtIso)}) sonrası açılır.
-                  </Text>
-                ) : null}
-              </>
-            ) : null}
             {match.status === 'upcoming' ? (
               <PillButton
                 title="Maçı İptal Et"
@@ -189,22 +167,24 @@ export function MatchDetailSummaryPanel({
               />
             ) : null}
           </View>
-          <View style={styles.mt}>
-            <View style={styles.rowBetween}>
-              <View style={styles.flex}>
-                <Text style={styles.body}>Oyuncular kendi bildirsin</Text>
-                <Text style={styles.muted}>
-                  Açıkken oyuncular maç sırasında kendi gol ve asistlerini bildirebilir; organizatör veya karşı takım onaylar.
-                </Text>
+          {match.status === 'upcoming' ? (
+            <View style={styles.mt}>
+              <View style={styles.rowBetween}>
+                <View style={styles.flex}>
+                  <Text style={styles.body}>Oyuncular kendi bildirsin</Text>
+                  <Text style={styles.muted}>
+                    Açıkken oyuncular maç sırasında kendi gol ve asistlerini bildirebilir; organizatör veya karşı takım onaylar.
+                  </Text>
+                </View>
+                <Switch
+                  value={match.selfReportEnabled}
+                  onValueChange={(v) => onSetSelfReportEnabled(v)}
+                  trackColor={{ false: colors.border, true: colors.accentMuted }}
+                  thumbColor={match.selfReportEnabled ? colors.accent : colors.textMuted}
+                />
               </View>
-              <Switch
-                value={match.selfReportEnabled}
-                onValueChange={(v) => onSetSelfReportEnabled(v)}
-                trackColor={{ false: colors.border, true: colors.accentMuted }}
-                thumbColor={match.selfReportEnabled ? colors.accent : colors.textMuted}
-              />
             </View>
-          </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -220,7 +200,7 @@ export function MatchDetailSummaryPanel({
               title={
                 ratingHints.peer || ratingHints.motm ? 'Derecelendirmeyi düzenle' : 'Oyuncuları derecelendir'
               }
-              onPress={() => navigation.navigate('MatchRatings', { matchId })}
+              onPress={() => navigation.navigate('MatchRatingFlow', { matchId })}
               testID="match:ratings:cta:press"
               style={styles.mt}
             />
@@ -230,7 +210,9 @@ export function MatchDetailSummaryPanel({
 
       {actionablePending.length > 0 ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Taslak bildirimler</Text>
+          <Text style={styles.sectionTitle}>
+            Taslak bildirimler{actionablePending.length > 0 ? ` (${actionablePending.length})` : ''}
+          </Text>
           <Text style={[styles.muted, styles.peerHint]}>
             Onaylanınca gol ve asist istatistiklere işlenir. Organizatör veya karşı takımdan biri onaylayabilir (akran
             onayı).
@@ -259,6 +241,9 @@ export function MatchDetailSummaryPanel({
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Katılım durumu</Text>
+        {isOngoing ? (
+          <Text style={styles.rsvpLockedBanner}>Maç başladı — katılım durumu kilitleniyor.</Text>
+        ) : null}
         {currentUserRsvp === 'going' ? (
           <RsvpOptionButton
             label="Gidiyorum"
@@ -266,7 +251,7 @@ export function MatchDetailSummaryPanel({
             baseColor={colors.accent}
             textColorOnFill={colors.textOnAccent}
             isSelected={true}
-            onPress={openRsvp}
+            onPress={isOngoing ? () => {} : openRsvp}
           />
         ) : currentUserRsvp === 'maybe' ? (
           <RsvpOptionButton
@@ -275,7 +260,7 @@ export function MatchDetailSummaryPanel({
             baseColor={colors.text}
             textColorOnFill={colors.background}
             isSelected={true}
-            onPress={openRsvp}
+            onPress={isOngoing ? () => {} : openRsvp}
           />
         ) : currentUserRsvp === 'notGoing' ? (
           <RsvpOptionButton
@@ -284,14 +269,14 @@ export function MatchDetailSummaryPanel({
             baseColor={colors.danger}
             textColorOnFill={colors.textOnAccent}
             isSelected={true}
-            onPress={openRsvp}
+            onPress={isOngoing ? () => {} : openRsvp}
           />
         ) : (
           <>
             <Text style={styles.muted}>
               Bu maçta katılımcı olarak görünmüyorsun; kod ile katıldıktan sonra durumunu buradan güncelleyebilirsin.
             </Text>
-            <PillButton title="Katılım Durumu" onPress={openRsvp} />
+            {!isOngoing ? <PillButton title="Katılım Durumu" onPress={openRsvp} /> : null}
           </>
         )}
         {match.selfReportEnabled && match.status !== 'finished' ? (

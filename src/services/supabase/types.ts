@@ -69,6 +69,7 @@ export interface MatchRow {
   created_at?: string;
   /** Omitted by match graph RPCs (payload trim); present on table-backed rows. */
   updated_at?: string;
+  rating_window_ends_at?: string | null;
 }
 
 export interface GroupRow {

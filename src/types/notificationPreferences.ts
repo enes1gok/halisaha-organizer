@@ -12,6 +12,9 @@ export type NotificationPreferences = {
     group_match_post_match_rating_reminder: boolean;
     group_match_match_result: boolean;
     group_match_streak_at_risk: boolean;
+    group_match_payment_morning_reminder: boolean;
+    group_match_payment_unpaid_summary_organizer: boolean;
+    group_match_roster_full_organizer: boolean;
   };
   quiet_hours: {
     enabled: boolean;
@@ -34,6 +37,9 @@ export function defaultNotificationPreferences(): NotificationPreferences {
       group_match_post_match_rating_reminder: true,
       group_match_match_result: true,
       group_match_streak_at_risk: true,
+      group_match_payment_morning_reminder: true,
+      group_match_payment_unpaid_summary_organizer: true,
+      group_match_roster_full_organizer: true,
     },
     quiet_hours: {
       enabled: false,
@@ -98,6 +104,18 @@ export function normalizeNotificationPreferences(raw: unknown): NotificationPref
         typeof typesIn.group_match_streak_at_risk === 'boolean'
           ? typesIn.group_match_streak_at_risk
           : base.types.group_match_streak_at_risk,
+      group_match_payment_morning_reminder:
+        typeof typesIn.group_match_payment_morning_reminder === 'boolean'
+          ? typesIn.group_match_payment_morning_reminder
+          : base.types.group_match_payment_morning_reminder,
+      group_match_payment_unpaid_summary_organizer:
+        typeof typesIn.group_match_payment_unpaid_summary_organizer === 'boolean'
+          ? typesIn.group_match_payment_unpaid_summary_organizer
+          : base.types.group_match_payment_unpaid_summary_organizer,
+      group_match_roster_full_organizer:
+        typeof typesIn.group_match_roster_full_organizer === 'boolean'
+          ? typesIn.group_match_roster_full_organizer
+          : base.types.group_match_roster_full_organizer,
     },
     quiet_hours: {
       enabled:

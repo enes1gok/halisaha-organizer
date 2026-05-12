@@ -20,7 +20,10 @@ type DeliveryType =
   | 'lineup_published'
   | 'post_match_rating_reminder'
   | 'match_result'
-  | 'streak_at_risk';
+  | 'streak_at_risk'
+  | 'payment_morning_reminder'
+  | 'payment_unpaid_summary_organizer'
+  | 'roster_full_organizer';
 
 type ClaimedDeliveryRow = {
   delivery_id: string;
@@ -66,6 +69,9 @@ type NotificationPreferences = {
     group_match_post_match_rating_reminder?: boolean;
     group_match_match_result?: boolean;
     group_match_streak_at_risk?: boolean;
+    group_match_payment_morning_reminder?: boolean;
+    group_match_payment_unpaid_summary_organizer?: boolean;
+    group_match_roster_full_organizer?: boolean;
   };
   quiet_hours?: {
     enabled?: boolean;
@@ -111,6 +117,9 @@ const PREF_KEY_BY_DELIVERY_TYPE: Record<
   post_match_rating_reminder: 'group_match_post_match_rating_reminder',
   match_result: 'group_match_match_result',
   streak_at_risk: 'group_match_streak_at_risk',
+  payment_morning_reminder: 'group_match_payment_morning_reminder',
+  payment_unpaid_summary_organizer: 'group_match_payment_unpaid_summary_organizer',
+  roster_full_organizer: 'group_match_roster_full_organizer',
 };
 
 /** Mirrors SQL `notification_delivery_allowed` + optional quiet-hours block at send time. */
@@ -296,6 +305,36 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
     return {
       title: 'Haftalık serin tehlikede',
       body: 'Bu hafta grubunda planlı maç yok — seriyi korumak için bir maç ayarla.',
+    };
+  }
+  if (delivery.type === 'payment_morning_reminder') {
+    const detail = [delivery.match_venue ?? '', formatMatchTime(delivery.match_starts_at)]
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(' • ');
+    return {
+      title: 'Bugün maç var',
+      body: detail
+        ? `${groupName} • ${detail} — nakit/notu unutma`
+        : `${groupName} grubunda bugün maç var — nakit/notu unutma`,
+    };
+  }
+  if (delivery.type === 'payment_unpaid_summary_organizer') {
+    return {
+      title: 'Ödenmemiş katılımcılar',
+      body: `${groupName} maçında henüz ödemesini yapmayan katılımcılar var`,
+    };
+  }
+  if (delivery.type === 'roster_full_organizer') {
+    const detail = [delivery.match_venue ?? '', formatMatchTime(delivery.match_starts_at)]
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(' • ');
+    return {
+      title: 'Kadro doldu',
+      body: detail
+        ? `${groupName} • ${detail} — kadro tamamlandı`
+        : `${groupName} grubundaki maçın kadrosu tamamlandı`,
     };
   }
   return {

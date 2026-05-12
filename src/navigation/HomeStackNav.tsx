@@ -6,9 +6,8 @@ import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
-import { MatchPostgameScreen } from '../screens/MatchPostgameScreen';
-import { MatchRatingsScreen } from '../screens/MatchRatingsScreen';
-import { MatchSummaryScreen } from '../screens/MatchSummaryScreen';
+import { MatchFinalScreen } from '../screens/MatchFinalScreen';
+import { MatchRatingFlowScreen } from '../screens/MatchRatingFlowScreen';
 import { getDefaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
 import type { HomeStackParamList } from './types';
 
@@ -44,19 +43,14 @@ export function HomeStackNav() {
         options={{ title: 'Kadro Kur' }}
       />
       <Stack.Screen
-        name="MatchPostgame"
-        component={MatchPostgameScreen}
-        options={{ title: 'Maç Sonrası' }}
-      />
-      <Stack.Screen
         name="MatchSummary"
-        component={MatchSummaryScreen}
-        options={{ title: 'Maçın özeti' }}
+        component={MatchFinalScreen}
+        options={{ title: 'Maç Sonucu' }}
       />
       <Stack.Screen
-        name="MatchRatings"
-        component={MatchRatingsScreen}
-        options={{ title: 'Oyuncu derecelendirme' }}
+        name="MatchRatingFlow"
+        component={MatchRatingFlowScreen}
+        options={{ title: 'Oyuncuları Derecelendir' }}
       />
     </Stack.Navigator>
   );

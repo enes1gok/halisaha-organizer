@@ -18,6 +18,10 @@ export interface MatchMotmRankDb {
 export interface MatchRatingPublicSummaryDb {
   players: MatchRatingPlayerSummaryDb[];
   motm: MatchMotmRankDb[];
+  /** ISO string: puanlama penceresinin kapanış zamanı (null = eski maç, pencere yok). */
+  rating_window_ends_at?: string | null;
+  /** true: pencere kapandı, sonuçlar herkes tarafından görülebilir. */
+  rating_window_closed?: boolean;
 }
 
 export interface PeerRatingInput {
@@ -39,6 +43,8 @@ export async function fetchMatchRatingPublicSummary(
   return {
     players: Array.isArray(raw.players) ? raw.players : [],
     motm: Array.isArray(raw.motm) ? raw.motm : [],
+    rating_window_ends_at: raw.rating_window_ends_at ?? null,
+    rating_window_closed: raw.rating_window_closed ?? false,
   };
 }
 

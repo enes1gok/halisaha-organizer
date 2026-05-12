@@ -5,18 +5,16 @@ export type HomeStackParamList = {
   JoinMatch: undefined;
   MatchDetail: { matchId: string };
   LineupBuilder: { matchId: string };
-  MatchPostgame: { matchId: string };
   MatchSummary: { matchId: string };
-  MatchRatings: { matchId: string };
+  MatchRatingFlow: { matchId: string };
 };
 
 export type MyMatchesStackParamList = {
   MyMatchesMain: undefined;
   MatchDetail: { matchId: string };
   LineupBuilder: { matchId: string };
-  MatchPostgame: { matchId: string };
   MatchSummary: { matchId: string };
-  MatchRatings: { matchId: string };
+  MatchRatingFlow: { matchId: string };
 };
 
 export type ProfileStackParamList = {
@@ -46,9 +44,8 @@ export type GroupsStackParamList = {
   JoinGroup: undefined;
   MatchDetail: { matchId: string };
   LineupBuilder: { matchId: string };
-  MatchPostgame: { matchId: string };
   MatchSummary: { matchId: string };
-  MatchRatings: { matchId: string };
+  MatchRatingFlow: { matchId: string };
 };
 
 export type RootTabParamList = {

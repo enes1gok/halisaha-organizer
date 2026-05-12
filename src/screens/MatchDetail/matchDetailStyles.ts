@@ -51,6 +51,27 @@ function buildSheet(colors: ThemeColors) {
       fontWeight: '700' as const,
       letterSpacing: letterSpacing.wide,
     },
+    ongoingBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.accentMuted,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      marginTop: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    ongoingBadgeTxt: {
+      ...typography.micro,
+      color: colors.accent,
+      fontWeight: '700' as const,
+      letterSpacing: letterSpacing.wide,
+    },
+    rsvpLockedBanner: {
+      ...typography.caption,
+      color: colors.textMuted,
+      fontStyle: 'italic' as const,
+    },
     heroScore: {
       ...typography.body,
       color: colors.textMuted,

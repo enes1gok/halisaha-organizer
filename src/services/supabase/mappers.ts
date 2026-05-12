@@ -122,6 +122,7 @@ export function rowsToMatch(
     status: row.status as MatchStatus,
     result,
     selfReports: domainSelf,
+    ratingWindowEndsAt: row.rating_window_ends_at ?? undefined,
   };
 }
 

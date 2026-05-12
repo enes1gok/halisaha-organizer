@@ -59,4 +59,6 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Oy yalnızca bitmiş maçlarda kullanılabilir.',
   'errors.rpc.motmPlayerNotOnField':
     'Seçilen oyuncu bu maçta yer almıyor.',
+  'errors.rpc.ratingWindowClosed':
+    'Puanlama penceresi kapandı. Sonuçlar yakında açıklanacak.',
 };

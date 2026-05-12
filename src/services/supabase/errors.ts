@@ -162,6 +162,10 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.motmPlayerNotOnField',
     code: 'VALIDATION',
   },
+  ERR_RATING_WINDOW_CLOSED: {
+    key: 'errors.rpc.ratingWindowClosed',
+    code: 'VALIDATION',
+  },
 };
 
 export function isAppError(error: unknown): error is AppError {
