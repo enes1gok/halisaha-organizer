@@ -61,4 +61,6 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Seçilen oyuncu bu maçta yer almıyor.',
   'errors.rpc.ratingWindowClosed':
     'Puanlama penceresi kapandı. Sonuçlar yakında açıklanacak.',
+  'errors.rpc.matchRosterFull':
+    'Maç kadrosu doldu. Artık bu maça katılamazsın.',
 };

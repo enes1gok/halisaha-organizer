@@ -166,6 +166,10 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.ratingWindowClosed',
     code: 'VALIDATION',
   },
+  ERR_MATCH_ROSTER_FULL: {
+    key: 'errors.rpc.matchRosterFull',
+    code: 'VALIDATION',
+  },
 };
 
 export function isAppError(error: unknown): error is AppError {

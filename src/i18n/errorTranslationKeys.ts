@@ -33,4 +33,5 @@ export type ErrorTranslationKey =
   | 'errors.rpc.motmInvalidPick'
   | 'errors.rpc.motmFinishedOnly'
   | 'errors.rpc.motmPlayerNotOnField'
-  | 'errors.rpc.ratingWindowClosed';
+  | 'errors.rpc.ratingWindowClosed'
+  | 'errors.rpc.matchRosterFull';

@@ -21,6 +21,25 @@ describe('normalizeNotificationPreferences', () => {
     expect(n.types.group_match_reminder).toBe(true);
     expect(n.quiet_hours.enabled).toBe(false);
   });
+
+  it('new Faz3+4 keys default to true', () => {
+    const n = normalizeNotificationPreferences({});
+    expect(n.types.group_match_payment_morning_reminder).toBe(true);
+    expect(n.types.group_match_payment_unpaid_summary_organizer).toBe(true);
+    expect(n.types.group_match_roster_full_organizer).toBe(true);
+  });
+
+  it('new Faz3+4 keys can be overridden', () => {
+    const n = normalizeNotificationPreferences({
+      types: {
+        group_match_payment_morning_reminder: false,
+        group_match_roster_full_organizer: false,
+      },
+    });
+    expect(n.types.group_match_payment_morning_reminder).toBe(false);
+    expect(n.types.group_match_roster_full_organizer).toBe(false);
+    expect(n.types.group_match_payment_unpaid_summary_organizer).toBe(true);
+  });
 });
 
 describe('isValidQuietHourTime', () => {
