@@ -17,9 +17,11 @@ import Animated, {
   Extrapolation,
   interpolate,
   runOnJS,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
@@ -111,17 +113,21 @@ function DraggableCard({
   testID,
   onDragActivated,
   onDragFinalize,
+  onHoverMove,
 }: {
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
   testID: string;
   onDragActivated?: (playerId: string) => void;
   onDragFinalize?: () => void;
+  onHoverMove?: (absX: number, absY: number) => void;
 }) {
   const styles = useLineupStyles();
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const dragging = useSharedValue(0);
+  const lastHoverX = useSharedValue(0);
+  const lastHoverY = useSharedValue(0);
   const { isLarge } = useFontScale();
 
   const pan = Gesture.Pan()
@@ -135,6 +141,15 @@ function DraggableCard({
       dragging.value = 1;
       tx.value = e.translationX;
       ty.value = e.translationY;
+      if (onHoverMove) {
+        const dx = e.absoluteX - lastHoverX.value;
+        const dy = e.absoluteY - lastHoverY.value;
+        if (dx * dx + dy * dy > 64) {
+          lastHoverX.value = e.absoluteX;
+          lastHoverY.value = e.absoluteY;
+          runOnJS(onHoverMove)(e.absoluteX, e.absoluteY);
+        }
+      }
     })
     .onEnd((e) => {
       runOnJS(onDragEnd)(player.id, e.absoluteX, e.absoluteY);
@@ -188,15 +203,79 @@ function DraggableCard({
   );
 }
 
+const GHOST_HALF_W = 35;
+const GHOST_HALF_H = 50;
+
+/**
+ * Floating ghost card rendered at screenFormation root level during pool drag.
+ * Bypasses ScrollView clipping and elevation stacking that would hide the dragged card.
+ */
+function PoolDragGhost({
+  player,
+  ghostX,
+  ghostY,
+  ghostOpacity,
+  containerOriginX,
+  containerOriginY,
+}: {
+  player: Player;
+  ghostX: SharedValue<number>;
+  ghostY: SharedValue<number>;
+  ghostOpacity: SharedValue<number>;
+  containerOriginX: SharedValue<number>;
+  containerOriginY: SharedValue<number>;
+}) {
+  const styles = useLineupStyles();
+  const { colors } = useTheme();
+
+  const ghostStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    left: ghostX.value - containerOriginX.value - GHOST_HALF_W,
+    top: ghostY.value - containerOriginY.value - GHOST_HALF_H,
+    zIndex: 999,
+    elevation: 20,
+    opacity: ghostOpacity.value,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  }));
+
+  const posColor = colors.position[player.position] ?? colors.textMuted;
+  const posLabel = POSITION_LABEL[player.position] ?? player.position;
+  const shortName =
+    player.name.length > 9 ? (player.name.split(' ')[0] ?? player.name) : player.name;
+
+  return (
+    <Animated.View style={[styles.columnItem, ghostStyle]} pointerEvents="none">
+      <View style={[styles.columnAvatarWrap, { borderColor: colors.accent }]}>
+        <PlayerAvatar name={player.name} uri={player.photoUri} size={40} />
+      </View>
+      <Text style={styles.columnName} numberOfLines={2}>
+        {shortName}
+      </Text>
+      <View style={styles.columnPosRow}>
+        <View style={[styles.columnPosDot, { backgroundColor: posColor }]} />
+        <Text style={[styles.columnPosLabel, { color: posColor }]}>{posLabel}</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
 /**
  * Vertical avatar card shown in the right player column.
  * Only rendered for bench (unplaced) players — ring is always accent green.
+ * Ghost SharedValues are updated on the UI thread (no runOnJS) for 60fps drag tracking.
  */
 function PlayerColumnItem({
   player,
   onDragEnd,
   onDragActivated,
   onDragFinalize,
+  onHoverMove,
+  poolGhostX,
+  poolGhostY,
+  poolGhostOpacity,
   testID,
 }: {
   player: Player;
@@ -204,22 +283,43 @@ function PlayerColumnItem({
   testID: string;
   onDragActivated?: (playerId: string) => void;
   onDragFinalize?: () => void;
+  onHoverMove?: (absX: number, absY: number) => void;
+  poolGhostX: SharedValue<number>;
+  poolGhostY: SharedValue<number>;
+  poolGhostOpacity: SharedValue<number>;
 }) {
   const styles = useLineupStyles();
   const { colors } = useTheme();
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const dragging = useSharedValue(0);
+  const lastHoverX = useSharedValue(0);
+  const lastHoverY = useSharedValue(0);
 
   const pan = Gesture.Pan()
     .activateAfterLongPress(LONG_PRESS_MS)
-    .onStart(() => {
+    .onStart((e) => {
+      dragging.value = 1;
+      poolGhostX.value = e.absoluteX;
+      poolGhostY.value = e.absoluteY;
+      poolGhostOpacity.value = withTiming(1, { duration: 80 });
       if (onDragActivated) runOnJS(onDragActivated)(player.id);
     })
     .onUpdate((e) => {
       dragging.value = 1;
       tx.value = e.translationX;
       ty.value = e.translationY;
+      poolGhostX.value = e.absoluteX;
+      poolGhostY.value = e.absoluteY;
+      if (onHoverMove) {
+        const dx = e.absoluteX - lastHoverX.value;
+        const dy = e.absoluteY - lastHoverY.value;
+        if (dx * dx + dy * dy > 64) {
+          lastHoverX.value = e.absoluteX;
+          lastHoverY.value = e.absoluteY;
+          runOnJS(onHoverMove)(e.absoluteX, e.absoluteY);
+        }
+      }
     })
     .onEnd((e) => {
       runOnJS(onDragEnd)(player.id, e.absoluteX, e.absoluteY);
@@ -228,6 +328,7 @@ function PlayerColumnItem({
       dragging.value = withSpring(0, Springs.interactive);
     })
     .onFinalize(() => {
+      poolGhostOpacity.value = withTiming(0, { duration: 100 });
       if (onDragFinalize) runOnJS(onDragFinalize)();
       tx.value = withSpring(0, Springs.interactive);
       ty.value = withSpring(0, Springs.interactive);
@@ -245,6 +346,7 @@ function PlayerColumnItem({
     shadowOpacity: dragging.value ? 0.4 : 0,
     shadowRadius: dragging.value ? 12 : 0,
     shadowOffset: { width: 0, height: dragging.value ? 4 : 0 },
+    opacity: interpolate(dragging.value, [0, 1], [1, 0], Extrapolation.CLAMP),
   }));
 
   const posColor = colors.position[player.position] ?? colors.textMuted;
@@ -299,9 +401,19 @@ export function LineupBuilderScreen() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
+  const [hoveredZoneKey, setHoveredZoneKey] = useState<string | null>(null);
+  const [isDraggingFromPool, setIsDraggingFromPool] = useState(false);
 
   const reduceMotion = useReduceMotion();
   const { showApiErrorToast, showValidationToast, showToast } = useUserFeedback();
+
+  // Ghost overlay SharedValues (worklet'ten güncellenir — JS roundtrip yok)
+  const poolGhostX = useSharedValue(0);
+  const poolGhostY = useSharedValue(0);
+  const poolGhostOpacity = useSharedValue(0);
+  const containerOriginX = useSharedValue(0);
+  const containerOriginY = useSharedValue(0);
+  const screenFormationRef = useRef<View>(null);
 
   const zoneA = useRef<View>(null);
   const zoneB = useRef<View>(null);
@@ -520,8 +632,21 @@ export function LineupBuilderScreen() {
     setDraggingPlayerId(playerId);
   }, []);
 
+  const onDragActivatedFromPool = useCallback((playerId: string) => {
+    void selectionTick();
+    setDraggingPlayerId(playerId);
+    setIsDraggingFromPool(true);
+  }, []);
+
+  const onHoverMove = useCallback((absX: number, absY: number) => {
+    const key = pickFormationZoneOrdered(formationZonesRef.current, absX, absY);
+    setHoveredZoneKey((prev) => (prev === key ? prev : key));
+  }, []);
+
   const onFormationDragFinalize = useCallback(() => {
     setDraggingPlayerId(null);
+    setHoveredZoneKey(null);
+    setIsDraggingFromPool(false);
   }, []);
 
   const onResetLineup = useCallback(() => {
@@ -870,6 +995,7 @@ export function LineupBuilderScreen() {
     side: 'A' | 'B',
     highlightEmptySlots: boolean,
     horizontal: boolean,
+    currentHoveredZoneKey: string | null,
   ) => (
     <PitchHalfField
       formation={formation}
@@ -877,6 +1003,8 @@ export function LineupBuilderScreen() {
       side={side}
       dimmed={false}
       highlightEmptySlots={highlightEmptySlots}
+      hoveredZoneKey={currentHoveredZoneKey}
+      stretch={horizontal}
       reduceMotion={reduceMotion}
       zonesRef={formationZonesRef}
       getPlayer={getPlayer}
@@ -890,6 +1018,7 @@ export function LineupBuilderScreen() {
               onDragEnd={handleDropFormation}
               onDragActivated={onDragActivated}
               onDragFinalize={onFormationDragFinalize}
+              onHoverMove={onHoverMove}
               testID={slotTestId}
             />
           </View>
@@ -905,9 +1034,19 @@ export function LineupBuilderScreen() {
   );
 
   if (formationMode && formationsForCount.length > 0 && selectedFormation) {
+    const poolDragPlayer = isDraggingFromPool && draggingPlayerId ? getPlayer(draggingPlayerId) : null;
     return (
       // screenFormation is a row: leftSide (header+pitches+actions) + full-height player column
-      <View style={styles.screenFormation}>
+      <View
+        ref={screenFormationRef}
+        style={styles.screenFormation}
+        onLayout={() => {
+          screenFormationRef.current?.measureInWindow((x, y) => {
+            containerOriginX.value = x;
+            containerOriginY.value = y;
+          });
+        }}
+      >
 
         {/* ── Left side: header + pitches + action bar ── */}
         <View style={styles.leftSide}>
@@ -950,11 +1089,11 @@ export function LineupBuilderScreen() {
               <View style={styles.pitchColumns}>
                 <View style={styles.pitchCol}>
                   <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.B}</Text>
-                  {renderPitch(selectedFormation, slotsB, 'B', draggingPlayerId != null, true)}
+                  {renderPitch(selectedFormation, slotsB, 'B', draggingPlayerId != null, true, hoveredZoneKey)}
                 </View>
                 <View style={styles.pitchCol}>
                   <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.A}</Text>
-                  {renderPitch(selectedFormation, slotsA, 'A', draggingPlayerId != null, true)}
+                  {renderPitch(selectedFormation, slotsA, 'A', draggingPlayerId != null, true, hoveredZoneKey)}
                 </View>
               </View>
             </View>
@@ -1013,8 +1152,12 @@ export function LineupBuilderScreen() {
                   key={id}
                   player={p}
                   onDragEnd={handleDropFormation}
-                  onDragActivated={onDragActivated}
+                  onDragActivated={onDragActivatedFromPool}
                   onDragFinalize={onFormationDragFinalize}
+                  onHoverMove={onHoverMove}
+                  poolGhostX={poolGhostX}
+                  poolGhostY={poolGhostY}
+                  poolGhostOpacity={poolGhostOpacity}
                   testID={`lineup:player-card:${id}`}
                 />
               );
@@ -1024,6 +1167,18 @@ export function LineupBuilderScreen() {
             ) : null}
           </ScrollView>
         </FormationDropZone>
+
+        {/* Ghost overlay for pool → pitch drag — renders above all content, bypasses ScrollView clip */}
+        {poolDragPlayer ? (
+          <PoolDragGhost
+            player={poolDragPlayer}
+            ghostX={poolGhostX}
+            ghostY={poolGhostY}
+            ghostOpacity={poolGhostOpacity}
+            containerOriginX={containerOriginX}
+            containerOriginY={containerOriginY}
+          />
+        ) : null}
 
         <ConfirmationModal
           visible={confirmOpen}
@@ -1172,15 +1327,18 @@ const useLineupStyles = makeStyles((t) =>
       paddingBottom: 2,
     },
     pitchesContent: {
+      flex: 1,
       paddingHorizontal: spacing.xs,
       paddingBottom: spacing.xs,
     },
     // Pitches stacked vertically in landscape (horizontal) mode — no scroll
     pitchColumns: {
+      flex: 1,
       flexDirection: 'column',
       gap: spacing.sm,
     },
     pitchCol: {
+      flex: 1,
       gap: spacing.xs,
     },
 
@@ -1345,6 +1503,18 @@ const useLineupStyles = makeStyles((t) =>
     actions: {
       gap: spacing.sm,
       paddingBottom: spacing.lg,
+    },
+
+    // ── Reset header button ──
+    resetBtn: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    resetBtnText: {
+      ...typography.body,
+      color: t.colors.danger,
     },
 
     // ── Shared ──

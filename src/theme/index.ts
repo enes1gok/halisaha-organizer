@@ -40,6 +40,7 @@ export const darkColors = {
     lineStrong: 'rgba(255, 255, 255, 0.38)',
     slotRing: 'rgba(255, 255, 255, 0.35)',
     slotRingGlow: 'rgba(0, 210, 106, 0.55)',
+    slotRingHover: 'rgba(0, 210, 106, 0.90)',
     slotFill: 'rgba(0, 0, 0, 0.18)',
   },
   /** Liderlik tablosu podyum — madalya vurgusu (koyu tema) */
@@ -105,6 +106,7 @@ export const lightColors: ColorPalette = {
     lineStrong: 'rgba(15, 36, 24, 0.5)',
     slotRing: 'rgba(15, 36, 24, 0.38)',
     slotRingGlow: 'rgba(0, 130, 77, 0.45)',
+    slotRingHover: 'rgba(0, 130, 77, 0.85)',
     slotFill: 'rgba(255, 255, 255, 0.55)',
   },
   /** Liderlik tablosu podyum — madalya vurgusu (açık tema) */

@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import type { LineupFormation, LineupSlotDef } from '../data/lineupFormations';
@@ -13,6 +14,7 @@ import { resolveSlotAnchor } from '../data/lineupFormations';
 import { radius, spacing } from '../theme';
 import { makeStyles, useThemeColors } from '../theme/ThemeContext';
 import type { Player } from '../types/domain';
+import { Springs } from '../utils/animations';
 import { FormationDropZone, type ZoneMap } from './FormationDropZone';
 
 /** Chip merkezini anchor'a hizalamak için yarı boyutlar (px). */
@@ -26,6 +28,10 @@ type Props = {
   dimmed?: boolean;
   /** Boş slotlarda sürükleme hedefi vurgusu */
   highlightEmptySlots?: boolean;
+  /** Şu an sürükleme ile hedeflenen slot anahtarı (ör. "A:2") */
+  hoveredZoneKey?: string | null;
+  /** flex: 1 ile ebeveyn boyutuna uyar; horizontal modda aspectRatio kısıtını kaldırır */
+  stretch?: boolean;
   reduceMotion?: boolean;
   zonesRef: React.MutableRefObject<ZoneMap>;
   getPlayer: (id: string) => Player | undefined;
@@ -41,48 +47,58 @@ type Props = {
 
 function SlotDropHighlight({
   empty,
-  active,
+  dragActive,
+  hovered,
   reduceMotion,
   children,
 }: {
   empty: boolean;
-  active: boolean;
+  dragActive: boolean;
+  hovered: boolean;
   reduceMotion: boolean;
   children: React.ReactNode;
 }) {
   const styles = usePitchStyles();
   const colors = useThemeColors();
-  const pulse = useSharedValue(0);
+  const idlePulse = useSharedValue(0);
+  const hoverGlow = useSharedValue(0);
 
   useEffect(() => {
-    if (!active || !empty || reduceMotion) {
-      pulse.value = 0;
+    if (!dragActive || !empty || reduceMotion) {
+      idlePulse.value = 0;
+      hoverGlow.value = 0;
       return;
     }
-    pulse.value = withRepeat(
-      withTiming(1, { duration: 900, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-  }, [active, empty, reduceMotion, pulse]);
+    if (hovered) {
+      idlePulse.value = 0;
+      hoverGlow.value = withSpring(1, Springs.snappy);
+    } else {
+      hoverGlow.value = withSpring(0, Springs.snappy);
+      idlePulse.value = withRepeat(
+        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true,
+      );
+    }
+  }, [dragActive, hovered, empty, reduceMotion, idlePulse, hoverGlow]);
 
   const ringStyle = useAnimatedStyle(() => {
-    if (!active || !empty) {
-      return {
-        borderColor: colors.pitch.slotRing,
-        shadowOpacity: 0,
-      };
+    if (!dragActive || !empty) {
+      return { borderColor: colors.pitch.slotRing, shadowOpacity: 0 };
     }
     if (reduceMotion) {
       return {
-        borderColor: colors.pitch.slotRingGlow,
-        shadowOpacity: 0.35,
+        borderColor: hovered ? colors.pitch.slotRingHover : colors.pitch.slotRing,
+        shadowOpacity: hovered ? 0.60 : 0.20,
+        borderWidth: hovered ? 2.5 : 2,
       };
     }
-    const t = pulse.value;
+    const h = hoverGlow.value;
+    const p = idlePulse.value;
     return {
-      borderColor: t > 0.5 ? colors.pitch.slotRingGlow : colors.pitch.slotRing,
-      shadowOpacity: 0.2 + t * 0.35,
+      borderColor: h > 0.5 ? colors.pitch.slotRingHover : colors.pitch.slotRing,
+      shadowOpacity: 0.08 + p * 0.12 + h * 0.45,
+      borderWidth: 2 + h * 1,
     };
   });
 
@@ -91,7 +107,6 @@ function SlotDropHighlight({
       style={[
         styles.slotRing,
         empty ? ringStyle : styles.slotRingFilled,
-        empty && active && reduceMotion && styles.slotRingReduceMotion,
       ]}
     >
       {children}
@@ -150,6 +165,8 @@ export function PitchHalfField({
   side,
   dimmed,
   highlightEmptySlots = false,
+  hoveredZoneKey = null,
+  stretch = false,
   reduceMotion = false,
   zonesRef,
   getPlayer,
@@ -160,9 +177,11 @@ export function PitchHalfField({
   const styles = usePitchStyles();
   const { pitch } = useThemeColors();
 
-  // aspectRatio ve minHeight yatay modda override edilir
+  // pitchOuter base'inde aspectRatio yok — tüm boyut kısıtları burada yönetilir
   const containerOverride = horizontal
-    ? ({ aspectRatio: 4 / 3, minHeight: 120 } as const)
+    ? stretch
+      ? ({ flex: 1, minHeight: 80 } as const)
+      : ({ aspectRatio: 4 / 3, minHeight: 120 } as const)
     : ({ aspectRatio: 3 / 4, minHeight: 200 } as const);
 
   return (
@@ -212,7 +231,8 @@ export function PitchHalfField({
             >
               <SlotDropHighlight
                 empty={empty}
-                active={highlightEmptySlots}
+                dragActive={highlightEmptySlots}
+                hovered={hoveredZoneKey === zoneKey}
                 reduceMotion={reduceMotion}
               >
                 {renderSlotContent(slot, p, slotTestId)}
@@ -230,8 +250,7 @@ const usePitchStyles = makeStyles((t) =>
     pitchOuter: {
       position: 'relative',
       width: '100%',
-      aspectRatio: 3 / 4,
-      minHeight: 200,
+      // aspectRatio ve minHeight containerOverride içinde yönetilir
       borderRadius: radius.card,
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.12)',
@@ -413,9 +432,6 @@ const usePitchStyles = makeStyles((t) =>
       borderColor: 'rgba(255,255,255,0.2)',
       backgroundColor: 'rgba(0,0,0,0.12)',
       shadowOpacity: 0,
-    },
-    slotRingReduceMotion: {
-      borderWidth: 2,
     },
   }),
 );
