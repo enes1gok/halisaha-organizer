@@ -25,6 +25,30 @@ function buildSheet(colors: ThemeColors) {
       borderBottomColor: colors.border,
       gap: spacing.sm,
     },
+    heroHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+    },
+    heroMain: {
+      flex: 1,
+    },
+    heroRsvp: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      gap: spacing.xs + 2,
+      marginTop: -spacing.xs,
+    },
+    heroRsvpText: {
+      ...typography.micro,
+      fontSize: 13,
+      fontWeight: '700',
+    },
     heroDate: {
       ...typography.body,
       color: colors.textMuted,

@@ -368,7 +368,13 @@ export function MatchDetailScreen() {
 
   return (
     <View style={matchDetailStyles.screen}>
-      <MatchDetailHero match={match} countdownLabel={countdown} effectiveStatus={effectiveStatus} />
+      <MatchDetailHero
+        match={match}
+        countdownLabel={countdown}
+        effectiveStatus={effectiveStatus}
+        currentUserRsvp={currentUserRsvp}
+        onPressRsvp={openRsvp}
+      />
       <View style={matchDetailStyles.segmentWrap}>
         <MatchDetailSegmentControl value={tab} onChange={setTab} />
       </View>

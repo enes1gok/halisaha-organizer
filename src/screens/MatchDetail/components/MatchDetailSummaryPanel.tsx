@@ -239,47 +239,9 @@ export function MatchDetailSummaryPanel({
         </View>
       ) : null}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Katılım durumu</Text>
-        {isOngoing ? (
-          <Text style={styles.rsvpLockedBanner}>Maç başladı — katılım durumu kilitleniyor.</Text>
-        ) : null}
-        {currentUserRsvp === 'going' ? (
-          <RsvpOptionButton
-            label="Gidiyorum"
-            iconName="checkmark-circle"
-            baseColor={colors.accent}
-            textColorOnFill={colors.textOnAccent}
-            isSelected={true}
-            onPress={isOngoing ? () => {} : openRsvp}
-          />
-        ) : currentUserRsvp === 'maybe' ? (
-          <RsvpOptionButton
-            label="Belki"
-            iconName="help-circle"
-            baseColor={colors.text}
-            textColorOnFill={colors.background}
-            isSelected={true}
-            onPress={isOngoing ? () => {} : openRsvp}
-          />
-        ) : currentUserRsvp === 'notGoing' ? (
-          <RsvpOptionButton
-            label="Gelmiyorum"
-            iconName="close-circle"
-            baseColor={colors.danger}
-            textColorOnFill={colors.textOnAccent}
-            isSelected={true}
-            onPress={isOngoing ? () => {} : openRsvp}
-          />
-        ) : (
-          <>
-            <Text style={styles.muted}>
-              Bu maçta katılımcı olarak görünmüyorsun; kod ile katıldıktan sonra durumunu buradan güncelleyebilirsin.
-            </Text>
-            {!isOngoing ? <PillButton title="Katılım Durumu" onPress={openRsvp} /> : null}
-          </>
-        )}
-        {match.selfReportEnabled && match.status !== 'finished' ? (
+      {match.selfReportEnabled && match.status !== 'finished' && currentUserRsvp === 'going' ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Maç İstatistikleri</Text>
           <View style={styles.rowWrap}>
             <PillButton
               title="Gol Attım"
@@ -294,8 +256,8 @@ export function MatchDetailSummaryPanel({
               style={styles.flex}
             />
           </View>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
     </>
   );
 }
