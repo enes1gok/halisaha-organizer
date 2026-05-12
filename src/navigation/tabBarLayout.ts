@@ -18,15 +18,21 @@ export const HOME_ACTION_STRIP_HEIGHT = 72;
 export const HOME_ACTION_STRIP_GAP = 8;
 
 /**
- * Extra bottom padding for Home FlatList so content clears the fixed action strip
- * (tab bar is outside the scene; only the strip overlaps scroll area).
+ * Bottom distance of the action strip from screen bottom — positions it flush
+ * against the floating tab bar pill. TAB_BAR_OVERFLOW_TOP (8px shadow area)
+ * provides the natural breathing gap between strip and pill.
  */
-export const HOME_LIST_PADDING_BOTTOM_EXTRA =
-  HOME_ACTION_STRIP_HEIGHT + HOME_ACTION_STRIP_GAP + 8 + 16;
+export function getHomeActionStripBottom(insetsBottom: number): number {
+  return (
+    TAB_BAR_FLOATING_BLOCK_HEIGHT +
+    TAB_BAR_FLOAT_MARGIN_BOTTOM +
+    Math.max(insetsBottom, 8)
+  );
+}
 
-/** Home liste alt dolgusu + home indicator (`useSafeAreaInsets().bottom`). */
+/** Home liste alt dolgusu — içerik hem şerit hem de tab bar'ın altında kalacak şekilde hesaplanır. */
 export function getHomeListPaddingBottom(insetsBottom: number): number {
-  return HOME_LIST_PADDING_BOTTOM_EXTRA + insetsBottom;
+  return getHomeActionStripBottom(insetsBottom) + HOME_ACTION_STRIP_HEIGHT + HOME_ACTION_STRIP_GAP + 16;
 }
 
 /** Bottom padding for FlatList/ScrollView on tab screens that do not pin a home action strip. */

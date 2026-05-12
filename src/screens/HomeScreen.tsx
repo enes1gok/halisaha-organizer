@@ -30,7 +30,7 @@ import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { countGoing } from '../utils/matchRoster';
 import { getLastFinishedMatchForPlayer } from '../utils/matchOutcome';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
-import { getHomeListPaddingBottom } from '../navigation/tabBarLayout';
+import { getHomeActionStripBottom, getHomeListPaddingBottom } from '../navigation/tabBarLayout';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
@@ -130,7 +130,7 @@ export function HomeScreen() {
           <HomeLastMatchSkeleton />
           <SkeletonList count={3} renderItem={() => <MatchCardSkeleton />} />
         </View>
-        <View style={[styles.actionStrip, { bottom: spacing.sm + insets.bottom }]} pointerEvents="none">
+        <View style={[styles.actionStrip, { bottom: getHomeActionStripBottom(insets.bottom) }]} pointerEvents="none">
           <HomeActionStripSkeleton />
         </View>
       </View>
@@ -174,7 +174,7 @@ export function HomeScreen() {
         }
       />
 
-      <View style={[styles.actionStrip, { bottom: spacing.sm + insets.bottom }]} pointerEvents="box-none">
+      <View style={[styles.actionStrip, { bottom: getHomeActionStripBottom(insets.bottom) }]} pointerEvents="box-none">
         <HomeActionCard
           onJoinPress={() => navigation.navigate('JoinMatch')}
           onCreatePress={() => navigation.navigate('CreateTab')}

@@ -1,6 +1,48 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Halisaha Organizer — Project constitution
 
 Authoritative static context for this repo. Read this file every conversation.
+
+## Commands
+
+```bash
+# Run the app (Expo Dev Client required on device/simulator)
+npm run start:dev          # start with dev client
+npm run start:dev:clear    # start with cleared Metro cache
+npm run ios                # build + run on iOS simulator
+npm run android            # build + run on Android emulator
+
+# Tests
+npm test                   # run all Jest unit tests
+npm run test:watch         # watch mode
+npm run test:rls:sql       # pgTAP RLS tests (requires: supabase start)
+npm run test:rls:integration  # Jest integration tests against local Supabase
+npm run test:rls           # both SQL + integration (full RLS suite)
+
+# Lint / style guardrails
+npm run lint:styles        # check for hardcoded hex colors and inline styles in changed files
+
+# Supabase local development
+npx supabase start         # start local Supabase stack
+npx supabase db reset      # reset DB and apply all migrations
+npx supabase migration new <name>   # scaffold new migration
+eval "$(npx supabase status -o env)"  # export local SUPABASE_URL + keys for integration tests
+```
+
+**Run a single test file:**
+```bash
+npx jest src/store/__tests__/someSlice.test.ts
+npx jest --testNamePattern="should compute stats"
+```
+
+**RLS integration test env setup** (one-time per shell):
+```bash
+eval "$(npx supabase status -o env)"
+export SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+```
 
 ## App identity
 
