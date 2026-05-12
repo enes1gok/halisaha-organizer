@@ -6,9 +6,9 @@ import type { RemoteHydrateOpts } from '../types/remoteHydration';
  * Ayrıca sunucu durumu + istemci önbelleği `RemoteHydrateOpts.force` ve store eylemleriyle birlikte yönetilir;
  * React Query ancak sayfa bazlı otomatik yeniden deneme / penceresi odak refetch gibi gereksinimler netleşirse değerlendirilmelidir.
  */
-const MATCH_TTL_MS = 60_000;
-const GROUP_TTL_MS = 60_000;
-const HYDRATION_TIMEOUT_MS = 12_000;
+const MATCH_TTL_MS = 120_000;
+const GROUP_TTL_MS = 120_000;
+const HYDRATION_TIMEOUT_MS = 8_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout>;

@@ -19,7 +19,7 @@ import {
   submitMatchResultRpc,
 } from '../services/supabase/matches';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
-import type { Match, MatchStatus, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
+import type { Match, MatchStatus, Player, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import type { CreateMatchInput } from '../store/types';
@@ -27,6 +27,7 @@ import type { RemoteHydrateOpts } from '../types/remoteHydration';
 import { AppError, createAuthRequiredError, createNotFoundError } from '../services/supabase/errors';
 import { rethrowUseCaseError } from './errors';
 import { runGatedMatchesHydration } from './remoteHydrationGate';
+import { withOptimisticMatch } from './optimisticMutation';
 
 type MatchesDeps = {
   getRemoteUserId: () => string | null;
@@ -50,6 +51,10 @@ type MatchesDeps = {
   unlockLocalLineup: (matchId: string) => void;
   setLocalMatchStatus: (matchId: string, status: MatchStatus) => void;
   submitLocalScore: (matchId: string, result: ScoreResult) => void;
+  getMatchesSnapshot: () => Match[];
+  restoreMatchesSnapshot: (snapshot: Match[]) => void;
+  getPlayersSnapshot: () => Player[];
+  restorePlayersSnapshot: (snapshot: Player[]) => void;
 };
 
 export async function hydrateRemoteMatchesUseCase(
@@ -145,41 +150,35 @@ export async function setRsvpUseCase(
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
     const uid = deps.getRemoteUserId();
     const patch = () => updateMatchAttendeeRemote(matchId, playerId, { status });
-
-    try {
-      await patch();
-    } catch (e) {
-      if (
-        e instanceof AppError &&
-        e.code === 'NOT_FOUND' &&
-        uid &&
-        playerId === uid
-      ) {
-        const m = deps.getLocalMatch(matchId);
-        if (__DEV__) {
-          console.warn('[setRsvpUseCase] attendee row missing; attempting join heal', {
-            matchId,
-            playerId,
-            attendeePlayerIds: m?.attendees?.map((a) => a.playerId),
-          });
-        }
-        if (m?.joinCode) {
-          const mid = await joinMatchByJoinCodeRpc(m.joinCode);
-          if (mid === matchId) {
-            await patch();
-          } else {
-            throw e;
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.setLocalRsvp(matchId, playerId, status),
+      rpc: async () => {
+        try {
+          await patch();
+        } catch (e) {
+          if (e instanceof AppError && e.code === 'NOT_FOUND' && uid && playerId === uid) {
+            const m = deps.getLocalMatch(matchId);
+            if (__DEV__) {
+              console.warn('[setRsvpUseCase] attendee row missing; attempting join heal', {
+                matchId,
+                playerId,
+                attendeePlayerIds: m?.attendees?.map((a) => a.playerId),
+              });
+            }
+            if (m?.joinCode) {
+              const mid = await joinMatchByJoinCodeRpc(m.joinCode);
+              if (mid === matchId) {
+                await patch();
+                return;
+              }
+            }
           }
-        } else {
           throw e;
         }
-      } else {
-        throw e;
-      }
-    }
-
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+      },
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.setLocalRsvp(matchId, playerId, status);
@@ -193,9 +192,12 @@ export async function setPaidUseCase(
   actorId: string,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await updateMatchAttendeeRemote(matchId, playerId, { paid });
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.setLocalPaid(matchId, playerId, paid, actorId),
+      rpc: () => updateMatchAttendeeRemote(matchId, playerId, { paid }),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.setLocalPaid(matchId, playerId, paid, actorId);
@@ -207,9 +209,12 @@ export async function setSelfReportEnabledUseCase(
   enabled: boolean,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await updateMatchOrganizerFieldsRemote(matchId, { self_report_enabled: enabled });
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.setLocalSelfReportEnabled(matchId, enabled),
+      rpc: () => updateMatchOrganizerFieldsRemote(matchId, { self_report_enabled: enabled }),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.setLocalSelfReportEnabled(matchId, enabled);
@@ -222,9 +227,12 @@ export async function addSelfReportUseCase(
   type: SelfReportType,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await insertSelfReportRemote(matchId, playerId, type);
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.addLocalSelfReport(matchId, playerId, type),
+      rpc: () => insertSelfReportRemote(matchId, playerId, type),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.addLocalSelfReport(matchId, playerId, type);
@@ -257,9 +265,14 @@ export async function respondSelfReportUseCase(
   }
 
   if (isRemoteMatchId(matchId)) {
-    await updateSelfReportStatusRemote(requestId, approve ? 'approved' : 'rejected');
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.respondLocalSelfReport(matchId, requestId, approve),
+      rpc: () => updateSelfReportStatusRemote(requestId, approve ? 'approved' : 'rejected'),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+      getPlayersSnapshot: deps.getPlayersSnapshot,
+      restorePlayersSnapshot: deps.restorePlayersSnapshot,
+    });
     return;
   }
   deps.respondLocalSelfReport(matchId, requestId, approve);
@@ -273,12 +286,12 @@ export async function setMatchTeamsUseCase(
   lineupFormationId?: string | null,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await replaceMatchTeamPlayersRemote(matchId, teamAIds, teamBIds);
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
-    if (lineupFormationId !== undefined) {
-      deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId);
-    }
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId),
+      rpc: () => replaceMatchTeamPlayersRemote(matchId, teamAIds, teamBIds),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId);
@@ -286,9 +299,12 @@ export async function setMatchTeamsUseCase(
 
 export async function lockLineupUseCase(deps: MatchesDeps, matchId: string): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await updateMatchOrganizerFieldsRemote(matchId, { lineup_locked: true });
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.lockLocalLineup(matchId),
+      rpc: () => updateMatchOrganizerFieldsRemote(matchId, { lineup_locked: true }),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.lockLocalLineup(matchId);
@@ -296,9 +312,12 @@ export async function lockLineupUseCase(deps: MatchesDeps, matchId: string): Pro
 
 export async function unlockLineupUseCase(deps: MatchesDeps, matchId: string): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await updateMatchOrganizerFieldsRemote(matchId, { lineup_locked: false });
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.unlockLocalLineup(matchId),
+      rpc: () => updateMatchOrganizerFieldsRemote(matchId, { lineup_locked: false }),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.unlockLocalLineup(matchId);
@@ -310,9 +329,12 @@ export async function setMatchStatusUseCase(
   status: MatchStatus,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
-    await updateMatchOrganizerFieldsRemote(matchId, { status });
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.setLocalMatchStatus(matchId, status),
+      rpc: () => updateMatchOrganizerFieldsRemote(matchId, { status }),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+    });
     return;
   }
   deps.setLocalMatchStatus(matchId, status);
@@ -341,16 +363,22 @@ export async function submitScoreUseCase(
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
     const payload = scoreResultToRpcPayload(result);
-    await submitMatchResultRpc({
-      matchId,
-      scoreA: result.scoreA,
-      scoreB: result.scoreB,
-      scorers: payload.scorers,
-      assists: payload.assists,
-      ownGoals: payload.own_goals,
+    await withOptimisticMatch({
+      applyOptimistic: () => deps.submitLocalScore(matchId, result),
+      rpc: () =>
+        submitMatchResultRpc({
+          matchId,
+          scoreA: result.scoreA,
+          scoreB: result.scoreB,
+          scorers: payload.scorers,
+          assists: payload.assists,
+          ownGoals: payload.own_goals,
+        }),
+      getSnapshot: deps.getMatchesSnapshot,
+      restoreSnapshot: deps.restoreMatchesSnapshot,
+      getPlayersSnapshot: deps.getPlayersSnapshot,
+      restorePlayersSnapshot: deps.restorePlayersSnapshot,
     });
-    const graph = await fetchMatchGraph(matchId);
-    deps.mergeRemoteGraph(graph);
     return;
   }
   deps.submitLocalScore(matchId, result);

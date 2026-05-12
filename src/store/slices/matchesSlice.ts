@@ -3,6 +3,7 @@ import { createJoinCode } from '../../data/seed';
 import type {
   Match,
   MatchStatus,
+  Player,
   RSVPStatus,
   ScoreResult,
   SelfReportRequest,
@@ -336,6 +337,10 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
     unlockLocalLineup: (matchId: string) => unlockLocalLineup(set, matchId),
     setLocalMatchStatus: (matchId: string, status: MatchStatus) => setLocalMatchStatus(set, matchId, status),
     submitLocalScore: (matchId: string, result: ScoreResult) => submitLocalScore(set, matchId, result),
+    getMatchesSnapshot: () => get().matches,
+    restoreMatchesSnapshot: (snapshot: Match[]) => set({ matches: snapshot }),
+    getPlayersSnapshot: () => get().players,
+    restorePlayersSnapshot: (snapshot: Player[]) => set({ players: snapshot }),
   };
 }
 

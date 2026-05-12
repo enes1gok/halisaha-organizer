@@ -79,6 +79,10 @@ function buildDeps(overrides: Partial<Parameters<typeof cancelMatchUseCase>[0]> 
     unlockLocalLineup: jest.fn(),
     setLocalMatchStatus: jest.fn(),
     submitLocalScore: jest.fn(),
+    getMatchesSnapshot: jest.fn().mockReturnValue([upcoming]),
+    restoreMatchesSnapshot: jest.fn(),
+    getPlayersSnapshot: jest.fn().mockReturnValue([]),
+    restorePlayersSnapshot: jest.fn(),
     ...overrides,
   };
 }
@@ -88,13 +92,8 @@ describe('cancelMatchUseCase', () => {
     jest.clearAllMocks();
   });
 
-  it('updates remote status to cancelled and merges graph for upcoming remote match', async () => {
+  it('optimistically sets cancelled status and calls remote for upcoming remote match', async () => {
     mockUpdateMatchOrganizerFieldsRemote.mockResolvedValue(undefined);
-    const cancelled = buildMatch({ status: 'cancelled' });
-    mockFetchMatchGraph.mockResolvedValue({
-      match: cancelled,
-      profiles: [],
-    } as Awaited<ReturnType<typeof matchGraphService.fetchMatchGraph>>);
 
     const deps = buildDeps();
     await cancelMatchUseCase(deps, REMOTE_MATCH_ID);
@@ -102,9 +101,9 @@ describe('cancelMatchUseCase', () => {
     expect(mockUpdateMatchOrganizerFieldsRemote).toHaveBeenCalledWith(REMOTE_MATCH_ID, {
       status: 'cancelled',
     });
-    expect(mockFetchMatchGraph).toHaveBeenCalledWith(REMOTE_MATCH_ID);
-    expect(deps.mergeRemoteGraph).toHaveBeenCalledTimes(1);
-    expect(deps.setLocalMatchStatus).not.toHaveBeenCalled();
+    expect(deps.setLocalMatchStatus).toHaveBeenCalledWith(REMOTE_MATCH_ID, 'cancelled');
+    expect(mockFetchMatchGraph).not.toHaveBeenCalled();
+    expect(deps.mergeRemoteGraph).not.toHaveBeenCalled();
   });
 
   it('throws AppError without touching remote when match is already cancelled', async () => {
@@ -156,7 +155,7 @@ describe('cancelMatchUseCase', () => {
     expect(mockFetchMatchGraph).not.toHaveBeenCalled();
   });
 
-  it('rethrows when remote update fails and skips graph fetch', async () => {
+  it('rethrows when remote update fails and rolls back optimistic state', async () => {
     const err = new AppError({
       code: 'FORBIDDEN',
       operation: 'updateMatchOrganizerFieldsRemote',
@@ -167,6 +166,8 @@ describe('cancelMatchUseCase', () => {
     const deps = buildDeps();
     await expect(cancelMatchUseCase(deps, REMOTE_MATCH_ID)).rejects.toBe(err);
 
+    expect(deps.setLocalMatchStatus).toHaveBeenCalledWith(REMOTE_MATCH_ID, 'cancelled');
+    expect(deps.restoreMatchesSnapshot).toHaveBeenCalledTimes(1);
     expect(mockFetchMatchGraph).not.toHaveBeenCalled();
     expect(deps.mergeRemoteGraph).not.toHaveBeenCalled();
   });

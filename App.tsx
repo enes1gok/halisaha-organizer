@@ -23,7 +23,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
 import { ToastProvider } from './src/context/ToastContext';
-import { AppLoadingScreen } from './src/components/AppLoadingScreen';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { SetNewPasswordScreen } from './src/screens/SetNewPasswordScreen';
@@ -33,7 +32,7 @@ import { registerBackgroundSyncTask, unregisterBackgroundSyncTask } from './src/
 import { runRemoteCatchUp } from './src/services/sync/remoteCatchUp';
 import { palettes } from './src/theme';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
-import { useAppStore } from './src/store';
+import { useAppStore, useAuthStore } from './src/store';
 
 /**
  * Sistem yazı ölçeği çarpanı için global tavan. Kullanıcı erişilebilirlik amacıyla
@@ -59,7 +58,8 @@ function bootstrapPalette() {
 
 function AppShell() {
   const { configured, loading, session, needsPasswordRecovery } = useSupabaseAuth();
-  const { scheme, colors } = useTheme();
+  const remoteUserId = useAuthStore((s) => s.remoteUserId);
+  const { scheme } = useTheme();
   const statusBarStyle = scheme === 'dark' ? 'light' : 'dark';
 
   useEffect(() => {
@@ -123,24 +123,6 @@ function AppShell() {
     };
   }, [configured, session, needsPasswordRecovery]);
 
-  if (configured && loading) {
-    return (
-      <>
-        <AppLoadingScreen message="Oturum kontrol ediliyor…" />
-        <StatusBar style={statusBarStyle} />
-      </>
-    );
-  }
-
-  if (configured && !session) {
-    return (
-      <>
-        <OnboardingNavigator />
-        <StatusBar style={statusBarStyle} />
-      </>
-    );
-  }
-
   if (configured && session && needsPasswordRecovery) {
     return (
       <>
@@ -150,9 +132,21 @@ function AppShell() {
     );
   }
 
+  // "Show stored, sync silent": persist'ten remoteUserId varsa AppNavigator'ı
+  // hemen göster; session bootstrap arka planda devam eder. Session null
+  // çıkarsa (token süresi dolmuş) store sıfırlanır → OnboardingNavigator'a geçer.
+  if (session || (loading && remoteUserId)) {
+    return (
+      <>
+        <AppNavigator />
+        <StatusBar style={statusBarStyle} />
+      </>
+    );
+  }
+
   return (
     <>
-      <AppNavigator />
+      <OnboardingNavigator />
       <StatusBar style={statusBarStyle} />
     </>
   );
