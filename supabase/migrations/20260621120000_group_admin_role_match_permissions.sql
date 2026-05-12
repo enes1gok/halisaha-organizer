@@ -104,16 +104,21 @@ create policy match_attendees_insert_organizer on public.match_attendees
 
 -- ─── 9. RLS: self_report_requests ─────────────────────────────────────────────
 
+drop policy if exists self_reports_select on public.self_report_requests;
+create policy self_reports_select on public.self_report_requests
+  for select to authenticated
+  using (public.can_view_self_report_request(match_id, player_id));
+
 drop policy if exists self_reports_update_organizer on public.self_report_requests;
 create policy self_reports_update_organizer on public.self_report_requests
   for update to authenticated
-  using (public.can_manage_group_match(match_id, auth.uid()))
-  with check (public.can_manage_group_match(match_id, auth.uid()));
+  using (public.can_respond_to_self_report_request(match_id, player_id))
+  with check (public.can_respond_to_self_report_request(match_id, player_id));
 
 drop policy if exists self_reports_delete_organizer on public.self_report_requests;
 create policy self_reports_delete_organizer on public.self_report_requests
   for delete to authenticated
-  using (public.can_manage_group_match(match_id, auth.uid()));
+  using (public.can_respond_to_self_report_request(match_id, player_id));
 
 -- can_view_self_report_request ve can_respond_to_self_report_request'teki
 -- is_match_organizer referanslarını can_manage_group_match ile güncelle.
