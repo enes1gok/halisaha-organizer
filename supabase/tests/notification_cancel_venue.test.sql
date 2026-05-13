@@ -42,7 +42,7 @@ values
 insert into public.matches (id, starts_at, venue, organizer_id, join_code, group_id, max_players, status)
 values (
   'f0000000-0000-4000-8000-000000000080'::uuid,
-  now() + interval '2 days',
+  now() + interval '3 days',
   'Saha Önce',
   'e0000000-0000-4000-8000-000000000010'::uuid,
   'MTCVN080',
