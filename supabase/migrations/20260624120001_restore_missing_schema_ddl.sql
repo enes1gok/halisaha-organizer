@@ -131,7 +131,7 @@ as $$
       mt.group_id,
       mt.series_id,
       mt.spawned_from_match_id,
-      mt.payment_method,
+      mt.payment_method::text,
       mt.iban_account_name,
       mt.payment_note
     from public.matches mt
@@ -199,7 +199,7 @@ as $$
     m.iban,
     m.iban_account_name,
     m.payment_note,
-    m.payment_method,
+    m.payment_method::text,
     m.join_code,
     m.lineup_locked,
     m.self_report_enabled,
@@ -342,7 +342,7 @@ as $$
       mt.group_id,
       mt.series_id,
       mt.spawned_from_match_id,
-      mt.payment_method,
+      mt.payment_method::text,
       mt.iban_account_name,
       mt.payment_note
     from public.matches mt
@@ -385,7 +385,7 @@ as $$
     m.iban,
     m.iban_account_name,
     m.payment_note,
-    m.payment_method,
+    m.payment_method::text,
     m.join_code,
     m.lineup_locked,
     m.self_report_enabled,

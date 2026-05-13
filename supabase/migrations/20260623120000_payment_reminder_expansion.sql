@@ -14,12 +14,29 @@ begin
 end $$;
 
 alter table public.matches
-  drop constraint if exists matches_payment_method_chk;
+  drop constraint if exists matches_payment_method_chk,
+  drop constraint if exists matches_payment_note_chk;
 
 alter table public.matches
   alter column payment_method drop default,
   alter column payment_method type public.match_payment_method using payment_method::public.match_payment_method,
   alter column payment_method set default 'iban'::public.match_payment_method;
+
+alter table public.matches
+  add constraint matches_payment_note_chk
+  check (
+    (
+      payment_method = 'note_only'::public.match_payment_method
+      and char_length(trim(coalesce(payment_note, ''))) between 1 and 120
+      and iban is null
+      and iban_account_name is null
+    )
+    or
+    (
+      payment_method <> 'note_only'::public.match_payment_method
+      and payment_note is null
+    )
+  );
 
 -- ── 1. notification_deliveries_type_check ────────────────────────────────────
 
