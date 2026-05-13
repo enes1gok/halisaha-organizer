@@ -3,14 +3,22 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../components/Card';
 import { EmptyStateHero } from '../components/emptyIllustrations';
+import { GroupsActionCard } from '../components/GroupsActionCard';
 import { PillButton } from '../components/PillButton';
 import { GroupCardSkeleton, SkeletonList } from '../components/skeleton';
 import type { GroupsStackParamList } from '../navigation/types';
+import {
+  HOME_ACTION_STRIP_GAP,
+  HOME_ACTION_STRIP_HEIGHT,
+  TAB_BAR_FLOAT_MARGIN_BOTTOM,
+  TAB_BAR_FLOATING_BLOCK_HEIGHT,
+} from '../navigation/tabBarLayout';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useAuthStore, useGroupsStore, useMatchesStore } from '../store';
-import { radius, shadows, spacing, typography } from '../theme';
+import { groupAvatarColors, groupAvatarTextColor, radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useThemeColors } from '../theme/ThemeContext';
 import type { Group } from '../types/domain';
 import { formatShortDate } from '../utils/dates';
@@ -18,6 +26,20 @@ import { formatShortDate } from '../utils/dates';
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'GroupsMain'>;
 
 const ACTIVE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+function getGroupAvatarColor(groupId: string): string {
+  let hash = 0;
+  for (let i = 0; i < groupId.length; i++) {
+    hash = (hash * 31 + groupId.charCodeAt(i)) & 0xffffff;
+  }
+  return groupAvatarColors[hash % groupAvatarColors.length];
+}
+
+function getGroupInitials(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
 
 interface GroupListMeta {
   upcomingCount: number;
@@ -37,6 +59,8 @@ function GroupsListRow({ group, meta, onPress, accessibilityLabel }: GroupsListR
   const styles = useGroupsStyles();
   const c = useThemeColors();
   const lastFinishedLabel = meta.lastFinishedAt ? formatShortDate(meta.lastFinishedAt) : null;
+  const avatarColor = getGroupAvatarColor(group.id);
+  const initials = getGroupInitials(group.name);
 
   return (
     <Pressable
@@ -46,42 +70,45 @@ function GroupsListRow({ group, meta, onPress, accessibilityLabel }: GroupsListR
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <View style={styles.cardHeaderRow}>
-        <Text style={styles.name} numberOfLines={1}>
-          {group.name}
-        </Text>
-        <View style={styles.memberHint} accessibilityElementsHidden>
-          <Ionicons name="people-outline" size={14} color={c.textMuted} />
-          <Text style={styles.memberCount}>{meta.totalMemberCount}</Text>
-        </View>
+      <View style={[styles.avatarSection, { backgroundColor: avatarColor }]}>
+        <Text style={styles.avatarText}>{initials}</Text>
       </View>
 
-      <View
-        style={styles.metaChipsRow}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        <View style={styles.metaChip}>
-          <Ionicons name="calendar-outline" size={12} color={c.accent} />
-          <Text style={styles.metaChipText} numberOfLines={1}>
-            {meta.upcomingCount} yaklaşan
+      <View style={styles.contentSection}>
+        <View style={styles.headerRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {group.name}
           </Text>
+          <Ionicons name="chevron-forward" size={20} color={c.textMuted} />
         </View>
-        <View style={styles.metaChip}>
-          <Ionicons name="flag-outline" size={12} color={c.textMuted} />
-          <Text style={styles.metaChipText} numberOfLines={1}>
-            {lastFinishedLabel ? `Son: ${lastFinishedLabel}` : 'Henüz maç yok'}
-          </Text>
-        </View>
-        <View style={styles.metaChip}>
-          <Ionicons name="pulse-outline" size={12} color={c.textMuted} />
-          <Text style={styles.metaChipText} numberOfLines={1}>
-            {meta.activeMemberCount} aktif (30g)
-          </Text>
+
+        <View
+          style={styles.metaChipsRow}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <View style={styles.memberHint}>
+            <Ionicons name="people-outline" size={12} color={c.textMuted} />
+            <Text style={styles.memberCount}>{meta.totalMemberCount} üye</Text>
+          </View>
+
+          <View style={styles.metaChip}>
+            <Ionicons name="calendar-outline" size={12} color={c.accent} />
+            <Text style={styles.metaChipText} numberOfLines={1}>
+              {meta.upcomingCount} yaklaşan
+            </Text>
+          </View>
+
+          {lastFinishedLabel && (
+            <View style={styles.metaChip}>
+              <Ionicons name="flag-outline" size={12} color={c.textMuted} />
+              <Text style={styles.metaChipText} numberOfLines={1}>
+                Son: {lastFinishedLabel}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
-
-      <Text style={styles.codeMeta}>Kod: {group.joinCode}</Text>
     </Pressable>
   );
 }
@@ -89,6 +116,7 @@ function GroupsListRow({ group, meta, onPress, accessibilityLabel }: GroupsListR
 export function GroupsScreen() {
   const styles = useGroupsStyles();
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const groups = useGroupsStore((s) => s.groups);
   const memberships = useGroupsStore((s) => s.groupMemberships);
@@ -176,6 +204,14 @@ export function GroupsScreen() {
     return result;
   }, [matches, memberships, myGroups]);
 
+  const adjustedListPaddingBottom =
+    HOME_ACTION_STRIP_HEIGHT +
+    HOME_ACTION_STRIP_GAP +
+    TAB_BAR_FLOATING_BLOCK_HEIGHT +
+    TAB_BAR_FLOAT_MARGIN_BOTTOM +
+    Math.max(insets.bottom, 8) +
+    16;
+
   const showInitialSkeleton = configured && loading && groups.length === 0 && memberships.length === 0 && !skeletonExpired;
   const showCenteredEmptyCTAs = !showInitialSkeleton && myGroups.length === 0;
 
@@ -210,30 +246,32 @@ export function GroupsScreen() {
             </Text>
           </Card>
         </View>
+
+        <View
+          style={[
+            styles.actionStrip,
+            {
+              bottom:
+                TAB_BAR_FLOATING_BLOCK_HEIGHT +
+                TAB_BAR_FLOAT_MARGIN_BOTTOM +
+                Math.max(insets.bottom, 8),
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <GroupsActionCard
+            onJoinPress={() => navigation.navigate('JoinGroup')}
+            onCreatePress={() => navigation.navigate('CreateGroup')}
+          />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.screen}>
-      <View style={styles.actions}>
-        <PillButton
-          title="Grup Oluştur"
-          onPress={() => navigation.navigate('CreateGroup')}
-          testID="groups:create:press"
-          accessibilityLabel="Grup oluştur"
-        />
-        <PillButton
-          title="Kod ile Katıl"
-          variant="ghost"
-          onPress={() => navigation.navigate('JoinGroup')}
-          testID="groups:join:press"
-          accessibilityLabel="Kod ile gruba katıl"
-        />
-      </View>
-
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: adjustedListPaddingBottom }]}
         data={showInitialSkeleton ? [] : myGroups}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
@@ -270,6 +308,24 @@ export function GroupsScreen() {
           );
         }}
       />
+
+      <View
+        style={[
+          styles.actionStrip,
+          {
+            bottom:
+              TAB_BAR_FLOATING_BLOCK_HEIGHT +
+              TAB_BAR_FLOAT_MARGIN_BOTTOM +
+              Math.max(insets.bottom, 8),
+          },
+        ]}
+        pointerEvents="box-none"
+      >
+        <GroupsActionCard
+          onJoinPress={() => navigation.navigate('JoinGroup')}
+          onCreatePress={() => navigation.navigate('CreateGroup')}
+        />
+      </View>
     </View>
   );
 }
@@ -298,27 +354,40 @@ const useGroupsStyles = makeStyles((t) =>
       alignSelf: 'stretch',
       width: '100%',
     },
-    actions: {
-      padding: spacing.md,
-      gap: spacing.sm,
-      borderBottomWidth: 1,
-      borderBottomColor: t.colors.border,
-    },
     list: { padding: spacing.md, gap: spacing.sm, flexGrow: 1 },
     card: {
       backgroundColor: t.colors.surface,
       borderWidth: 1,
       borderColor: t.colors.border,
       borderRadius: radius.card,
-      padding: spacing.md,
-      gap: spacing.sm,
+      overflow: 'hidden',
+      flexDirection: 'row',
       ...shadows.sm,
     },
     cardPressed: {
       opacity: 0.85,
       transform: [{ scale: 0.997 }],
     },
-    cardHeaderRow: {
+    avatarSection: {
+      width: 72,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+    },
+    avatarText: {
+      ...typography.title,
+      color: groupAvatarTextColor,
+      fontSize: 18,
+      fontWeight: '600',
+    },
+    contentSection: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      gap: 4,
+      justifyContent: 'center',
+    },
+    headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -331,7 +400,7 @@ const useGroupsStyles = makeStyles((t) =>
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
       borderRadius: radius.pill,
-      backgroundColor: t.colors.surfaceSoft,
+      backgroundColor: t.colors.background,
     },
     memberCount: {
       ...typography.micro,
@@ -340,8 +409,9 @@ const useGroupsStyles = makeStyles((t) =>
     name: { ...typography.subtitle, color: t.colors.text, flexShrink: 1 },
     metaChipsRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
+      alignItems: 'center',
       gap: spacing.xs,
+      flexWrap: 'wrap',
     },
     metaChip: {
       flexDirection: 'row',
@@ -358,6 +428,11 @@ const useGroupsStyles = makeStyles((t) =>
       ...typography.micro,
       color: t.colors.textMuted,
     },
-    codeMeta: { ...typography.caption, color: t.colors.textMuted },
+    actionStrip: {
+      position: 'absolute',
+      left: spacing.md,
+      right: spacing.md,
+      bottom: spacing.sm,
+    },
   }),
 );

@@ -211,16 +211,16 @@ export function GroupCardSkeleton() {
   const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.groupCard}>
-      <View style={styles.groupCardHeaderRow}>
-        <SkeletonText variant="subtitle" width="58%" />
-        <SkeletonBlock width={36} height={20} radius={radius.pill} />
+      <SkeletonBlock width={72} height={80} radius={0} />
+      <View style={styles.groupCardContent}>
+        <View style={styles.groupCardHeaderRow}>
+          <SkeletonText variant="subtitle" width="55%" />
+        </View>
+        <View style={styles.groupCardChipsRow}>
+          <SkeletonBlock width={80} height={18} radius={radius.pill} />
+          <SkeletonBlock width={90} height={18} radius={radius.pill} />
+        </View>
       </View>
-      <View style={styles.groupCardChipsRow}>
-        <SkeletonBlock width={92} height={22} radius={radius.pill} />
-        <SkeletonBlock width={104} height={22} radius={radius.pill} />
-        <SkeletonBlock width={108} height={22} radius={radius.pill} />
-      </View>
-      <SkeletonText variant="caption" width="40%" />
     </View>
   );
 }
@@ -381,8 +381,14 @@ const useSkeletonPresetStyles = makeStyles((t) =>
     borderWidth: 1,
     borderColor: t.colors.border,
     borderRadius: radius.card,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  groupCardContent: {
+    flex: 1,
     padding: spacing.md,
-    gap: spacing.sm,
+    gap: 4,
+    justifyContent: 'center',
   },
   groupCardHeaderRow: {
     flexDirection: 'row',
@@ -393,6 +399,7 @@ const useSkeletonPresetStyles = makeStyles((t) =>
   groupCardChipsRow: {
     flexDirection: 'row',
     gap: spacing.xs,
+    alignItems: 'center',
   },
   calendarShell: {
     backgroundColor: t.colors.surface,

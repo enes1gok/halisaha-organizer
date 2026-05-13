@@ -191,6 +191,19 @@ export const gradientPalettes = { light: lightGradients, dark: darkGradients } a
  */
 export const gradients = darkGradients;
 
+export const groupAvatarColors = [
+  '#4A90D9', // mavi
+  '#7B5EA7', // mor
+  '#E67E22', // turuncu
+  '#27AE60', // yeşil
+  '#E74C3C', // kırmızı
+  '#16A085', // teal
+  '#8E44AD', // koyu mor
+  '#2980B9', // koyu mavi
+] as const;
+
+export const groupAvatarTextColor = '#FFFFFF';
+
 export const shadows = StyleSheet.create({
   none: {},
   sm: Platform.select({
