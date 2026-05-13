@@ -142,6 +142,7 @@ export function mapGroup(row: GroupRow): Group {
     ownerId: row.owner_id,
     joinCode: row.join_code,
     createdAt: row.created_at,
+    photoUri: row.photo_uri ?? undefined,
   };
 }
 

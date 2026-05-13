@@ -272,6 +272,7 @@ describe('mapGroup / mapMembership', () => {
       owner_id: 'u1',
       join_code: 'JOIN',
       created_at: iso,
+      photo_uri: null,
     };
     expect(mapGroup(row)).toEqual({
       id: 'g1',

@@ -35,3 +35,32 @@ export async function uploadProfileAvatar(localUri: string): Promise<string> {
   } = supabase.storage.from('avatars').getPublicUrl(path);
   return publicUrl;
 }
+
+/** Resize, upload to `avatars/groups/{groupId}/photo.jpg`, return public URL. */
+export async function uploadGroupPhoto(groupId: string, localUri: string): Promise<string> {
+  if (!isSupabaseConfigured()) {
+    throw createAuthRequiredError('uploadGroupPhoto', 'Supabase yapılandırılmadı.');
+  }
+  const supabase = getSupabaseClient();
+
+  const manipulated = await ImageManipulator.manipulateAsync(
+    localUri,
+    [{ resize: { width: 512 } }],
+    { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
+  );
+
+  const response = await fetch(manipulated.uri);
+  const blob = await response.blob();
+
+  const path = `groups/${groupId}/photo.jpg`;
+  const { error } = await supabase.storage.from('avatars').upload(path, blob, {
+    upsert: true,
+    contentType: 'image/jpeg',
+  });
+  if (error) throw mapSupabaseError(error, 'uploadGroupPhoto');
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('avatars').getPublicUrl(path);
+  return publicUrl;
+}

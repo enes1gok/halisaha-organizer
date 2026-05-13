@@ -146,6 +146,7 @@ export interface Group {
   ownerId: string;
   joinCode: string;
   createdAt: string;
+  photoUri?: string;
 }
 
 export interface GroupMembership {

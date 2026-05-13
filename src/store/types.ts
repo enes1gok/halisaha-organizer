@@ -152,6 +152,8 @@ export interface GroupsSlice {
 
   kickGroupMember: (groupId: string, targetPlayerId: string) => Promise<void>;
   setGroupMemberRole: (groupId: string, targetPlayerId: string, role: 'admin' | 'member') => Promise<void>;
+
+  updateGroupPhoto: (groupId: string, localUri: string) => Promise<void>;
 }
 
 export type AppState = AuthSlice &

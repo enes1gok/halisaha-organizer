@@ -7,7 +7,9 @@
       "Bash(git -C /Users/enesgok/Documents/github/halisaha-organizer diff src/screens/GroupWeeklySeriesScreen.tsx)",
       "Bash(ls ~/.claude/.mcp.json 2>/dev/null && echo \"exists\" || echo \"not found\")",
       "Read(//Users/enesgok/.claude/**)",
-      "Bash(npx jest *)"
+      "Bash(npx jest *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)"
     ]
   }
 }

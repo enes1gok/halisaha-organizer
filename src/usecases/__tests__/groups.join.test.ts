@@ -55,6 +55,7 @@ function buildDeps(overrides: Partial<Parameters<typeof joinGroupUseCase>[0]> = 
     setWeeklySeriesCache: jest.fn(),
     kickMemberLocal: jest.fn(),
     setMemberRoleLocal: jest.fn(),
+    updateGroupPhotoLocal: jest.fn(),
     ...overrides,
   };
 }

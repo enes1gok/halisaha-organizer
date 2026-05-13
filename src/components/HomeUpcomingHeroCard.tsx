@@ -210,6 +210,7 @@ export function HomeUpcomingHeroCard({
 const useStyles = makeStyles((t) =>
   StyleSheet.create({
     outer: {
+      marginTop: spacing.md,
       marginBottom: spacing.md,
     },
     card: {

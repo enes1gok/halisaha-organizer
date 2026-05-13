@@ -23,6 +23,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
 import { ToastProvider } from './src/context/ToastContext';
+import { markAppIntroCompleteInStorage } from './src/hooks/useAppIntroCompletion';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { OnboardingNavigator } from './src/navigation/OnboardingStackNav';
 import { SetNewPasswordScreen } from './src/screens/SetNewPasswordScreen';
@@ -61,6 +62,16 @@ function AppShell() {
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const { scheme } = useTheme();
   const statusBarStyle = scheme === 'dark' ? 'light' : 'dark';
+
+  // Authenticated users should always skip intro
+  useEffect(() => {
+    const markIntroComplete = async () => {
+      if ((session || remoteUserId) && !needsPasswordRecovery) {
+        await markAppIntroCompleteInStorage();
+      }
+    };
+    void markIntroComplete();
+  }, [session, remoteUserId, needsPasswordRecovery]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {

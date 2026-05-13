@@ -11,6 +11,7 @@ import {
   kickGroupMemberUseCase,
   leaveGroupUseCase,
   setGroupMemberRoleUseCase,
+  updateGroupPhotoUseCase,
   upsertGroupWeeklySeriesUseCase,
 } from '../../usecases/groups';
 import type { UpsertGroupWeeklySeriesInput } from '../../services/supabase/groupWeeklySeries';
@@ -148,6 +149,18 @@ function setMemberRoleLocal(
   }));
 }
 
+function updateGroupPhotoLocal(
+  set: Parameters<StateCreator<AppState>>[0],
+  groupId: string,
+  photoUri: string,
+) {
+  set((state) => ({
+    groups: state.groups.map((g) =>
+      g.id === groupId ? { ...g, photoUri } : g,
+    ),
+  }));
+}
+
 function deleteLocalGroupState(set: Parameters<StateCreator<AppState>>[0], groupId: string) {
   set((state) => {
     const weeklySeriesByGroupId = { ...state.weeklySeriesByGroupId };
@@ -181,6 +194,8 @@ function buildGroupsUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get:
       kickMemberLocal(set, groupId, targetPlayerId),
     setMemberRoleLocal: (groupId: string, targetPlayerId: string, role: import('../../types/domain').GroupRole) =>
       setMemberRoleLocal(set, groupId, targetPlayerId, role),
+    updateGroupPhotoLocal: (groupId: string, photoUri: string) =>
+      updateGroupPhotoLocal(set, groupId, photoUri),
   };
 }
 
@@ -209,4 +224,7 @@ export const createGroupsSlice: StateCreator<AppState, [], [], GroupsSlice> = (s
 
   setGroupMemberRole: (groupId, targetPlayerId, role) =>
     setGroupMemberRoleUseCase(buildGroupsUseCaseDeps(set, get), groupId, targetPlayerId, role),
+
+  updateGroupPhoto: (groupId, localUri) =>
+    updateGroupPhotoUseCase(buildGroupsUseCaseDeps(set, get), groupId, localUri),
 });

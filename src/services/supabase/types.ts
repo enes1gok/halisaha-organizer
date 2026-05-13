@@ -78,12 +78,13 @@ export interface GroupRow {
   owner_id: string;
   join_code: string;
   created_at: string;
+  photo_uri: string | null;
 }
 
 export interface GroupMemberRow {
   group_id: string;
   player_id: string;
-  role: 'owner' | 'member';
+  role: 'owner' | 'admin' | 'member';
   created_at: string;
 }
 

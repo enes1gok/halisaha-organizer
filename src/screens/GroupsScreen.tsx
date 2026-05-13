@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../components/Card';
 import { EmptyStateHero } from '../components/emptyIllustrations';
@@ -70,8 +70,16 @@ function GroupsListRow({ group, meta, onPress, accessibilityLabel }: GroupsListR
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <View style={[styles.avatarSection, { backgroundColor: avatarColor }]}>
-        <Text style={styles.avatarText}>{initials}</Text>
+      <View style={[styles.avatarSection, { backgroundColor: group.photoUri ? undefined : avatarColor }]}>
+        {group.photoUri ? (
+          <Image
+            source={{ uri: group.photoUri }}
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={styles.avatarText}>{initials}</Text>
+        )}
       </View>
 
       <View style={styles.contentSection}>
@@ -369,10 +377,15 @@ const useGroupsStyles = makeStyles((t) =>
       transform: [{ scale: 0.997 }],
     },
     avatarSection: {
-      width: 72,
+      width: 88,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.lg,
+    },
+    avatarImage: {
+      width: 88,
+      height: '100%',
+      position: 'absolute',
     },
     avatarText: {
       ...typography.title,
@@ -382,9 +395,9 @@ const useGroupsStyles = makeStyles((t) =>
     },
     contentSection: {
       flex: 1,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.md,
       paddingHorizontal: spacing.md,
-      gap: 4,
+      gap: 8,
       justifyContent: 'center',
     },
     headerRow: {

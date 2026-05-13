@@ -26,7 +26,7 @@ async function fetchMyGroupsViaMultiQuery(userId: string): Promise<MyGroupsPaylo
   const [groupsResult, membershipsResult] = await Promise.all([
     supabase
       .from('groups')
-      .select('id,name,owner_id,join_code,created_at')
+      .select('id,name,owner_id,join_code,created_at,photo_uri')
       .in('id', groupIds),
     supabase
       .from('group_members')

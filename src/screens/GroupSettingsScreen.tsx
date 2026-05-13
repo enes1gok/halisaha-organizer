@@ -1,8 +1,9 @@
 import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, AlertButton, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { Alert, AlertButton, ActivityIndicator, Image, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Card } from '../components/Card';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
@@ -13,12 +14,14 @@ import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, usePlayersStore } from '../store';
 import { colors, letterSpacing, radius, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useUserFeedback } from '../utils/userFeedback';
 import { isRemoteUuid } from '../utils/matchId';
 import type { GroupRole } from '../types/domain';
 
 type SettingsRoute = RouteProp<GroupsStackParamList, 'GroupSettings'>;
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'GroupSettings'>;
+
 
 function roleSortOrder(role: GroupRole): number {
   if (role === 'owner') return 0;
@@ -35,6 +38,7 @@ function roleLabel(role: GroupRole): string {
 export function GroupSettingsScreen() {
   const route = useRoute<SettingsRoute>();
   const navigation = useNavigation<Nav>();
+  const styles = useStyles();
   const { groupId } = route.params;
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const groups = useGroupsStore((s) => s.groups);
@@ -46,13 +50,14 @@ export function GroupSettingsScreen() {
   const hydrateRemoteGroups = useGroupsStore((s) => s.hydrateRemoteGroups);
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const { configured, loading } = useSupabaseAuth();
-  const { showUserFacingError, showApiErrorToast } = useUserFeedback();
+  const { showUserFacingError, showApiErrorToast, showValidationToast, showToast } = useUserFeedback();
+  const updateGroupPhoto = useGroupsStore((s) => s.updateGroupPhoto);
 
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const group = groups.find((item) => item.id === groupId);
   const isOwner = group?.ownerId === userId;
   const deleteUsesRemoteTable = Boolean(remoteUserId) && isRemoteUuid(groupId);
-  
+
   const myMembership = memberships.find((m) => m.groupId === groupId && m.playerId === userId);
   const isAdmin = myMembership?.role === 'admin';
   const isOwnerOrAdmin = isOwner || isAdmin;
@@ -67,6 +72,7 @@ export function GroupSettingsScreen() {
 
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const showInitialSkeleton = configured && loading && !group;
 
   const groupMembersSorted = useMemo(() => {
@@ -92,6 +98,41 @@ export function GroupSettingsScreen() {
       await Clipboard.setStringAsync(group.joinCode);
     });
   }, [group, runCopyCode]);
+
+  const onPressPickGroupPhoto = useCallback(() => {
+    if (!group) return;
+    void (async () => {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        showValidationToast('İzin gerekli', 'Galeriden fotoğraf seçmek için erişim izni verin.');
+        return;
+      }
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+      if (picked.canceled || !picked.assets[0]?.uri) return;
+      setPhotoUploading(true);
+      try {
+        await updateGroupPhoto(groupId, picked.assets[0].uri);
+        showToast({
+          variant: 'success',
+          title: 'Başarılı',
+          message: 'Grup fotoğrafı güncelleştirildi.',
+        });
+      } catch (error) {
+        showApiErrorToast(error, {
+          uiOperation: 'groups:settings:photo',
+          fallbackMessage: 'Fotoğraf yüklenemedi.',
+          mapOperation: 'updateGroupPhotoRemote',
+        });
+      } finally {
+        setPhotoUploading(false);
+      }
+    })();
+  }, [group, groupId, showValidationToast, showApiErrorToast, showToast, updateGroupPhoto]);
 
   const onPressLeave = useCallback(() => {
     Alert.alert(
@@ -287,6 +328,33 @@ export function GroupSettingsScreen() {
         { paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM },
       ]}
     >
+      {isOwnerOrAdmin && (
+        <Card variant="glass">
+          <Text style={styles.cardTitle}>Grup Fotoğrafı</Text>
+          <View style={styles.photoSection}>
+            <View style={styles.photoPlaceholder}>
+              {group.photoUri ? (
+                <Image
+                  source={{ uri: group.photoUri }}
+                  style={styles.photoImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.photoPlaceholderText}>Fotoğraf yok</Text>
+              )}
+            </View>
+            <PillButton
+              title="Galeriden Seç"
+              onPress={onPressPickGroupPhoto}
+              loading={photoUploading}
+              disabled={photoUploading}
+              style={styles.photoButton}
+            />
+          </View>
+          <Text style={styles.photoHint}>Grup fotoğrafı JPEG formatında 512px genişlikte saklanır.</Text>
+        </Card>
+      )}
+
       <Card variant="glass">
         <Text style={styles.cardTitle}>Katılım kodu</Text>
         <Text style={styles.hint}>
@@ -392,101 +460,136 @@ export function GroupSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: {
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  cardTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  hint: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  codeBox: {
-    backgroundColor: colors.background,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  codeText: {
-    ...typography.subtitle,
-    color: colors.text,
-    letterSpacing: letterSpacing.code,
-    textAlign: 'center',
-  },
-  memberList: {
-    gap: spacing.md,
-  },
-  memberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  memberMeta: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  memberName: {
-    ...typography.body,
-    color: colors.text,
-    flexShrink: 1,
-  },
-  memberRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  rolePill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  rolePillOwner: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  rolePillAdmin: {
-    borderColor: '#F59E0B',
-    backgroundColor: 'rgba(245,158,11,0.12)',
-  },
-  rolePillMember: {
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  roleTextOwner: {
-    ...typography.micro,
-    color: colors.accent,
-  },
-  roleTextAdmin: {
-    ...typography.micro,
-    color: '#F59E0B',
-  },
-  roleTextMember: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-  moreBtn: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moreBtnText: {
-    ...typography.micro,
-    color: colors.textMuted,
-    letterSpacing: 2,
-  },
-});
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.colors.background },
+    content: {
+      padding: spacing.md,
+      gap: spacing.md,
+    },
+    cardTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      marginBottom: spacing.sm,
+    },
+    hint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginBottom: spacing.sm,
+    },
+    codeBox: {
+      backgroundColor: t.colors.background,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    codeText: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      letterSpacing: letterSpacing.code,
+      textAlign: 'center',
+    },
+    memberList: {
+      gap: spacing.md,
+    },
+    memberRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    memberMeta: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    memberName: {
+      ...typography.body,
+      color: t.colors.text,
+      flexShrink: 1,
+    },
+    memberRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    rolePill: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+    },
+    rolePillOwner: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    rolePillAdmin: {
+      borderColor: t.colors.admin,
+      backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    },
+    rolePillMember: {
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.background,
+    },
+    roleTextOwner: {
+      ...typography.micro,
+      color: t.colors.accent,
+    },
+    roleTextAdmin: {
+      ...typography.micro,
+      color: t.colors.admin,
+    },
+    roleTextMember: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+    },
+    moreBtn: {
+      minWidth: 44,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    moreBtnText: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      letterSpacing: 2,
+    },
+    photoSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    photoPlaceholder: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.card,
+      backgroundColor: t.colors.background,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    photoImage: {
+      width: '100%',
+      height: '100%',
+    },
+    photoPlaceholderText: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    photoButton: {
+      flex: 1,
+    },
+    photoHint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginTop: spacing.sm,
+    },
+  }),
+);

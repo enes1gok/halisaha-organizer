@@ -4,6 +4,7 @@ import {
   upsertGroupWeeklySeriesRemote,
   type UpsertGroupWeeklySeriesInput,
 } from '../services/supabase/groupWeeklySeries';
+import { uploadGroupPhoto } from '../services/supabase/avatarUpload';
 import { reportError } from '../services/logging/reportError';
 import {
   createGroupRemote,
@@ -14,6 +15,7 @@ import {
   leaveGroupRemote,
   setGroupMemberRoleRemote,
 } from '../services/supabase/groups';
+import { getSupabaseClient } from '../lib/supabase';
 import type { Group, GroupRole, GroupWeeklySeries } from '../types/domain';
 import type { CreateGroupResult } from '../store/types';
 import type { RemoteHydrateOpts } from '../types/remoteHydration';
@@ -36,6 +38,7 @@ type GroupsDeps = {
   setWeeklySeriesCache: (groupId: string, series: GroupWeeklySeries | null) => void;
   kickMemberLocal: (groupId: string, targetPlayerId: string) => void;
   setMemberRoleLocal: (groupId: string, targetPlayerId: string, role: GroupRole) => void;
+  updateGroupPhotoLocal: (groupId: string, photoUri: string) => void;
 };
 
 export async function hydrateRemoteGroupsUseCase(
@@ -180,6 +183,24 @@ export async function setGroupMemberRoleUseCase(
     deps.hydrateLocalGroups(payload);
   } catch (error) {
     rethrowUseCaseError('setGroupMemberRole', error, 'Üye rolü değiştirilemedi.');
+  }
+}
+
+export async function updateGroupPhotoUseCase(
+  deps: GroupsDeps,
+  groupId: string,
+  localUri: string,
+): Promise<void> {
+  const uid = deps.getRemoteUserId();
+  if (!uid) return;
+
+  try {
+    const publicUrl = await uploadGroupPhoto(groupId, localUri);
+    const supabase = getSupabaseClient();
+    await supabase.rpc('update_group_photo', { p_group_id: groupId, p_photo_uri: publicUrl });
+    deps.updateGroupPhotoLocal(groupId, publicUrl);
+  } catch (error) {
+    rethrowUseCaseError('updateGroupPhoto', error, 'Grup fotoğrafı güncellenemedi.');
   }
 }
 

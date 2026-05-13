@@ -72,7 +72,11 @@ export function HomeScreen() {
   const showInitialSkeleton = configured && loading && matches.length === 0 && !skeletonExpired;
 
   const upcoming = useMemo(() => {
-    const list = matches.filter((m) => m.status === 'upcoming');
+    const now = Date.now();
+    const list = matches.filter((m) => {
+      const startsAtMs = new Date(m.startsAt).getTime();
+      return m.status === 'upcoming' && startsAtMs > now;
+    });
     return [...list].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   }, [matches]);
 
@@ -108,6 +112,13 @@ export function HomeScreen() {
   const listHeader = useMemo(
     () => (
       <View>
+        {lastMatch ? (
+          <HomeLastMatchCard
+            match={lastMatch}
+            playerId={userId}
+            onPress={() => navigation.navigate('MatchDetail', { matchId: lastMatch.id })}
+          />
+        ) : null}
         <HomeUpcomingHeroCard
           match={nextMatch}
           goingCount={nextMatch ? countGoing(nextMatch) : 0}
@@ -118,13 +129,6 @@ export function HomeScreen() {
             if (nextMatch) navigation.navigate('MatchDetail', { matchId: nextMatch.id });
           }}
         />
-        {lastMatch ? (
-          <HomeLastMatchCard
-            match={lastMatch}
-            playerId={userId}
-            onPress={() => navigation.navigate('MatchDetail', { matchId: lastMatch.id })}
-          />
-        ) : null}
       </View>
     ),
     [getPlayer, lastMatch, navigation, nextMatch, userHasPaid, userId],

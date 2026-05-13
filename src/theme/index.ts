@@ -25,6 +25,7 @@ export const darkColors = {
   /** Dolu accent üzeri ikincil / alt satır metni */
   textOnAccentMuted: 'rgba(10, 10, 10, 0.72)',
   danger: '#FF4D4D',
+  admin: '#F59E0B',
   position: {
     GK: '#EAB308',
     DEF: '#3B82F6',
@@ -91,6 +92,7 @@ export const lightColors: ColorPalette = {
   textOnAccent: '#FFFFFF',
   textOnAccentMuted: 'rgba(255, 255, 255, 0.78)',
   danger: '#DC2626',
+  admin: '#D97706',
   position: {
     GK: '#B45309',
     DEF: '#1D4ED8',
