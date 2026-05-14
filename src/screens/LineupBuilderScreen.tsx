@@ -842,6 +842,8 @@ export function LineupBuilderScreen() {
   };
 
   const onPickFormation = (id: string) => {
+    // Aynı formasyon tekrar seçildiyse hiçbir şey yapma
+    if (id === resolvedFormationId) return;
     const f = getLineupFormationById(id);
     if (!f) return;
     if (!reduceMotion) {
@@ -852,32 +854,15 @@ export function LineupBuilderScreen() {
         delete: { type: 'easeInEaseOut', property: 'opacity' },
       });
     }
-    const sameSize =
-      selectedFormation != null && selectedFormation.playersPerTeam === f.playersPerTeam;
     setFormationId(id);
-    if (sameSize) {
-      if (match) {
-        void setMatchTeams(
-          match.id,
-          compactSlots(slotsA),
-          compactSlots(slotsB),
-          id,
-        ).catch((err) =>
-          showApiErrorToast(err, {
-            uiOperation: 'LineupBuilder:pickFormationSameSize',
-            fallbackMessage: 'Kadro kaydedilemedi.',
-            mapOperation: 'replaceMatchTeamPlayersRemote',
-          }),
-        );
-      }
-      return;
-    }
+    // Slot index↔pozisyon eşleşmesi formasyona özgü — aynı boyut farklı yapı demek.
+    // Formasyon her değişiminde slotları sıfırla; oyuncular havuza döner.
     setSlotsA(Array.from({ length: f.playersPerTeam }, () => null));
     setSlotsB(Array.from({ length: f.playersPerTeam }, () => null));
     if (match) {
       void setMatchTeams(match.id, [], [], id).catch((err) =>
         showApiErrorToast(err, {
-          uiOperation: 'LineupBuilder:pickFormationReset',
+          uiOperation: 'LineupBuilder:pickFormation',
           fallbackMessage: 'Kadro kaydedilemedi.',
           mapOperation: 'replaceMatchTeamPlayersRemote',
         }),
