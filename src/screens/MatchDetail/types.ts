@@ -1,1 +1,1 @@
-export type MatchDetailTab = 'summary' | 'roster' | 'payment';
+export type MatchDetailTab = 'summary' | 'roster';

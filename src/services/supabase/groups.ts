@@ -52,10 +52,15 @@ async function fetchMyGroupsViaMultiQuery(userId: string): Promise<MyGroupsPaylo
 
 export async function fetchMyGroups(): Promise<MyGroupsPayload> {
   const supabase = getSupabaseClient();
+  // getSession() reads from local cache — no extra network call. getUser() would
+  // make a round-trip to the auth API and can return {user:null} on flaky networks,
+  // silently clearing the group store without throwing (hydration gate then blocks
+  // retries for 120 s). The RPC and fallback query are both protected by JWT/RLS.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { groups: [], memberships: [], profiles: [] };
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) return { groups: [], memberships: [], profiles: [] };
+  const userId = session.user.id;
 
   const { data, error } = await supabase.rpc('get_my_groups_bundle_for_user');
   if (!error && data != null && typeof data === 'object') {
@@ -84,7 +89,7 @@ export async function fetchMyGroups(): Promise<MyGroupsPayload> {
     });
   }
 
-  return fetchMyGroupsViaMultiQuery(user.id);
+  return fetchMyGroupsViaMultiQuery(userId);
 }
 
 export async function createGroupRemote(name: string): Promise<Group> {

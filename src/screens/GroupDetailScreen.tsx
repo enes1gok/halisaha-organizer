@@ -50,7 +50,7 @@ export function GroupDetailScreen() {
   const memberCount = memberships.filter((item) => item.groupId === groupId).length;
 
   const groupMatches = useMemo(
-    () => matches.filter((item) => item.groupId === groupId),
+    () => matches.filter((item) => item.groupId === groupId && item.status !== 'cancelled'),
     [matches, groupId],
   );
 

@@ -37,7 +37,6 @@ import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import { useUserFeedback } from '../utils/userFeedback';
 import { MatchDetailHero } from './MatchDetail/components/MatchDetailHero';
-import { MatchDetailPaymentPanel } from './MatchDetail/components/MatchDetailPaymentPanel';
 import { MatchDetailRosterPanel } from './MatchDetail/components/MatchDetailRosterPanel';
 import { MatchDetailSegmentControl } from './MatchDetail/components/MatchDetailSegmentControl';
 import { MatchDetailSummaryPanel } from './MatchDetail/components/MatchDetailSummaryPanel';
@@ -346,11 +345,6 @@ export function MatchDetailScreen() {
     );
   }
 
-  const showPrice = (match.pricePerPerson ?? 0) > 0;
-  const showIbanPayment = match.paymentMethod === 'iban' && Boolean(match.iban);
-  const showCashPayment = match.paymentMethod === 'cash';
-  const showNoteOnlyPayment = match.paymentMethod === 'note_only';
-
   const actionablePending = useMemo(() => {
     if (!userId) return [];
     return match.selfReports.filter(
@@ -442,22 +436,11 @@ export function MatchDetailScreen() {
             attendeesSorted={attendeesSorted}
             motmWinnerIds={motmWinnerIds}
             ratingByPid={ratingByPid}
-          />
-        ) : null}
-
-        {tab === 'payment' ? (
-          <MatchDetailPaymentPanel
-            match={match}
-            showPrice={showPrice}
-            showIbanPayment={showIbanPayment}
-            showCashPayment={showCashPayment}
-            showNoteOnlyPayment={showNoteOnlyPayment}
+            isOrganizer={canManageMatch}
+            userId={userId}
             ibanCopyLabel={ibanCopyLabel}
             ibanCopied={ibanCopied}
             onPressCopyIban={onPressCopyIban}
-            attendeesSorted={attendeesSorted}
-            isOrganizer={canManageMatch}
-            userId={userId}
             onPressEditPaid={handlePressEditPaid}
           />
         ) : null}

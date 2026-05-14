@@ -173,7 +173,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       .getSession()
       .then(({ data: { session: initial } }) => {
         if (cancelled) return;
-        void applySessionWithTimeout(initial);
+        if (!applyingSessionRef.current) {
+          applyingSessionRef.current = true;
+          void applySessionWithTimeout(initial).finally(() => {
+            applyingSessionRef.current = false;
+          });
+        }
       })
       .catch(() => {
         if (!cancelled) setLoading(false);

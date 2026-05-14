@@ -250,7 +250,7 @@ export function MatchDetailSummaryPanel({
         </View>
       ) : null}
 
-      {match.selfReportEnabled && match.status !== 'finished' && currentUserRsvp === 'going' ? (
+      {match.selfReportEnabled && isOngoing && currentUserRsvp === 'going' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Maç İstatistikleri</Text>
           <View style={styles.rowWrap}>

@@ -206,7 +206,6 @@ export function AppNavigator() {
           tabBar={(p) => <HalisaTabBar {...p} />}
           screenOptions={{
             headerShown: false,
-            tabBarTransparent: true,
             tabBarStyle: {
               position: 'absolute',
               backgroundColor: 'transparent',

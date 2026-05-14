@@ -254,24 +254,6 @@ export function GroupsScreen() {
             </Text>
           </Card>
         </View>
-
-        <View
-          style={[
-            styles.actionStrip,
-            {
-              bottom:
-                TAB_BAR_FLOATING_BLOCK_HEIGHT +
-                TAB_BAR_FLOAT_MARGIN_BOTTOM +
-                Math.max(insets.bottom, 8),
-            },
-          ]}
-          pointerEvents="box-none"
-        >
-          <GroupsActionCard
-            onJoinPress={() => navigation.navigate('JoinGroup')}
-            onCreatePress={() => navigation.navigate('CreateGroup')}
-          />
-        </View>
       </View>
     );
   }
@@ -345,6 +327,7 @@ const useGroupsStyles = makeStyles((t) =>
       flex: 1,
       justifyContent: 'center',
       paddingHorizontal: spacing.md,
+      paddingBottom: TAB_BAR_FLOATING_BLOCK_HEIGHT + TAB_BAR_FLOAT_MARGIN_BOTTOM,
       gap: spacing.md,
       width: '100%',
     },

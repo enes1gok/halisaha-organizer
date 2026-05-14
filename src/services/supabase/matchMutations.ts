@@ -61,8 +61,14 @@ export async function updateMatchOrganizerFieldsRemote(
   if (patch.self_report_enabled !== undefined) dbPatch.self_report_enabled = patch.self_report_enabled;
   if (patch.status !== undefined) dbPatch.status = patch.status as MatchStatusRow;
 
-  const { error } = await supabase.from('matches').update(dbPatch).eq('id', matchId);
+  const { data, error } = await supabase.from('matches').update(dbPatch).eq('id', matchId).select('id');
   if (error) throw mapSupabaseError(error, 'updateMatchOrganizerFieldsRemote');
+  if (!data?.length) {
+    throw createNotFoundError(
+      'updateMatchOrganizerFieldsRemote',
+      'Maç güncellenemedi. Yetki hatası veya maç bulunamadı.',
+    );
+  }
 }
 
 export async function updateMatchDetailsRemote(params: {

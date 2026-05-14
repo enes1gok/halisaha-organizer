@@ -11,7 +11,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 const OPTIONS: ReadonlyArray<{ value: MatchDetailTab; label: string; testId: string }> = [
   { value: 'summary', label: 'Özet', testId: 'match:detail:tab:summary' },
   { value: 'roster', label: 'Kadro', testId: 'match:detail:tab:roster' },
-  { value: 'payment', label: 'Ödeme', testId: 'match:detail:tab:payment' },
 ];
 
 type Props = {
