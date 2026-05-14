@@ -34,6 +34,12 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Ödeme notu en fazla 120 karakter olabilir.',
   'errors.rpc.matchStartsAtPast':
     'Maç başlangıcı geçmişte olamaz. Lütfen ileri bir tarih ve saat seçin.',
+  'errors.rpc.matchNotEditable':
+    'Yalnızca yaklaşan (upcoming) maçlar düzenlenebilir.',
+  'errors.rpc.matchMaxPlayersTooLow':
+    'Katılımcı sayısı, mevcut gidecek oyuncu sayısından az olamaz.',
+  'errors.rpc.matchMaxPlayersInvalid':
+    'Katılımcı sayısı 4 ile 22 arasında çift bir sayı olmalı.',
   'errors.rpc.backendSchemaOutdated':
     'Sunucu sürümü güncel değil; bu işlem için gerekli güncelleme henüz uygulanmamış olabilir. Lütfen kısa süre sonra tekrar deneyin veya yöneticiye bildirin.',
   'errors.rpc.groupNameMin': 'Grup adı en az 2 karakter olmalı.',

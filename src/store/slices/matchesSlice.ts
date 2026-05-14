@@ -30,6 +30,7 @@ import {
   setSelfReportEnabledUseCase,
   submitMatchRatingsUseCase,
   submitScoreUseCase,
+  updateMatchDetailsUseCase,
 } from '../../usecases/matches';
 import { isRemoteMatchId } from '../../utils/matchId';
 import { patchPlayersStatsForMatchTransition } from '../../utils/stats';
@@ -129,6 +130,20 @@ function joinLocalMatchByJoinCode(
     return { matches };
   });
   return get().getMatch(found.id) ?? null;
+}
+
+function patchLocalMatch(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  patch: Partial<Match>,
+) {
+  set((state) => {
+    const matches = state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      return { ...m, ...patch };
+    });
+    return { matches };
+  });
 }
 
 function setLocalRsvp(
@@ -319,6 +334,7 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
     mergeHydratedRemoteMatches: (graphs: MatchGraphPayload[]) => applyHydratedRemoteMatches(set, graphs),
     mergeRemoteGraph: (graph: MatchGraphPayload) => applyRemoteGraph(set, graph),
     createLocalMatch: (input: CreateMatchInput) => createLocalMatch(set, get, input),
+    patchLocalMatch: (matchId: string, patch: Partial<Match>) => patchLocalMatch(set, matchId, patch),
     joinLocalMatchByJoinCode: (code: string) => joinLocalMatchByJoinCode(set, get, code),
     setLocalRsvp: (matchId: string, playerId: string, status: RSVPStatus) =>
       setLocalRsvp(set, matchId, playerId, status),
@@ -436,6 +452,10 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
       matchIdsPendingListEntrance: pushPendingListEntrance(s.matchIdsPendingListEntrance, m.id),
     }));
     return m;
+  },
+
+  updateMatchDetails: async (input) => {
+    await updateMatchDetailsUseCase(buildMatchesUseCaseDeps(set, get), input);
   },
 
   joinMatchByJoinCode: async (code) => {

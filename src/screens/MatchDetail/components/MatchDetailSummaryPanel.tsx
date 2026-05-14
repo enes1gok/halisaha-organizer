@@ -23,6 +23,7 @@ type Props = {
   joinCopied: boolean;
   onPressCopyJoin: () => void;
   isOrganizer: boolean;
+  canManageMatch: boolean;
   userOnMatchLineup: boolean;
   showFinishedRatingsChrome: boolean;
   ratingHints: { peer: boolean; motm: boolean };
@@ -48,6 +49,7 @@ export function MatchDetailSummaryPanel({
   joinCopied,
   onPressCopyJoin,
   isOrganizer,
+  canManageMatch,
   userOnMatchLineup,
   showFinishedRatingsChrome,
   ratingHints,
@@ -154,6 +156,15 @@ export function MatchDetailSummaryPanel({
                 onPress={() => navigation.navigate('LineupBuilder', { matchId })}
                 style={styles.flex}
                 testID="match:lineup:builder:press"
+              />
+            ) : null}
+            {canManageMatch && match.status === 'upcoming' && isRemoteMatchId(match.id) ? (
+              <PillButton
+                title="Maç Detaylarını Düzenle"
+                variant="secondary"
+                onPress={() => navigation.navigate('EditMatch', { matchId })}
+                style={styles.fullRow}
+                testID="match:edit-details:press"
               />
             ) : null}
             {match.status === 'upcoming' ? (

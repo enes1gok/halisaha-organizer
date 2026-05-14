@@ -4,6 +4,7 @@ import { useReduceMotion } from '../hooks/useReduceMotion';
 import { useThemeColors } from '../theme/ThemeContext';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { EditMatchScreen } from '../screens/EditMatchScreen';
 import { MatchFinalScreen } from '../screens/MatchFinalScreen';
 import { MatchRatingFlowScreen } from '../screens/MatchRatingFlowScreen';
 import { MyMatchesScreen } from '../screens/MyMatchesScreen';
@@ -30,6 +31,11 @@ export function MyMatchesStackNav() {
         name="MatchDetail"
         component={MatchDetailScreen}
         options={{ title: 'Maç Detayı' }}
+      />
+      <Stack.Screen
+        name="EditMatch"
+        component={EditMatchScreen}
+        options={{ title: 'Maçı Düzenle' }}
       />
       <Stack.Screen
         name="LineupBuilder"

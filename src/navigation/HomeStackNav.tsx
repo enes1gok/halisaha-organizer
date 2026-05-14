@@ -6,6 +6,7 @@ import { JoinMatchScreen } from '../screens/JoinMatchScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { EditMatchScreen } from '../screens/EditMatchScreen';
 import { MatchFinalScreen } from '../screens/MatchFinalScreen';
 import { MatchRatingFlowScreen } from '../screens/MatchRatingFlowScreen';
 import { getDefaultNativeStackScreenOptions } from './defaultNativeStackScreenOptions';
@@ -36,6 +37,11 @@ export function HomeStackNav() {
         name="MatchDetail"
         component={MatchDetailScreen}
         options={{ title: 'Maç Detayı' }}
+      />
+      <Stack.Screen
+        name="EditMatch"
+        component={EditMatchScreen}
+        options={{ title: 'Maçı Düzenle' }}
       />
       <Stack.Screen
         name="LineupBuilder"

@@ -10,6 +10,7 @@ import { JoinGroupScreen } from '../screens/JoinGroupScreen';
 import { LeaderboardScreen } from '../screens/LeaderboardScreen';
 import { LineupBuilderScreen } from '../screens/LineupBuilderScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
+import { EditMatchScreen } from '../screens/EditMatchScreen';
 import { MatchFinalScreen } from '../screens/MatchFinalScreen';
 import { MatchRatingFlowScreen } from '../screens/MatchRatingFlowScreen';
 import { GroupSettingsScreen } from '../screens/GroupSettingsScreen';
@@ -42,6 +43,7 @@ export function GroupsStackNav() {
       <Stack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: 'Grup Oluştur' }} />
       <Stack.Screen name="JoinGroup" component={JoinGroupScreen} options={{ title: 'Gruba Katıl' }} />
       <Stack.Screen name="MatchDetail" component={MatchDetailScreen} options={{ title: 'Maç Detayı' }} />
+      <Stack.Screen name="EditMatch" component={EditMatchScreen} options={{ title: 'Maçı Düzenle' }} />
       <Stack.Screen name="LineupBuilder" component={LineupBuilderScreen} options={{ title: 'Kadro Kur' }} />
       <Stack.Screen name="MatchSummary" component={MatchFinalScreen} options={{ title: 'Maç Sonucu' }} />
       <Stack.Screen

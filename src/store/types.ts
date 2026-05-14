@@ -8,6 +8,7 @@ import type {
   GroupMembership,
   GroupWeeklySeries,
   Match,
+  MatchPaymentMethod,
   MatchStatus,
   MatchTemplate,
   Player,
@@ -30,6 +31,18 @@ export type CreateMatchInput = {
   ibanAccountName?: string;
   paymentNote?: string;
   paymentMethod: 'note_only' | 'iban' | 'cash';
+};
+
+export type EditMatchInput = {
+  matchId: string;
+  venue: string;
+  startsAt: string;
+  maxPlayers: number;
+  pricePerPerson?: number;
+  iban?: string;
+  ibanAccountName?: string;
+  paymentNote?: string;
+  paymentMethod: MatchPaymentMethod;
 };
 
 export type RemoteProfileRow = {
@@ -104,6 +117,7 @@ export interface MatchesSlice {
   refreshRemoteMatch: (matchId: string) => Promise<void>;
 
   createMatch: (input: CreateMatchInput) => Promise<Match>;
+  updateMatchDetails: (input: EditMatchInput) => Promise<void>;
   joinMatchByJoinCode: (code: string) => Promise<Match | null>;
 
   setRSVP: (matchId: string, playerId: string, status: RSVPStatus) => Promise<void>;

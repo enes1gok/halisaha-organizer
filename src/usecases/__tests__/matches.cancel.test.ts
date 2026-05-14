@@ -68,6 +68,7 @@ function buildDeps(overrides: Partial<Parameters<typeof cancelMatchUseCase>[0]> 
     mergeHydratedRemoteMatches: jest.fn(),
     mergeRemoteGraph: jest.fn(),
     createLocalMatch: jest.fn(),
+    patchLocalMatch: jest.fn(),
     joinLocalMatchByJoinCode: jest.fn(),
     setLocalRsvp: jest.fn(),
     setLocalPaid: jest.fn(),

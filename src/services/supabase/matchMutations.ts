@@ -1,7 +1,7 @@
-import type { MatchStatus, RSVPStatus, SelfReportType } from '../../types/domain';
+import type { MatchPaymentMethod, MatchStatus, RSVPStatus, SelfReportType } from '../../types/domain';
 import { getSupabaseClient } from '../../lib/supabase';
 import { createNotFoundError, mapSupabaseError } from './errors';
-import type { MatchStatusRow, SelfReportStatusRow } from './types';
+import type { MatchRow, MatchStatusRow, SelfReportStatusRow } from './types';
 import { rsvpToDb } from './mappers';
 
 export async function updateMatchAttendeeRemote(
@@ -63,6 +63,33 @@ export async function updateMatchOrganizerFieldsRemote(
 
   const { error } = await supabase.from('matches').update(dbPatch).eq('id', matchId);
   if (error) throw mapSupabaseError(error, 'updateMatchOrganizerFieldsRemote');
+}
+
+export async function updateMatchDetailsRemote(params: {
+  matchId: string;
+  startsAt: string;
+  venue: string;
+  maxPlayers: number;
+  paymentMethod: MatchPaymentMethod;
+  pricePerPerson?: number | null;
+  iban?: string | null;
+  ibanAccountName?: string | null;
+  paymentNote?: string | null;
+}): Promise<MatchRow> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc('update_match_details', {
+    p_match_id: params.matchId,
+    p_starts_at: params.startsAt,
+    p_venue: params.venue,
+    p_max_players: params.maxPlayers,
+    p_payment_method: params.paymentMethod,
+    p_price_per_person: params.pricePerPerson ?? null,
+    p_iban: params.iban ?? null,
+    p_iban_account_name: params.ibanAccountName ?? null,
+    p_payment_note: params.paymentNote ?? null,
+  });
+  if (error) throw mapSupabaseError(error, 'updateMatchDetailsRemote');
+  return data as MatchRow;
 }
 
 export async function insertSelfReportRemote(

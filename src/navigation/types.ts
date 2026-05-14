@@ -4,6 +4,7 @@ export type HomeStackParamList = {
   HomeMain: undefined;
   JoinMatch: undefined;
   MatchDetail: { matchId: string };
+  EditMatch: { matchId: string };
   LineupBuilder: { matchId: string };
   MatchSummary: { matchId: string };
   MatchRatingFlow: { matchId: string };
@@ -12,6 +13,7 @@ export type HomeStackParamList = {
 export type MyMatchesStackParamList = {
   MyMatchesMain: undefined;
   MatchDetail: { matchId: string };
+  EditMatch: { matchId: string };
   LineupBuilder: { matchId: string };
   MatchSummary: { matchId: string };
   MatchRatingFlow: { matchId: string };
@@ -43,6 +45,7 @@ export type GroupsStackParamList = {
   CreateGroup: undefined;
   JoinGroup: undefined;
   MatchDetail: { matchId: string };
+  EditMatch: { matchId: string };
   LineupBuilder: { matchId: string };
   MatchSummary: { matchId: string };
   MatchRatingFlow: { matchId: string };

@@ -3,6 +3,7 @@ import {
   insertSelfReportRemote,
   replaceMatchTeamPlayersRemote,
   updateMatchAttendeeRemote,
+  updateMatchDetailsRemote,
   updateMatchOrganizerFieldsRemote,
   updateSelfReportStatusRemote,
 } from '../services/supabase/matchMutations';
@@ -22,7 +23,7 @@ import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import type { Match, MatchStatus, Player, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
-import type { CreateMatchInput } from '../store/types';
+import type { CreateMatchInput, EditMatchInput } from '../store/types';
 import type { RemoteHydrateOpts } from '../types/remoteHydration';
 import { AppError, createAuthRequiredError, createNotFoundError } from '../services/supabase/errors';
 import { rethrowUseCaseError } from './errors';
@@ -35,6 +36,7 @@ type MatchesDeps = {
   mergeHydratedRemoteMatches: (graphs: MatchGraphPayload[]) => void;
   mergeRemoteGraph: (graph: MatchGraphPayload) => void;
   createLocalMatch: (input: CreateMatchInput) => Match;
+  patchLocalMatch: (matchId: string, patch: Partial<Match>) => void;
   joinLocalMatchByJoinCode: (code: string) => Match | null;
   setLocalRsvp: (matchId: string, playerId: string, status: RSVPStatus) => void;
   setLocalPaid: (matchId: string, playerId: string, paid: boolean, actorId: string) => void;
@@ -121,6 +123,54 @@ export async function createMatchUseCase(deps: MatchesDeps, input: CreateMatchIn
   }
 
   return deps.createLocalMatch(input);
+}
+
+export async function updateMatchDetailsUseCase(
+  deps: MatchesDeps,
+  input: EditMatchInput,
+): Promise<void> {
+  const startsMs = new Date(input.startsAt).getTime();
+  if (!Number.isFinite(startsMs) || startsMs < Date.now()) {
+    throw new AppError({
+      code: 'VALIDATION',
+      operation: 'updateMatchDetails',
+      translationKey: 'errors.rpc.matchStartsAtPast',
+      retryable: false,
+    });
+  }
+
+  const uid = deps.getRemoteUserId();
+  if (uid && isRemoteMatchId(input.matchId)) {
+    try {
+      await updateMatchDetailsRemote({
+        matchId: input.matchId,
+        startsAt: input.startsAt,
+        venue: input.venue,
+        maxPlayers: input.maxPlayers,
+        paymentMethod: input.paymentMethod,
+        pricePerPerson: input.pricePerPerson ?? null,
+        iban: input.iban ?? null,
+        ibanAccountName: input.ibanAccountName ?? null,
+        paymentNote: input.paymentNote ?? null,
+      });
+      const graph = await fetchMatchGraph(input.matchId);
+      deps.mergeRemoteGraph(graph);
+    } catch (error) {
+      rethrowUseCaseError('updateMatchDetails', error, 'Maç güncellenemedi.');
+    }
+    return;
+  }
+
+  deps.patchLocalMatch(input.matchId, {
+    venue: input.venue,
+    startsAt: input.startsAt,
+    maxPlayers: input.maxPlayers,
+    paymentMethod: input.paymentMethod,
+    pricePerPerson: input.pricePerPerson,
+    iban: input.iban,
+    ibanAccountName: input.ibanAccountName,
+    paymentNote: input.paymentNote,
+  });
 }
 
 export async function joinMatchByJoinCodeUseCase(deps: MatchesDeps, code: string): Promise<Match | null> {

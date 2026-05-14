@@ -393,6 +393,7 @@ export function MatchDetailScreen() {
             joinCopied={joinCopied}
             onPressCopyJoin={onPressCopyJoin}
             isOrganizer={canManageMatch}
+            canManageMatch={canManageMatch}
             userOnMatchLineup={userOnMatchLineup}
             showFinishedRatingsChrome={showFinishedRatingsChrome}
             ratingHints={ratingHints}
