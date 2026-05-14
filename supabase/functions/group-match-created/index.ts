@@ -259,10 +259,10 @@ function buildMessage(delivery: ClaimedDelivery): { title: string; body: string 
       .filter(Boolean)
       .join(' • ');
     return {
-      title: 'Odeme hatirlatmasi',
+      title: 'Ödeme hatırlatması',
       body: detail
-        ? `${groupName} • ${detail} — Odemeni tamamlamayi unutma`
-        : `${groupName} grubu maci icin odemeni tamamlamayi unutma`,
+        ? `${groupName} • ${detail} — ödemeyi tamamlamayı unutma`
+        : `${groupName} grubu maçı için ödemeyi tamamlamayı unutma`,
     };
   }
   if (delivery.type === 'match_cancelled') {

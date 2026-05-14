@@ -10,7 +10,8 @@
       "Bash(npx jest *)",
       "Bash(npm run *)",
       "Bash(npm test *)",
-      "Bash(grep -E \"\\\\.ts$|\\\\.tsx$\")"
+      "Bash(grep -E \"\\\\.ts$|\\\\.tsx$\")",
+      "Bash(npx supabase *)"
     ]
   }
 }

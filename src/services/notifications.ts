@@ -1,6 +1,7 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { getSupabaseClient } from '../lib/supabase';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 
@@ -23,7 +24,10 @@ type DeliveryType =
   | 'lineup_published'
   | 'post_match_rating_reminder'
   | 'match_result'
-  | 'streak_at_risk';
+  | 'streak_at_risk'
+  | 'payment_morning_reminder'
+  | 'payment_unpaid_summary_organizer'
+  | 'roster_full_organizer';
 
 type InAppDelivery = {
   id: string;
@@ -122,10 +126,10 @@ function buildInAppMessage(delivery: InAppDelivery): { title: string; body: stri
       .filter(Boolean)
       .join(' • ');
     return {
-      title: 'Odeme hatirlatmasi',
+      title: 'Ödeme hatırlatması',
       body: detail
-        ? `${groupName} • ${detail} — Odemeni tamamlamayi unutma`
-        : `${groupName} grubu maci icin odemeni tamamlamayi unutma`,
+        ? `${groupName} • ${detail} — ödemeyi tamamlamayı unutma`
+        : `${groupName} grubu maçı için ödemeyi tamamlamayı unutma`,
     };
   }
   if (delivery.type === 'match_cancelled') {
@@ -168,6 +172,36 @@ function buildInAppMessage(delivery: InAppDelivery): { title: string; body: stri
     return {
       title: 'Haftalık serin tehlikede',
       body: 'Bu hafta grubunda planlı maç yok — seriyi korumak için bir maç ayarla.',
+    };
+  }
+  if (delivery.type === 'payment_morning_reminder') {
+    const detail = [delivery.match?.venue ?? '', formatMatchTime(delivery.match?.starts_at ?? null)]
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(' • ');
+    return {
+      title: 'Bugün maç var',
+      body: detail
+        ? `${groupName} • ${detail} — nakit/notu unutma`
+        : `${groupName} grubunda bugün maç var — nakit/notu unutma`,
+    };
+  }
+  if (delivery.type === 'payment_unpaid_summary_organizer') {
+    return {
+      title: 'Ödenmemiş katılımcılar',
+      body: `${groupName} maçında henüz ödemesini yapmayan katılımcılar var`,
+    };
+  }
+  if (delivery.type === 'roster_full_organizer') {
+    const detail = [delivery.match?.venue ?? '', formatMatchTime(delivery.match?.starts_at ?? null)]
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .join(' • ');
+    return {
+      title: 'Kadro doldu',
+      body: detail
+        ? `${groupName} • ${detail} — kadro tamamlandı`
+        : `${groupName} grubundaki maçın kadrosu tamamlandı`,
     };
   }
   return {
@@ -346,7 +380,8 @@ export async function registerForPushToken(): Promise<string | null> {
     });
   }
 
-  const token = await Notifications.getExpoPushTokenAsync();
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+  const token = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
   return token.data ?? null;
 }
 

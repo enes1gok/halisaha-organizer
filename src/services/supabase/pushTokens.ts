@@ -22,6 +22,14 @@ export async function upsertPushToken(token: string, platform: string): Promise<
 
 export async function deactivatePushToken(token: string): Promise<void> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from('push_tokens').update({ is_active: false }).eq('token', token);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase
+    .from('push_tokens')
+    .update({ is_active: false })
+    .eq('token', token)
+    .eq('user_id', user.id);
   if (error) throw mapSupabaseError(error, 'deactivatePushToken');
 }
