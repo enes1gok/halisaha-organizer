@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -269,6 +269,9 @@ export function PitchHalfField({
                 marginBottom: -SLOT_CENTER_OFFSET_Y,
               } as const);
 
+          const firstName = p ? p.name.split(' ')[0] : null;
+          const nameColor = teamTint === 'light' ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.92)';
+
           return (
             <FormationDropZone
               key={slot.index}
@@ -285,6 +288,14 @@ export function PitchHalfField({
               >
                 {renderSlotContent(slot, p, slotTestId)}
               </SlotDropHighlight>
+              {firstName ? (
+                <Text
+                  style={[styles.slotPlayerName, { color: nameColor }]}
+                  numberOfLines={1}
+                >
+                  {firstName}
+                </Text>
+              ) : null}
             </FormationDropZone>
           );
         })}
@@ -478,6 +489,16 @@ const usePitchStyles = makeStyles((t) =>
       borderColor: 'rgba(255,255,255,0.2)',
       backgroundColor: 'rgba(0,0,0,0.12)',
       shadowOpacity: 0,
+    },
+    slotPlayerName: {
+      position: 'absolute',
+      top: 59,
+      left: -16,
+      right: -16,
+      textAlign: 'center',
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 0.2,
     },
   }),
 );

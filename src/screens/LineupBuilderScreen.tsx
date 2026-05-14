@@ -115,6 +115,9 @@ function DraggableCard({
   onDragFinalize,
   onHoverMove,
   variant = 'card',
+  slotGhostX,
+  slotGhostY,
+  slotGhostOpacity,
 }: {
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
@@ -123,6 +126,9 @@ function DraggableCard({
   onDragFinalize?: () => void;
   onHoverMove?: (absX: number, absY: number) => void;
   variant?: 'card' | 'slot';
+  slotGhostX?: SharedValue<number>;
+  slotGhostY?: SharedValue<number>;
+  slotGhostOpacity?: SharedValue<number>;
 }) {
   const styles = useLineupStyles();
   const tx = useSharedValue(0);
@@ -134,7 +140,12 @@ function DraggableCard({
 
   const pan = Gesture.Pan()
     .activateAfterLongPress(LONG_PRESS_MS)
-    .onStart(() => {
+    .onStart((e) => {
+      if (variant === 'slot' && slotGhostX && slotGhostY && slotGhostOpacity) {
+        slotGhostX.value = e.absoluteX;
+        slotGhostY.value = e.absoluteY;
+        slotGhostOpacity.value = withTiming(1, { duration: 30 });
+      }
       if (onDragActivated) {
         runOnJS(onDragActivated)(player.id);
       }
@@ -143,6 +154,10 @@ function DraggableCard({
       dragging.value = 1;
       tx.value = e.translationX;
       ty.value = e.translationY;
+      if (variant === 'slot' && slotGhostX && slotGhostY) {
+        slotGhostX.value = e.absoluteX;
+        slotGhostY.value = e.absoluteY;
+      }
       if (onHoverMove) {
         const dx = e.absoluteX - lastHoverX.value;
         const dy = e.absoluteY - lastHoverY.value;
@@ -154,12 +169,18 @@ function DraggableCard({
       }
     })
     .onEnd((e) => {
+      if (variant === 'slot' && slotGhostOpacity) {
+        slotGhostOpacity.value = withTiming(0, { duration: 50 });
+      }
       runOnJS(onDragEnd)(player.id, e.absoluteX, e.absoluteY);
       tx.value = withSpring(0, Springs.snappy);
       ty.value = withSpring(0, Springs.snappy);
       dragging.value = withSpring(0, Springs.snappy);
     })
     .onFinalize(() => {
+      if (variant === 'slot' && slotGhostOpacity) {
+        slotGhostOpacity.value = withTiming(0, { duration: 50 });
+      }
       if (onDragFinalize) {
         runOnJS(onDragFinalize)();
       }
@@ -181,6 +202,9 @@ function DraggableCard({
     shadowOpacity: dragging.value ? 0.35 : 0,
     shadowRadius: dragging.value ? 10 : 0,
     shadowOffset: { width: 0, height: dragging.value ? 4 : 0 },
+    opacity: variant === 'slot'
+      ? interpolate(dragging.value, [0, 1], [1, 0], Extrapolation.CLAMP)
+      : 1,
   }));
 
   return (
@@ -213,6 +237,7 @@ function DraggableCard({
 
 const GHOST_HALF_W = 35;
 const GHOST_HALF_H = 50;
+const SLOT_GHOST_HALF = 28;
 
 /**
  * Floating ghost card rendered at screenFormation root level during pool drag.
@@ -266,6 +291,43 @@ function PoolDragGhost({
         <View style={[styles.columnPosDot, { backgroundColor: posColor }]} />
         <Text style={[styles.columnPosLabel, { color: posColor }]}>{posLabel}</Text>
       </View>
+    </Animated.View>
+  );
+}
+
+function SlotDragGhost({
+  player,
+  ghostX,
+  ghostY,
+  ghostOpacity,
+  containerOriginX,
+  containerOriginY,
+}: {
+  player: Player;
+  ghostX: SharedValue<number>;
+  ghostY: SharedValue<number>;
+  ghostOpacity: SharedValue<number>;
+  containerOriginX: SharedValue<number>;
+  containerOriginY: SharedValue<number>;
+}) {
+  const styles = useLineupStyles();
+
+  const ghostStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    left: ghostX.value - containerOriginX.value - SLOT_GHOST_HALF,
+    top: ghostY.value - containerOriginY.value - SLOT_GHOST_HALF,
+    zIndex: 999,
+    elevation: 20,
+    opacity: ghostOpacity.value,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+  }));
+
+  return (
+    <Animated.View style={[styles.slotGhostRing, ghostStyle]} pointerEvents="none">
+      <PlayerAvatar name={player.name} uri={player.photoUri} size={44} />
     </Animated.View>
   );
 }
@@ -411,6 +473,7 @@ export function LineupBuilderScreen() {
   const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
   const [hoveredZoneKey, setHoveredZoneKey] = useState<string | null>(null);
   const [isDraggingFromPool, setIsDraggingFromPool] = useState(false);
+  const [isDraggingFromSlot, setIsDraggingFromSlot] = useState(false);
 
   const reduceMotion = useReduceMotion();
   const { showApiErrorToast, showValidationToast, showToast } = useUserFeedback();
@@ -419,6 +482,9 @@ export function LineupBuilderScreen() {
   const poolGhostX = useSharedValue(0);
   const poolGhostY = useSharedValue(0);
   const poolGhostOpacity = useSharedValue(0);
+  const slotGhostX = useSharedValue(0);
+  const slotGhostY = useSharedValue(0);
+  const slotGhostOpacity = useSharedValue(0);
   const containerOriginX = useSharedValue(0);
   const containerOriginY = useSharedValue(0);
   const screenFormationRef = useRef<View>(null);
@@ -646,6 +712,12 @@ export function LineupBuilderScreen() {
     setIsDraggingFromPool(true);
   }, []);
 
+  const onDragActivatedFromSlot = useCallback((playerId: string) => {
+    void selectionTick();
+    setDraggingPlayerId(playerId);
+    setIsDraggingFromSlot(true);
+  }, []);
+
   const onHoverMove = useCallback((absX: number, absY: number) => {
     const key = pickFormationZoneOrdered(formationZonesRef.current, absX, absY);
     setHoveredZoneKey((prev) => (prev === key ? prev : key));
@@ -655,6 +727,7 @@ export function LineupBuilderScreen() {
     setDraggingPlayerId(null);
     setHoveredZoneKey(null);
     setIsDraggingFromPool(false);
+    setIsDraggingFromSlot(false);
   }, []);
 
   const onResetLineup = useCallback(() => {
@@ -1032,9 +1105,12 @@ export function LineupBuilderScreen() {
               player={p}
               variant="slot"
               onDragEnd={handleDropFormation}
-              onDragActivated={onDragActivated}
+              onDragActivated={onDragActivatedFromSlot}
               onDragFinalize={onFormationDragFinalize}
               onHoverMove={onHoverMove}
+              slotGhostX={slotGhostX}
+              slotGhostY={slotGhostY}
+              slotGhostOpacity={slotGhostOpacity}
               testID={slotTestId}
             />
           </View>
@@ -1191,6 +1267,18 @@ export function LineupBuilderScreen() {
             ghostX={poolGhostX}
             ghostY={poolGhostY}
             ghostOpacity={poolGhostOpacity}
+            containerOriginX={containerOriginX}
+            containerOriginY={containerOriginY}
+          />
+        ) : null}
+
+        {/* Ghost overlay for slot → slot drag — bypasses pitchesArea overflow:hidden stacking context */}
+        {isDraggingFromSlot && draggingPlayerId ? (
+          <SlotDragGhost
+            player={getPlayer(draggingPlayerId)!}
+            ghostX={slotGhostX}
+            ghostY={slotGhostY}
+            ghostOpacity={slotGhostOpacity}
             containerOriginX={containerOriginX}
             containerOriginY={containerOriginY}
           />
@@ -1464,6 +1552,16 @@ const useLineupStyles = makeStyles((t) =>
       height: 44,
       borderRadius: 22,
       overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    slotGhostRing: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      borderWidth: 2,
+      borderColor: 'rgba(255,255,255,0.45)',
+      backgroundColor: 'rgba(0,0,0,0.15)',
       alignItems: 'center',
       justifyContent: 'center',
     },
