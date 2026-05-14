@@ -20,6 +20,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 drop function if exists public.list_visible_match_graphs_for_user(integer);
+drop function if exists public.list_visible_match_graphs_for_user(integer, timestamptz, uuid);
 
 create function public.list_visible_match_graphs_for_user(
   p_limit integer default null,
@@ -79,6 +80,7 @@ grant execute on function public.list_visible_match_graphs_for_user(integer, tim
 -- ─────────────────────────────────────────────────────────────────────────────
 
 drop function if exists public.list_visible_match_summaries_for_user(integer);
+drop function if exists public.list_visible_match_summaries_for_user(integer, timestamptz, uuid);
 
 create function public.list_visible_match_summaries_for_user(
   p_limit integer default null,

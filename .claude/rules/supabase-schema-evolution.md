@@ -2,6 +2,11 @@
 
 Apply when authoring migrations or SQL under `supabase/` (alongside [supabase-governance.md](supabase-governance.md) for migration-first and security).
 
+## Migration filenames
+
+- **Unique timestamps required.** No two migration files may share the same timestamp prefix (e.g. `20260622120000`). If two migrations are created in the same minute, increment the sub-second counter: `20260622120000`, `20260622120001`, `20260622120002`, …
+- Duplicate timestamps have caused "recorded-but-not-executed" bugs in this repo (see `20260624120001_restore_missing_schema_ddl.sql` for prior incident). The Supabase CLI disambiguates by full filename, but some versions may skip or conflict on duplicates.
+
 ## New tables
 
 - Include `updated_at timestamptz not null default now()` unless the table is strictly append-only with no row updates; if omitting, add a one-line rationale in the migration/PR.

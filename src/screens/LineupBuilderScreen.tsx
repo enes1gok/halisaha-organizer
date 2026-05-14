@@ -67,7 +67,7 @@ type Nav = NativeStackNavigationProp<
   HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList
 >;
 
-const LONG_PRESS_MS = 300;
+const LONG_PRESS_MS = 150;
 const DRAG_SCALE = 1.03;
 
 const FORMATION_TOTALS = new Set([14, 16, 22]);
@@ -106,7 +106,7 @@ function syncTeamsWithGoing(
   return { A: [...nextA, ...addA], B: [...nextB, ...addB] };
 }
 
-/** Horizontal card used on pitch slots and in classic mode lists. */
+/** Draggable player token — renders as a circular avatar on pitch slots, or a horizontal card in the pool list. */
 function DraggableCard({
   player,
   onDragEnd,
@@ -114,6 +114,7 @@ function DraggableCard({
   onDragActivated,
   onDragFinalize,
   onHoverMove,
+  variant = 'card',
 }: {
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
@@ -121,6 +122,7 @@ function DraggableCard({
   onDragActivated?: (playerId: string) => void;
   onDragFinalize?: () => void;
   onHoverMove?: (absX: number, absY: number) => void;
+  variant?: 'card' | 'slot';
 }) {
   const styles = useLineupStyles();
   const tx = useSharedValue(0);
@@ -144,7 +146,7 @@ function DraggableCard({
       if (onHoverMove) {
         const dx = e.absoluteX - lastHoverX.value;
         const dy = e.absoluteY - lastHoverY.value;
-        if (dx * dx + dy * dy > 64) {
+        if (dx * dx + dy * dy > 16) {
           lastHoverX.value = e.absoluteX;
           lastHoverY.value = e.absoluteY;
           runOnJS(onHoverMove)(e.absoluteX, e.absoluteY);
@@ -153,17 +155,17 @@ function DraggableCard({
     })
     .onEnd((e) => {
       runOnJS(onDragEnd)(player.id, e.absoluteX, e.absoluteY);
-      tx.value = withSpring(0, Springs.interactive);
-      ty.value = withSpring(0, Springs.interactive);
-      dragging.value = withSpring(0, Springs.interactive);
+      tx.value = withSpring(0, Springs.snappy);
+      ty.value = withSpring(0, Springs.snappy);
+      dragging.value = withSpring(0, Springs.snappy);
     })
     .onFinalize(() => {
       if (onDragFinalize) {
         runOnJS(onDragFinalize)();
       }
-      tx.value = withSpring(0, Springs.interactive);
-      ty.value = withSpring(0, Springs.interactive);
-      dragging.value = withSpring(0, Springs.interactive);
+      tx.value = withSpring(0, Springs.snappy);
+      ty.value = withSpring(0, Springs.snappy);
+      dragging.value = withSpring(0, Springs.snappy);
     });
 
   const style = useAnimatedStyle(() => ({
@@ -185,19 +187,25 @@ function DraggableCard({
     <GestureDetector gesture={pan}>
       <Animated.View
         hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-        style={[styles.card, style]}
+        style={variant === 'slot' ? [styles.slotToken, style] : [styles.card, style]}
         testID={testID}
         accessibilityRole="button"
         accessibilityLabel={player.name}
         accessibilityHint="Sürükleyerek sahaya veya havuza taşıyın."
       >
-        <PlayerAvatar name={player.name} uri={player.photoUri} size={36} />
-        <View style={styles.cardMeta}>
-          <Text style={styles.cardName} numberOfLines={isLarge ? 2 : 1}>
-            {player.name}
-          </Text>
-          <PositionBadge position={player.position} />
-        </View>
+        {variant === 'slot' ? (
+          <PlayerAvatar name={player.name} uri={player.photoUri} size={44} />
+        ) : (
+          <>
+            <PlayerAvatar name={player.name} uri={player.photoUri} size={36} />
+            <View style={styles.cardMeta}>
+              <Text style={styles.cardName} numberOfLines={isLarge ? 2 : 1}>
+                {player.name}
+              </Text>
+              <PositionBadge position={player.position} />
+            </View>
+          </>
+        )}
       </Animated.View>
     </GestureDetector>
   );
@@ -302,7 +310,7 @@ function PlayerColumnItem({
       dragging.value = 1;
       poolGhostX.value = e.absoluteX;
       poolGhostY.value = e.absoluteY;
-      poolGhostOpacity.value = withTiming(1, { duration: 80 });
+      poolGhostOpacity.value = withTiming(1, { duration: 30 });
       if (onDragActivated) runOnJS(onDragActivated)(player.id);
     })
     .onUpdate((e) => {
@@ -314,7 +322,7 @@ function PlayerColumnItem({
       if (onHoverMove) {
         const dx = e.absoluteX - lastHoverX.value;
         const dy = e.absoluteY - lastHoverY.value;
-        if (dx * dx + dy * dy > 64) {
+        if (dx * dx + dy * dy > 16) {
           lastHoverX.value = e.absoluteX;
           lastHoverY.value = e.absoluteY;
           runOnJS(onHoverMove)(e.absoluteX, e.absoluteY);
@@ -323,16 +331,16 @@ function PlayerColumnItem({
     })
     .onEnd((e) => {
       runOnJS(onDragEnd)(player.id, e.absoluteX, e.absoluteY);
-      tx.value = withSpring(0, Springs.interactive);
-      ty.value = withSpring(0, Springs.interactive);
-      dragging.value = withSpring(0, Springs.interactive);
+      tx.value = withSpring(0, Springs.snappy);
+      ty.value = withSpring(0, Springs.snappy);
+      dragging.value = withSpring(0, Springs.snappy);
     })
     .onFinalize(() => {
-      poolGhostOpacity.value = withTiming(0, { duration: 100 });
+      poolGhostOpacity.value = withTiming(0, { duration: 50 });
       if (onDragFinalize) runOnJS(onDragFinalize)();
-      tx.value = withSpring(0, Springs.interactive);
-      ty.value = withSpring(0, Springs.interactive);
-      dragging.value = withSpring(0, Springs.interactive);
+      tx.value = withSpring(0, Springs.snappy);
+      ty.value = withSpring(0, Springs.snappy);
+      dragging.value = withSpring(0, Springs.snappy);
     });
 
   const animStyle = useAnimatedStyle(() => ({
@@ -485,7 +493,7 @@ export function LineupBuilderScreen() {
   );
 
   useEffect(() => {
-    const t = setTimeout(measure, 300);
+    const t = setTimeout(measure, 100);
     return () => clearTimeout(t);
   }, [match?.teamAIds, match?.teamBIds, measure]);
 
@@ -611,7 +619,7 @@ export function LineupBuilderScreen() {
         }),
       );
     }
-    setTimeout(measure, 50);
+    requestAnimationFrame(measure);
   };
 
   const handleDropFormation = useCallback(
@@ -757,14 +765,19 @@ export function LineupBuilderScreen() {
           mapOperation: 'replaceMatchTeamPlayersRemote',
         }),
       );
-    setTimeout(measure, 50);
+    requestAnimationFrame(measure);
   };
 
   const onPickFormation = (id: string) => {
     const f = getLineupFormationById(id);
     if (!f) return;
     if (!reduceMotion) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      LayoutAnimation.configureNext({
+        duration: 180,
+        create: { type: 'easeInEaseOut', property: 'opacity' },
+        update: { type: 'spring', springDamping: 0.7 },
+        delete: { type: 'easeInEaseOut', property: 'opacity' },
+      });
     }
     const sameSize =
       selectedFormation != null && selectedFormation.playersPerTeam === f.playersPerTeam;
@@ -1017,6 +1030,7 @@ export function LineupBuilderScreen() {
           <View style={styles.slotInner}>
             <DraggableCard
               player={p}
+              variant="slot"
               onDragEnd={handleDropFormation}
               onDragActivated={onDragActivated}
               onDragFinalize={onFormationDragFinalize}
@@ -1443,8 +1457,15 @@ const useLineupStyles = makeStyles((t) =>
     slotInner: {
       minHeight: 44,
       justifyContent: 'center',
-      width: '100%',
       alignItems: 'center',
+    },
+    slotToken: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     slotEmpty: {
       alignItems: 'center',

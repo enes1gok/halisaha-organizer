@@ -11,6 +11,31 @@ export type MyGroupsPayload = {
   profiles: PublicProfileRow[];
 };
 
+// PG 42703 = undefined_column. If photo_uri migration hasn't been applied yet,
+// retry without the column and fill null so mapGroup degrades gracefully.
+async function fetchGroupsResilient(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  groupIds: string[],
+): Promise<{ data: GroupRow[] | null; error: unknown }> {
+  const full = await supabase
+    .from('groups')
+    .select('id,name,owner_id,join_code,created_at,photo_uri')
+    .in('id', groupIds);
+
+  if ((full.error as { code?: string } | null)?.code === '42703') {
+    const slim = await supabase
+      .from('groups')
+      .select('id,name,owner_id,join_code,created_at')
+      .in('id', groupIds);
+    return {
+      data: slim.data?.map((g) => ({ ...g, photo_uri: null })) ?? null,
+      error: slim.error,
+    };
+  }
+
+  return { data: full.data as GroupRow[] | null, error: full.error };
+}
+
 async function fetchMyGroupsViaMultiQuery(userId: string): Promise<MyGroupsPayload> {
   const supabase = getSupabaseClient();
 
@@ -24,10 +49,7 @@ async function fetchMyGroupsViaMultiQuery(userId: string): Promise<MyGroupsPaylo
   if (groupIds.length === 0) return { groups: [], memberships: [], profiles: [] };
 
   const [groupsResult, membershipsResult] = await Promise.all([
-    supabase
-      .from('groups')
-      .select('id,name,owner_id,join_code,created_at,photo_uri')
-      .in('id', groupIds),
+    fetchGroupsResilient(supabase, groupIds),
     supabase
       .from('group_members')
       .select('group_id,player_id,role,created_at')

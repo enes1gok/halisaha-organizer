@@ -174,6 +174,7 @@ Skills live in `.claude/skills/{name}.md`. Invoke with `/skill-name` or read the
 | `evolve-postgres-function` | Postgres function signature/return-type change in a migration; 42P13 / DROP+recreate + grants |
 | `add-formation-logic` | New `LineupFormation` in `lineupFormations.ts`, anchors, tests, tactical board behavior |
 | `add-group-feature` | New route in `GroupsStackNav`, `GroupRole` logic, `GroupWeeklySeries` change, group-scoped RPC |
+| `handle-column-absent-compat` | Multi-query fallback selects a newly-added column that may not exist in the deployed DB (PG 42703); wrap the query with a retry-without-column pattern |
 
 ## Maintenance contract
 
