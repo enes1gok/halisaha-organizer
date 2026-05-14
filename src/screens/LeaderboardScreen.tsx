@@ -6,8 +6,9 @@ import { EmptyState } from '../components/EmptyState';
 import { LeaderboardPodium } from '../components/LeaderboardPodium';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { LeaderboardRowSkeleton, SkeletonList } from '../components/skeleton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  TAB_BAR_LIST_PADDING_BOTTOM,
+  getTabBarListPaddingBottom,
   TAB_BAR_LIST_PADDING_PINNED_EXTRA,
 } from '../navigation/tabBarLayout';
 import { spacing, typography } from '../theme';
@@ -50,6 +51,7 @@ export function LeaderboardScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const route = useRoute<GroupLeaderboardRoute>();
   const groupId = route.params?.groupId;
   const players = usePlayersStore((s) => s.players);
@@ -197,8 +199,8 @@ export function LeaderboardScreen() {
           styles.list,
           {
             paddingBottom: showPinned
-              ? TAB_BAR_LIST_PADDING_BOTTOM + TAB_BAR_LIST_PADDING_PINNED_EXTRA
-              : TAB_BAR_LIST_PADDING_BOTTOM,
+              ? getTabBarListPaddingBottom(insets.bottom) + TAB_BAR_LIST_PADDING_PINNED_EXTRA
+              : getTabBarListPaddingBottom(insets.bottom),
           },
         ]}
         ListEmptyComponent={

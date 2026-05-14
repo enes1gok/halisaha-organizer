@@ -28,7 +28,8 @@ import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { useEffectiveMatchStatus } from '../hooks/useEffectiveMatchStatus';
 import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
@@ -62,6 +63,7 @@ export function MatchDetailScreen() {
   const { colors } = useTheme();
   const matchDetailStyles = useMatchDetailStyles();
   const { matchId } = route.params;
+  const insets = useSafeAreaInsets();
 
   const { showApiErrorToast } = useUserFeedback();
   const userId = useAuthStore((s) => s.getCurrentUserId());
@@ -375,7 +377,7 @@ export function MatchDetailScreen() {
 
       <ScrollView
         style={styles.tabScroll}
-        contentContainerStyle={[styles.tabScrollContent, { paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }]}
+        contentContainerStyle={[styles.tabScrollContent, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
         {tab === 'summary' ? (

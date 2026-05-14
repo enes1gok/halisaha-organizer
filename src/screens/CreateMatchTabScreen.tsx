@@ -21,6 +21,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeViewGestureHandler } from 'react-native-gesture-handler';
 import { PillButton } from '../components/PillButton';
@@ -66,6 +67,7 @@ export function CreateMatchTabScreen() {
   const { showToast, showValidationToast, showApiErrorToast } = useUserFeedback();
   const { colors } = useTheme();
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheetModal>(null);
   const pendingMatchToastRef = useRef<ShowToastOptions | null>(null);
   const snapPoints = useMemo(() => ['82%'], []);
@@ -446,7 +448,7 @@ export function CreateMatchTabScreen() {
         handleIndicatorStyle={styles.handle}
       >
         <BottomSheetScrollView
-          contentContainerStyle={styles.sheetBody}
+          contentContainerStyle={[styles.sheetBody, { paddingBottom: Math.max(spacing.xl, insets.bottom + spacing.md) }]}
           keyboardShouldPersistTaps="handled"
         >
           <Text style={[typography.title, styles.title]}>Yeni Maç</Text>
@@ -971,7 +973,6 @@ const useStyles = makeStyles((t) =>
     },
     sheetBody: {
       paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.xl,
       gap: spacing.sm,
     },
     title: {

@@ -16,8 +16,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { PillButton } from '../components/PillButton';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import { useTheme } from '../theme/ThemeContext';
 import { radius, spacing, typography } from '../theme';
 import {
@@ -58,6 +60,7 @@ export function EditMatchScreen() {
   const route = useRoute<EditMatchRoute>();
   const navigation = useNavigation<Nav>();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { showToast, showValidationToast, showApiErrorToast } = useUserFeedback();
 
   const { matchId } = route.params;
@@ -329,12 +332,15 @@ export function EditMatchScreen() {
     },
     submitButton: {
       marginTop: spacing.lg,
-      marginBottom: spacing.lg,
     },
   });
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: getTabBarListPaddingBottom(insets.bottom) }}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Venue */}
       <View style={styles.section}>
         <Text style={styles.label}>Yer</Text>

@@ -48,7 +48,8 @@ import {
 } from '../utils/stats';
 import { isEmailVerified } from '../utils/emailVerification';
 import { useTurkishIbanField } from '../hooks/useTurkishIbanField';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
 import { isValidTurkishIban, normalizeIban } from '../utils/iban';
 import { useUserFeedback } from '../utils/userFeedback';
@@ -81,6 +82,7 @@ export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
   const { colors } = useTheme();
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const player = usePlayersStore((s) => s.players.find((p) => p.id === userId));
@@ -350,7 +352,7 @@ export function ProfileScreen() {
     return (
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}
+        contentContainerStyle={{ paddingBottom: getTabBarListPaddingBottom(insets.bottom) }}
         accessibilityLabel="Profil yükleniyor"
       >
         <ProfileHeaderSkeleton />
@@ -379,7 +381,7 @@ export function ProfileScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}
+      contentContainerStyle={{ paddingBottom: getTabBarListPaddingBottom(insets.bottom) }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <ProfileStatsHero

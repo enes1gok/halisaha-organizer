@@ -16,7 +16,8 @@ import {
 } from 'react-native';
 import { SettingsSectionSkeleton } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/supabase/profiles';
 import { colors, spacing, typography } from '../theme';
 import {
@@ -66,6 +67,7 @@ function permissionLabel(status: Notifications.PermissionStatus): string {
 type QuietField = 'start' | 'end';
 
 export function NotificationSettingsScreen() {
+  const insets = useSafeAreaInsets();
   const { configured, session } = useSupabaseAuth();
   const { showValidationToast, showApiErrorToast } = useUserFeedback();
   const [loading, setLoading] = useState(true);
@@ -324,7 +326,7 @@ export function NotificationSettingsScreen() {
 
   if (!configured) {
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}>
         <Text style={styles.hint}>
           Supabase için kök dizinde `.env` içinde EXPO_PUBLIC_SUPABASE_URL ve EXPO_PUBLIC_SUPABASE_ANON_KEY tanımlayın.
         </Text>
@@ -334,7 +336,7 @@ export function NotificationSettingsScreen() {
 
   if (!session) {
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}>
         <Text style={styles.hint}>Bildirim tercihleri için önce oturum açın.</Text>
       </ScrollView>
     );
@@ -342,7 +344,7 @@ export function NotificationSettingsScreen() {
 
   if (loading) {
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}>
         <SettingsSectionSkeleton rows={2} />
         <SettingsSectionSkeleton rows={1} />
         <SettingsSectionSkeleton rows={7} />
@@ -354,7 +356,7 @@ export function NotificationSettingsScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.section}>
@@ -689,7 +691,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-    paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
     gap: spacing.md,
   },
   section: {

@@ -18,7 +18,8 @@ import { SettingsSectionSkeleton } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { readDeleteAccountUrl } from '../lib/publicConfig';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { ProfileStackParamList } from '../navigation/types';
 import { usePreferencesStore } from '../store';
 import type { ThemePreference } from '../store/types';
@@ -118,6 +119,7 @@ export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const reduceMotion = useReduceMotion();
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const {
     configured,
     loading: authLoading,
@@ -167,7 +169,10 @@ export function SettingsScreen() {
   }, []);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
+    >
       <Card style={styles.section}>
         <Text style={styles.sectionTitle} accessibilityRole="header">
           Hesap
@@ -335,7 +340,6 @@ const useStyles = makeStyles((t) =>
     },
     content: {
       padding: spacing.md,
-      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
       gap: spacing.md,
     },
     section: {

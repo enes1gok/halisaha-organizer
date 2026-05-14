@@ -9,11 +9,12 @@ import {
   View,
   type ViewToken,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../../../components/EmptyState';
 import type { EmptyStateVariant } from '../../../components/emptyIllustrations/types';
 import { MatchCard } from '../../../components/MatchCard';
 import { MatchCardListRow } from '../../../components/MatchCardListRow';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../../../navigation/tabBarLayout';
+import { getTabBarListPaddingBottom } from '../../../navigation/tabBarLayout';
 import { letterSpacing, radius, spacing, typography } from '../../../theme';
 import { makeStyles, useThemeColors } from '../../../theme/ThemeContext';
 import type { Match } from '../../../types/domain';
@@ -98,6 +99,7 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
 ) {
   const styles = useAgendaStyles();
   const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
   const listRef = useRef<SectionList<Match, AgendaSection>>(null);
   const indexByKey = useMemo(() => {
     const map = new Map<string, number>();
@@ -168,9 +170,10 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
       ref={listRef}
       sections={sections}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={
-        sections.length === 0 ? styles.emptyContent : styles.content
-      }
+      contentContainerStyle={[
+        sections.length === 0 ? styles.emptyContent : styles.content,
+        { paddingBottom: getTabBarListPaddingBottom(insets.bottom) },
+      ]}
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={ListHeaderComponent}
       refreshControl={
@@ -264,13 +267,11 @@ const useAgendaStyles = makeStyles((t) =>
     content: {
       padding: spacing.md,
       paddingTop: spacing.sm,
-      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
     },
     emptyContent: {
       flexGrow: 1,
       paddingHorizontal: spacing.md,
       paddingTop: spacing.sm,
-      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
       justifyContent: 'flex-start',
     },
     sectionHeader: {

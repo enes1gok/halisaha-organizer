@@ -10,7 +10,8 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { SettingsSectionSkeleton, SkeletonText } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, usePlayersStore } from '../store';
 import { colors, letterSpacing, radius, spacing, typography } from '../theme';
@@ -39,6 +40,7 @@ export function GroupSettingsScreen() {
   const route = useRoute<SettingsRoute>();
   const navigation = useNavigation<Nav>();
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const { groupId } = route.params;
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const groups = useGroupsStore((s) => s.groups);
@@ -325,7 +327,7 @@ export function GroupSettingsScreen() {
       style={styles.screen}
       contentContainerStyle={[
         styles.content,
-        { paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM },
+        { paddingBottom: getTabBarListPaddingBottom(insets.bottom) },
       ]}
     >
       {isOwnerOrAdmin && (

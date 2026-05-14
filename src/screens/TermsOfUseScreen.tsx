@@ -1,7 +1,8 @@
 import React from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import { spacing, typography } from '../theme';
 import { makeStyles } from '../theme/ThemeContext';
 
@@ -48,9 +49,13 @@ const SECTIONS: Array<{ title: string; body: string }> = [
 
 export function TermsOfUseScreen() {
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
+    >
       <View style={styles.card}>
         <Text style={styles.title}>Kullanim Kosullari</Text>
         <Text style={styles.meta}>Son guncelleme: 2026-05-07</Text>
@@ -86,7 +91,6 @@ const useStyles = makeStyles((t) =>
     },
     content: {
       padding: spacing.md,
-      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
       gap: spacing.sm,
     },
     card: {

@@ -1,16 +1,21 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../components/Card';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import { OPEN_SOURCE_LICENSES_SUMMARY } from '../legal/openSourceLicensesBundled';
 import { spacing, typography } from '../theme';
 import { makeStyles } from '../theme/ThemeContext';
 
 export function LicensesScreen() {
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
+    >
       <Card>
         <Text style={styles.title}>Açık kaynak yazılımlar</Text>
         <Text style={styles.body}>{OPEN_SOURCE_LICENSES_SUMMARY}</Text>
@@ -27,7 +32,6 @@ const useStyles = makeStyles((t) =>
     },
     content: {
       padding: spacing.md,
-      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
       gap: spacing.md,
     },
     title: {

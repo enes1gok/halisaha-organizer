@@ -2,7 +2,7 @@
  * Shared layout for the floating pill tab bar. Keep scroll `paddingBottom` on tab-root screens in sync.
  */
 export const TAB_BAR_FLOAT_MARGIN_H = 16;
-export const TAB_BAR_FLOAT_MARGIN_BOTTOM = 12;
+export const TAB_BAR_FLOAT_MARGIN_BOTTOM = 4;
 /** Shell padding + pill row; snackbar clears above floating tab bar. */
 export const TAB_BAR_FLOATING_BLOCK_HEIGHT = 78;
 /** Small top inset so the bar shadow is not clipped (no FAB). */
@@ -35,7 +35,21 @@ export function getHomeListPaddingBottom(insetsBottom: number): number {
   return getHomeActionStripBottom(insetsBottom) + HOME_ACTION_STRIP_HEIGHT + HOME_ACTION_STRIP_GAP + 16;
 }
 
-/** Bottom padding for FlatList/ScrollView on tab screens that do not pin a home action strip. */
+/**
+ * Dynamic bottom padding for FlatList/ScrollView on any screen inside the tab navigator.
+ * Clears the floating pill tab bar + device safe area inset.
+ * Pass `useSafeAreaInsets().bottom` as the argument.
+ */
+export function getTabBarListPaddingBottom(insetsBottom: number): number {
+  return (
+    TAB_BAR_FLOATING_BLOCK_HEIGHT +
+    TAB_BAR_FLOAT_MARGIN_BOTTOM +
+    Math.max(insetsBottom, 8) +
+    8
+  );
+}
+
+/** @deprecated Use getTabBarListPaddingBottom(insets.bottom) instead. */
 export const TAB_BAR_LIST_PADDING_BOTTOM = 96;
 
 /** Leaderboard: extra list padding when the pinned “you” strip is visible. */

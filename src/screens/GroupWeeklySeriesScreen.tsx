@@ -2,7 +2,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LayoutAnimation, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import { WeeklySeriesFormSkeleton } from '../components/skeleton';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useUserFeedback } from '../utils/userFeedback';
@@ -49,6 +51,7 @@ function parseTimeToDate(t: string): Date {
 
 export function GroupWeeklySeriesScreen() {
   const { groupId } = useRoute<Route>().params;
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const group = useGroupsStore((s) => s.groups.find((g) => g.id === groupId));
   const fetchSeries = useGroupsStore((s) => s.fetchGroupWeeklySeries);
@@ -191,14 +194,14 @@ export function GroupWeeklySeriesScreen() {
 
   if (loading) {
     return (
-      <ScrollView contentContainerStyle={styles.scroll} pointerEvents="none">
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]} pointerEvents="none">
         <WeeklySeriesFormSkeleton />
       </ScrollView>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]} keyboardShouldPersistTaps="handled">
       <Text style={styles.lead}>
         Maç sonucu kaydedildiğinde bir sonraki hafta aynı gün ve saatte yeni maç oluşturulur. Katılımcı listesi sıfırlanır;
         yalnızca varsayılan organizatör &quot;geliyorum&quot; olarak eklenir.
@@ -299,7 +302,7 @@ export function GroupWeeklySeriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
+  scroll: { padding: spacing.md, gap: spacing.md },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   muted: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
   loadingLabel: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },

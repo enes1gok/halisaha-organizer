@@ -2,9 +2,10 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../components/EmptyState';
 import { MatchCardSkeleton, MyMatchesCalendarSkeleton, SkeletonList } from '../components/skeleton';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import { resolveMyMatchesEntryScreen } from '../navigation/myMatchesEntry';
 import type { MyMatchesStackParamList } from '../navigation/types';
 import { spacing } from '../theme';
@@ -23,6 +24,7 @@ export function MyMatchesScreen() {
   const navigation = useNavigation<Nav>();
   const data = useMyMatchesData();
   const styles = useStyles();
+  const insets = useSafeAreaInsets();
   const agendaRef = useRef<MyMatchesAgendaHandle>(null);
   const suppressPrimaryVisibleSyncRef = useRef(false);
   const skipNextAgendaScrollRef = useRef(false);
@@ -82,7 +84,7 @@ export function MyMatchesScreen() {
             counts={data.segmentCounts}
           />
         </View>
-        <View style={styles.skeletonBody}>
+        <View style={[styles.skeletonBody, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}>
           <MyMatchesCalendarSkeleton />
           <View style={styles.skeletonGap} />
           <SkeletonList count={3} renderItem={() => <MatchCardSkeleton />} />
@@ -182,7 +184,6 @@ const useStyles = makeStyles((t) =>
     skeletonBody: {
       paddingHorizontal: spacing.md,
       paddingTop: spacing.sm,
-      paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM,
     },
     skeletonGap: {
       height: spacing.md,

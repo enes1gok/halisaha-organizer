@@ -9,10 +9,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotmSelectorSection } from '../components/MotmSelectorSection';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { colors, radius, shadows, spacing, typography } from '../theme';
@@ -47,6 +48,7 @@ export function MatchRatingFlowScreen() {
   const route = useRoute<RatingFlowRoute>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const { showValidationToast, showApiErrorToast } = useUserFeedback();
 
@@ -205,7 +207,7 @@ export function MatchRatingFlowScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }]}
+      contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
     >
       {/* Üst bilgi */}
       <View style={styles.headerRow}>

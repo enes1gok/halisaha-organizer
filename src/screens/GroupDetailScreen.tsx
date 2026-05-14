@@ -2,13 +2,14 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useMemo, useLayoutEffect } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MatchCard } from '../components/MatchCard';
 import { MatchCardListRow } from '../components/MatchCardListRow';
 import { PillButton } from '../components/PillButton';
 import { MatchCardSkeleton, SettingsSectionSkeleton, SkeletonList, SkeletonText } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, useMatchesStore } from '../store';
 import { colors, spacing, typography } from '../theme';
@@ -21,6 +22,7 @@ export function GroupDetailScreen() {
   const route = useRoute<DetailRoute>();
   const navigation = useNavigation<Nav>();
   const { groupId } = route.params;
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const groups = useGroupsStore((s) => s.groups);
   const memberships = useGroupsStore((s) => s.groupMemberships);
@@ -123,7 +125,7 @@ export function GroupDetailScreen() {
         ListHeaderComponent={listHeader}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM },
+          { paddingBottom: getTabBarListPaddingBottom(insets.bottom) },
         ]}
         ListEmptyComponent={
           <Text style={styles.empty}>Bu grupta henüz planlanan maç yok.</Text>

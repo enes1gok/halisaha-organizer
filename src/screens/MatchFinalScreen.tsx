@@ -3,12 +3,13 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import { MatchFinishedResultCard } from '../components/MatchFinishedResultCard';
 import { MatchScoreLines } from '../components/MatchScoreLines';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
-import { TAB_BAR_LIST_PADDING_BOTTOM } from '../navigation/tabBarLayout';
+import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import { computeBadgesEarnedInMatch } from '../domain/badges/computeBadgesEarnedInMatch';
@@ -33,6 +34,7 @@ export function MatchFinalScreen() {
   const route = useRoute<R>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
+  const insets = useSafeAreaInsets();
   const { showToast } = useUserFeedback();
 
   const cardRef = useRef<View>(null);
@@ -153,7 +155,7 @@ export function MatchFinalScreen() {
   const showRatingCta = onLineup && !hasSubmittedRatings && isRemoteMatchId(match.id) && !windowClosed;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: TAB_BAR_LIST_PADDING_BOTTOM }}>
+    <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: getTabBarListPaddingBottom(insets.bottom) }}>
       <View style={styles.pad}>
         <MatchFinishedResultCard
           ref={cardRef}

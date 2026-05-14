@@ -1,9 +1,11 @@
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LayoutAnimation,
   LayoutChangeEvent,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -538,6 +540,7 @@ export function LineupBuilderScreen() {
   const [slotsA, setSlotsA] = useState<(string | null)[]>([]);
   const [slotsB, setSlotsB] = useState<(string | null)[]>([]);
   const [formationId, setFormationId] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const formationInitKey = useRef<string>('');
   const lastPersistKey = useRef<string>('');
@@ -1130,34 +1133,19 @@ export function LineupBuilderScreen() {
 
           {/* Compact header strip */}
           <View style={styles.formationHeader}>
-            <Text style={styles.formationTitle}>
-              {goingPlayers.length}/{match.maxPlayers} · {selectedFormation.playersPerTeam}&apos;şer · {selectedFormation.label}
-            </Text>
-            {!strictFormationFill ? (
-              <Text style={styles.hintWarn} accessibilityRole="text">
-                Tam kadro değil; boş slot bırakabilirsiniz.
-              </Text>
-            ) : null}
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipRow}
-              testID="lineup:formation:scroll"
+            <Pressable
+              onPress={() => setDropdownOpen(true)}
+              style={styles.formationDropdownBtn}
+              testID="lineup:formation:dropdown"
+              accessibilityRole="button"
+              accessibilityLabel={`Dizilim: ${selectedFormation.label}. Değiştirmek için dokun.`}
             >
-              {formationsForCount.map((f) => (
-                <Pressable
-                  key={f.id}
-                  onPress={() => onPickFormation(f.id)}
-                  style={[styles.chip, resolvedFormationId === f.id && styles.chipSelected]}
-                  testID={`lineup:formation:${f.id}`}
-                >
-                  <Text style={[styles.chipText, resolvedFormationId === f.id && styles.chipTextSelected]}>
-                    {f.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+              <Ionicons name="apps-outline" size={15} color={colors.accent} />
+              <Text style={styles.formationDropdownLabel}>Dizilim</Text>
+              <View style={styles.formationDropdownDivider} />
+              <Text style={styles.formationDropdownBtnText}>{selectedFormation.label}</Text>
+              <Ionicons name="chevron-down" size={13} color={colors.accent} />
+            </Pressable>
           </View>
 
           {/* Pitches area — stacked vertically, horizontal (landscape) mode, no scroll */}
@@ -1165,12 +1153,16 @@ export function LineupBuilderScreen() {
             <View style={styles.pitchesContent}>
               <View style={styles.pitchColumns}>
                 <View style={styles.pitchCol}>
-                  <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.B}</Text>
-                  {renderPitch(selectedFormation, slotsB, 'B', draggingPlayerId != null, true, hoveredZoneKey)}
+                  <View style={styles.pitchWrapper}>
+                    {renderPitch(selectedFormation, slotsB, 'B', draggingPlayerId != null, true, hoveredZoneKey)}
+                    <Text style={[styles.pitchTeamTitleOverlay, styles.pitchTeamTitleLight]}>{TEAM_SIDE_LABELS.B}</Text>
+                  </View>
                 </View>
                 <View style={styles.pitchCol}>
-                  <Text style={styles.pitchTeamTitle}>{TEAM_SIDE_LABELS.A}</Text>
-                  {renderPitch(selectedFormation, slotsA, 'A', draggingPlayerId != null, true, hoveredZoneKey)}
+                  <View style={styles.pitchWrapper}>
+                    {renderPitch(selectedFormation, slotsA, 'A', draggingPlayerId != null, true, hoveredZoneKey)}
+                    <Text style={[styles.pitchTeamTitleOverlay, styles.pitchTeamTitleDark]}>{TEAM_SIDE_LABELS.A}</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -1269,6 +1261,41 @@ export function LineupBuilderScreen() {
           />
         ) : null}
 
+        {/* Formation picker dropdown modal */}
+        <Modal
+          transparent
+          animationType="fade"
+          visible={dropdownOpen}
+          onRequestClose={() => setDropdownOpen(false)}
+        >
+          <Pressable style={styles.dropdownBackdrop} onPress={() => setDropdownOpen(false)}>
+            <Pressable style={styles.dropdownSheet} onPress={(e) => e.stopPropagation()}>
+              <Text style={styles.dropdownSheetTitle}>Dizilim seç</Text>
+              {formationsForCount.map((f) => (
+                <Pressable
+                  key={f.id}
+                  style={styles.dropdownOption}
+                  onPress={() => {
+                    onPickFormation(f.id);
+                    setDropdownOpen(false);
+                  }}
+                  testID={`lineup:formation:${f.id}`}
+                >
+                  <Text style={[
+                    styles.dropdownOptionText,
+                    resolvedFormationId === f.id && styles.dropdownOptionTextSelected,
+                  ]}>
+                    {f.label}
+                  </Text>
+                  {resolvedFormationId === f.id ? (
+                    <Ionicons name="checkmark" size={18} color={colors.accent} />
+                  ) : null}
+                </Pressable>
+              ))}
+            </Pressable>
+          </Pressable>
+        </Modal>
+
         <ConfirmationModal
           visible={confirmOpen}
           title="Kadroyu kilitle?"
@@ -1355,11 +1382,10 @@ const useLineupStyles = makeStyles((t) =>
 
     // ── Formation header strip ──
     formationHeader: {
-      gap: spacing.xs,
       flexShrink: 0,
-      paddingTop: spacing.sm,
+      paddingTop: spacing.xs,
       paddingHorizontal: spacing.md,
-      paddingBottom: spacing.xs,
+      paddingBottom: 0,
     },
     formationTitle: {
       ...typography.subtitle,
@@ -1376,37 +1402,79 @@ const useLineupStyles = makeStyles((t) =>
       lineHeight: 18,
     },
 
-    // ── Formation chip row ──
-    chipRow: {
-      gap: spacing.sm,
-      paddingVertical: 2,
+    // ── Formation dropdown ──
+    formationDropdownRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
-    chip: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+    formationDropdownLabel: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    formationDropdownBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: t.colors.border,
-      backgroundColor: t.colors.surface,
-      minHeight: 44,
-      justifyContent: 'center',
-    },
-    chipSelected: {
       borderColor: t.colors.accent,
       backgroundColor: t.colors.accentMuted,
+      minHeight: 32,
     },
-    chipText: {
+    formationDropdownBtnText: {
+      ...typography.body,
+      color: t.colors.accent,
+      fontWeight: '600',
+    },
+    dropdownBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.lg,
+    },
+    dropdownSheet: {
+      backgroundColor: t.colors.surface,
+      borderRadius: radius.card,
+      padding: spacing.md,
+      width: '100%',
+      maxWidth: 320,
+      gap: spacing.xs,
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+    },
+    dropdownSheetTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      paddingBottom: spacing.xs,
+    },
+    dropdownOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xs,
+      borderRadius: radius.sm,
+      minHeight: 44,
+    },
+    dropdownOptionText: {
       ...typography.body,
       color: t.colors.text,
     },
-    chipTextSelected: {
+    dropdownOptionTextSelected: {
       color: t.colors.accent,
       fontWeight: '600',
     },
 
     // ── Pitches area ──
     pitchesArea: {
-      flex: 1,
+      flex: 0.8,
       overflow: 'hidden',
     },
     pitchTeamTitle: {
@@ -1415,20 +1483,38 @@ const useLineupStyles = makeStyles((t) =>
       textAlign: 'center',
       paddingBottom: 2,
     },
+    pitchWrapper: {
+      flex: 1,
+      position: 'relative',
+    },
+    pitchTeamTitleOverlay: {
+      position: 'absolute',
+      top: spacing.xs,
+      left: spacing.xs,
+      zIndex: 2,
+      ...typography.caption,
+      fontWeight: '600',
+    },
+    pitchTeamTitleLight: {
+      color: 'rgba(0,0,0,0.8)',
+    },
+    pitchTeamTitleDark: {
+      color: 'rgba(255,255,255,0.9)',
+    },
     pitchesContent: {
       flex: 1,
       paddingHorizontal: spacing.xs,
-      paddingBottom: spacing.xs,
+      paddingBottom: 0,
+      paddingTop: spacing.xs,
     },
     // Pitches stacked vertically in landscape (horizontal) mode — no scroll
     pitchColumns: {
       flex: 1,
       flexDirection: 'column',
-      gap: spacing.sm,
+      gap: 0,
     },
     pitchCol: {
       flex: 1,
-      gap: spacing.xs,
     },
 
     // ── 2-row action bar ──
