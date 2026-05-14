@@ -29,29 +29,29 @@ export function ProfileIdentityHeader({ player, badgeTiles, showEditControls, em
 
   return (
     <View style={styles.hero} accessibilityLabel={`${player.name}, ${player.position}`}>
-      <PlayerAvatar name={player.name} uri={player.photoUri} size={88} />
+      <View style={[styles.avatarRing, { borderColor: colors.accent }]}>
+        <PlayerAvatar name={player.name} uri={player.photoUri} size={88} />
+      </View>
       <Text style={styles.heroName}>{player.name}</Text>
-      <View style={styles.badges}>
+      <View style={styles.metaRow}>
         <PositionBadge position={player.position} />
+        {showEditControls && emailVerified !== undefined && (
+          <Text
+            style={emailVerified ? styles.emailOk : styles.emailWarn}
+            testID="profile:identity:email-verification"
+          >
+            {emailVerified ? '✓ Doğrulandı' : '✗ Doğrulanmadı'}
+          </Text>
+        )}
       </View>
       {showEditControls ? (
-        <View style={styles.editControls}>
-          {emailVerified !== undefined && (
-            <Text
-              style={emailVerified ? styles.emailOk : styles.emailWarn}
-              testID="profile:identity:email-verification"
-            >
-              {emailVerified ? 'E-posta doğrulandı' : 'E-posta henüz doğrulanmadı'}
-            </Text>
-          )}
-          <PillButton
-            title="Profili Düzenle"
-            variant="ghost"
-            onPress={onEditPress}
-            style={styles.editBtn}
-            testID="profile:edit:press"
-          />
-        </View>
+        <PillButton
+          title="Profili Düzenle"
+          variant="ghost"
+          onPress={onEditPress}
+          style={styles.editBtn}
+          testID="profile:edit:press"
+        />
       ) : null}
       {badgeTiles && badgeTiles.length > 0 ? (
         <>
@@ -92,32 +92,39 @@ const useStyles = makeStyles((t) =>
   StyleSheet.create({
     hero: {
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.md,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
       backgroundColor: t.colors.surfaceGlass,
       borderBottomWidth: 1,
       borderBottomColor: t.colors.glassBorder,
       alignItems: 'center',
-      gap: spacing.sm,
+      gap: 6,
+    },
+    avatarRing: {
+      borderRadius: 999,
+      borderWidth: 3,
+      padding: 3,
+      marginBottom: spacing.xs,
+      shadowColor: t.colors.accent,
+      shadowOpacity: 0.3,
+      shadowOffset: { width: 0, height: 0 },
+      shadowRadius: 10,
     },
     heroName: {
       ...typography.headlineStrong,
       color: t.colors.text,
-      marginTop: spacing.sm,
       letterSpacing: letterSpacing.wide,
     },
-    badges: {
+    metaRow: {
       flexDirection: 'row',
       gap: spacing.sm,
       alignItems: 'center',
-      marginTop: spacing.xs,
     },
     badgeScroll: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.sm,
       maxWidth: '100%',
     },
     badgeChip: {
@@ -142,10 +149,8 @@ const useStyles = makeStyles((t) =>
       ...typography.micro,
       fontWeight: '600',
     },
-    editControls: {
-      alignItems: 'center',
-      marginTop: spacing.sm,
-      gap: spacing.sm,
+    editBtn: {
+      minWidth: 160,
     },
     emailOk: {
       ...typography.caption,
@@ -154,10 +159,6 @@ const useStyles = makeStyles((t) =>
     emailWarn: {
       ...typography.caption,
       color: t.colors.danger,
-    },
-    editBtn: {
-      marginTop: spacing.xs,
-      minWidth: 160,
     },
   }),
 );

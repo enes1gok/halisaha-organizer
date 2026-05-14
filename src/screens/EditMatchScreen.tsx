@@ -231,7 +231,7 @@ export function EditMatchScreen() {
       paddingVertical: spacing.md,
     },
     section: {
-      marginVertical: spacing.lg,
+      marginVertical: spacing.sm,
     },
     label: {
       ...typography.body,
@@ -248,12 +248,12 @@ export function EditMatchScreen() {
       paddingVertical: spacing.md,
       color: colors.text,
       ...typography.body,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
     },
     dateTimeRow: {
       flexDirection: 'row',
-      gap: spacing.md,
-      marginBottom: spacing.md,
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
     },
     dateTimeButton: {
       flex: 1,
@@ -271,13 +271,10 @@ export function EditMatchScreen() {
       color: colors.text,
     },
     sliderContainer: {
+      flexDirection: 'row',
       gap: spacing.sm,
-      marginBottom: spacing.md,
-    },
-    sliderValue: {
-      ...typography.body,
-      color: colors.text,
-      fontWeight: '600',
+      marginBottom: spacing.sm,
+      alignItems: 'center',
     },
     segmentedControl: {
       flexDirection: 'row',
@@ -286,7 +283,7 @@ export function EditMatchScreen() {
       borderWidth: 1,
       borderColor: colors.border,
       padding: 2,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
       gap: 2,
     },
     segmentButton: {
@@ -313,18 +310,18 @@ export function EditMatchScreen() {
       borderWidth: 1,
       borderColor: colors.border,
       padding: spacing.md,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
     },
     helperText: {
       ...typography.caption,
       color: colors.textMuted,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
     },
     ibanToggleRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
     },
     toggleLabel: {
       ...typography.body,
@@ -389,6 +386,7 @@ export function EditMatchScreen() {
                       mode="date"
                       display="spinner"
                       onChange={onDateChange}
+                      textColor={colors.text}
                     />
                   </View>
                 </View>
@@ -420,6 +418,7 @@ export function EditMatchScreen() {
                       mode="time"
                       display="spinner"
                       onChange={onTimeChange}
+                      textColor={colors.text}
                     />
                   </View>
                 </View>
@@ -441,19 +440,16 @@ export function EditMatchScreen() {
       <View style={styles.section}>
         <Text style={styles.label}>Katılımcı Sayısı</Text>
         <View style={styles.sliderContainer}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <TextInput
-              style={[styles.textInput, { flex: 0.3, marginBottom: 0 }]}
-              placeholder="14"
-              placeholderTextColor={colors.textMuted}
-              value={maxPlayersInputText}
-              onChangeText={handleMaxPlayersChange}
-              keyboardType="number-pad"
-            />
-            <Text style={styles.sliderValue}>{maxPlayers}</Text>
-          </View>
+          <TextInput
+            style={[styles.textInput, { width: 60, marginBottom: 0 }]}
+            placeholder="14"
+            placeholderTextColor={colors.textMuted}
+            value={maxPlayersInputText}
+            onChangeText={handleMaxPlayersChange}
+            keyboardType="number-pad"
+          />
           <Slider
-            style={{ height: 40 }}
+            style={{ flex: 1, height: 40 }}
             minimumValue={MATCH_MAX_PLAYERS_MIN}
             maximumValue={MATCH_MAX_PLAYERS_MAX}
             value={maxPlayers}

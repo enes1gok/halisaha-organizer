@@ -1,5 +1,7 @@
 import React from 'react';
+import { View } from 'react-native';
 import type { BadgeTileVm } from '../../domain/badges';
+import { spacing } from '../../theme';
 import type { Player } from '../../types/domain';
 import { ProfileIdentityHeader } from './ProfileIdentityHeader';
 import { ProfileKpiStrip } from './ProfileKpiStrip';
@@ -35,7 +37,7 @@ export function ProfileStatsHero({
   onEditPress,
 }: Props) {
   return (
-    <>
+    <View style={{ gap: spacing.sm }}>
       <ProfileIdentityHeader
         player={player}
         badgeTiles={badgeTiles}
@@ -58,6 +60,6 @@ export function ProfileStatsHero({
         compositeScore={compositeScore}
         sparklinePoints={sparklinePoints}
       />
-    </>
+    </View>
   );
 }

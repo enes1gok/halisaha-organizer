@@ -135,12 +135,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         }
         try {
           const token = await registerForPushToken();
+          console.log('[PushToken] registerForPushToken result:', token ?? 'null (no token)');
           if (token) {
             await upsertPushToken(token, 'expo');
             setActivePushToken(token);
+            console.log('[PushToken] upsertPushToken success');
           }
         } catch (e) {
-          console.warn('Push token kaydı başarısız', e);
+          console.warn('[PushToken] kaydı başarısız:', e);
         }
       }
     },

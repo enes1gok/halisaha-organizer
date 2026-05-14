@@ -62,6 +62,11 @@ export function ProfilePerformanceCard({
           {winStreak > 0 ? (
             <MetricRow label="Seri" value={`${winStreak} galibiyet`} />
           ) : null}
+        </View>
+
+        <View style={styles.metricSeparator} />
+
+        <View style={styles.metrics}>
           <MetricRow
             label="Topluluk oyu (ortalama)"
             value={
@@ -96,7 +101,7 @@ const usePerformanceCardStyles = makeStyles((t) =>
       paddingTop: spacing.sm,
     },
     card: {
-      gap: spacing.sm,
+      gap: spacing.md,
     },
     cardTitle: {
       ...typography.subtitle,
@@ -126,19 +131,22 @@ const usePerformanceCardStyles = makeStyles((t) =>
       color: t.colors.textMuted,
     },
     progressTrack: {
-      height: 6,
-      borderRadius: 3,
+      height: 8,
+      borderRadius: 4,
       backgroundColor: t.colors.border,
       overflow: 'hidden',
     },
     progressFill: {
       height: '100%',
-      borderRadius: 3,
+      borderRadius: 4,
       backgroundColor: t.colors.accent,
     },
     metrics: {
-      marginTop: spacing.xs,
       gap: spacing.md,
+    },
+    metricSeparator: {
+      height: 1,
+      backgroundColor: t.colors.border,
     },
     metricBlock: {
       gap: 2,

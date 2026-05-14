@@ -8,7 +8,7 @@ type Props = {
   matchesPlayed: number;
   goals: number;
   assists: number;
-  /** Sunucudan haftalık maç serisi; null ise gösterilmez (çevrimdışı / senkron yok). */
+  /** Sunucudan haftalık maç serisi; null ise "—" gösterilir. */
   weeklyMatchStreakEffective?: number | null;
 };
 
@@ -19,8 +19,26 @@ export function ProfileKpiStrip({
   weeklyMatchStreakEffective,
 }: Props) {
   const styles = useKpiStyles();
-  const summary = `${matchesPlayed} maç, ${goals} gol, ${assists} asist${weeklyMatchStreakEffective != null ? `, ${weeklyMatchStreakEffective} haftalık seri` : ''}`;
   const { isHuge } = useFontScale();
+  const streakValue = weeklyMatchStreakEffective == null ? '—' : String(weeklyMatchStreakEffective);
+  const summary = `${matchesPlayed} maç, ${goals} gol, ${assists} asist, ${streakValue} haftalık seri`;
+
+  if (isHuge) {
+    return (
+      <View
+        style={styles.wrap}
+        accessibilityRole="text"
+        accessibilityLabel={`Özet istatistikler: ${summary}`}
+      >
+        <View style={styles.stackedCard}>
+          <StackedRow value={matchesPlayed} label="Maç" showDivider />
+          <StackedRow value={goals} label="Gol" showDivider />
+          <StackedRow value={assists} label="Asist" showDivider />
+          <StackedRow value={streakValue} label="Hafta serisi" showDivider={false} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -28,44 +46,62 @@ export function ProfileKpiStrip({
       accessibilityRole="text"
       accessibilityLabel={`Özet istatistikler: ${summary}`}
     >
-      <View style={[styles.row, isHuge && styles.rowStacked]}>
-        <KpiCell value={matchesPlayed} label="Maç" stacked={isHuge} />
-        <View style={isHuge ? styles.dividerHorizontal : styles.divider} />
-        <KpiCell value={goals} label="Gol" stacked={isHuge} />
-        <View style={isHuge ? styles.dividerHorizontal : styles.divider} />
-        <KpiCell value={assists} label="Asist" stacked={isHuge} />
-        {weeklyMatchStreakEffective != null && (
-          <>
-            <View style={isHuge ? styles.dividerHorizontal : styles.divider} />
-            <KpiCell
-              value={weeklyMatchStreakEffective}
-              label="Hafta serisi"
-              stacked={isHuge}
-            />
-          </>
-        )}
+      <View style={styles.grid}>
+        <GridCell value={matchesPlayed} label="Maç" borderRight borderBottom />
+        <GridCell value={goals} label="Gol" borderBottom />
+        <GridCell value={assists} label="Asist" borderRight />
+        <GridCell value={streakValue} label="Hafta serisi" />
       </View>
     </View>
   );
 }
 
-function KpiCell({
+function GridCell({
   value,
   label,
-  stacked,
+  borderRight,
+  borderBottom,
 }: {
-  value: number;
+  value: string | number;
   label: string;
-  stacked: boolean;
+  borderRight?: boolean;
+  borderBottom?: boolean;
 }) {
   const styles = useKpiStyles();
   return (
-    <View style={[styles.cell, stacked && styles.cellStacked]}>
-      <Text style={styles.cellVal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+    <View
+      style={[
+        styles.cell,
+        borderRight && styles.cellBorderRight,
+        borderBottom && styles.cellBorderBottom,
+      ]}
+    >
+      <Text style={styles.cellVal} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
         {value}
       </Text>
       <Text style={styles.cellLbl}>{label}</Text>
     </View>
+  );
+}
+
+function StackedRow({
+  value,
+  label,
+  showDivider,
+}: {
+  value: string | number;
+  label: string;
+  showDivider: boolean;
+}) {
+  const styles = useKpiStyles();
+  return (
+    <>
+      <View style={styles.stackedRow}>
+        <Text style={styles.stackedLbl}>{label}</Text>
+        <Text style={styles.stackedVal}>{value}</Text>
+      </View>
+      {showDivider && <View style={styles.stackedDivider} />}
+    </>
   );
 }
 
@@ -76,52 +112,70 @@ const useKpiStyles = makeStyles((t) =>
       paddingTop: spacing.md,
       paddingBottom: spacing.sm,
     },
-    row: {
+    grid: {
       flexDirection: 'row',
-      alignItems: 'stretch',
+      flexWrap: 'wrap',
       backgroundColor: t.colors.surface,
       borderRadius: radius.card,
       borderWidth: 1,
       borderColor: t.colors.border,
+      overflow: 'hidden',
       ...shadows.sm,
     },
-    rowStacked: {
-      flexDirection: 'column',
-      alignItems: 'stretch',
-    },
     cell: {
-      flex: 1,
+      width: '50%',
       paddingVertical: spacing.md,
-      paddingHorizontal: spacing.xs,
+      paddingHorizontal: spacing.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 0,
     },
-    cellStacked: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'baseline',
-      paddingHorizontal: spacing.md,
-      gap: spacing.md,
+    cellBorderRight: {
+      borderRightWidth: 1,
+      borderRightColor: t.colors.border,
     },
-    divider: {
-      width: 1,
-      backgroundColor: t.colors.border,
-      marginVertical: spacing.sm,
-    },
-    dividerHorizontal: {
-      height: 1,
-      backgroundColor: t.colors.border,
-      marginHorizontal: spacing.md,
+    cellBorderBottom: {
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
     },
     cellVal: {
-      ...typography.title,
+      fontSize: 28,
+      fontFamily: 'Inter_900Black',
       color: t.colors.accent,
+      lineHeight: 34,
     },
     cellLbl: {
       ...typography.caption,
       color: t.colors.textMuted,
       marginTop: 4,
+    },
+    stackedCard: {
+      backgroundColor: t.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      overflow: 'hidden',
+      ...shadows.sm,
+    },
+    stackedRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    stackedLbl: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    stackedVal: {
+      fontSize: 22,
+      fontFamily: 'Inter_700Bold',
+      color: t.colors.accent,
+    },
+    stackedDivider: {
+      height: 1,
+      backgroundColor: t.colors.border,
+      marginHorizontal: spacing.md,
     },
   }),
 );
