@@ -17,8 +17,21 @@ export function isEmailNotConfirmedSignInError(message: string): boolean {
 const AUTH_ERROR_TR: Record<string, string> = {
   'email rate limit exceeded':
     'E-posta gönderme limiti aşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.',
+  'invalid login credentials': 'E-posta adresi veya şifre hatalı.',
+  'invalid email or password': 'E-posta adresi veya şifre hatalı.',
+  'user already registered': 'Bu e-posta adresi zaten kayıtlı. Giriş yapabilirsiniz.',
+  'password should be at least 6 characters': 'Şifre en az 6 karakter olmalıdır.',
+  'unable to validate email address: invalid format': 'Geçersiz e-posta adresi formatı.',
+  'signup requires a valid password': 'Geçerli bir şifre giriniz.',
+  'for security purposes, you can only request this after':
+    'Güvenlik nedeniyle çok sık istek gönderildi. Lütfen biraz bekleyin.',
 };
 
 export function translateAuthError(rawMessage: string): string {
-  return AUTH_ERROR_TR[rawMessage.toLowerCase().trim()] ?? rawMessage;
+  const lower = rawMessage.toLowerCase().trim();
+  if (AUTH_ERROR_TR[lower]) return AUTH_ERROR_TR[lower];
+  for (const [key, value] of Object.entries(AUTH_ERROR_TR)) {
+    if (lower.includes(key)) return value;
+  }
+  return rawMessage;
 }

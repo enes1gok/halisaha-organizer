@@ -83,7 +83,7 @@ export function SignInScreen() {
       return;
     }
 
-    showToast({ title: 'Giriş', message: error.message, variant: 'error' });
+    showToast({ title: 'Giriş', message: translateAuthError(error.message), variant: 'error' });
   };
 
   const handleForgotPassword = async () => {
