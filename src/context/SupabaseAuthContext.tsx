@@ -78,6 +78,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [needsPasswordRecovery, setNeedsPasswordRecovery] = useState(false);
   const lastHandledAuthUrlRef = useRef<string | null>(null);
   const applyingSessionRef = useRef(false);
+  const pendingSessionRef = useRef<{ queued: boolean; session: Session | null }>({
+    queued: false,
+    session: null,
+  });
+  const runApplySessionRef = useRef<(sess: Session | null) => void>(() => {});
 
   const pushProfileToStore = useCallback(
     async (userId: string, fallbackEmail?: string | null, meta?: User['user_metadata']) => {
@@ -135,14 +140,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         }
         try {
           const token = await registerForPushToken();
-          console.log('[PushToken] registerForPushToken result:', token ?? 'null (no token)');
           if (token) {
             await upsertPushToken(token, 'expo');
             setActivePushToken(token);
-            console.log('[PushToken] upsertPushToken success');
           }
         } catch (e) {
-          console.warn('[PushToken] kaydı başarısız:', e);
+          console.warn('Push token kaydı başarısız', e);
         }
       }
     },
@@ -162,6 +165,25 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     [applySession],
   );
 
+  const runApplySession = useCallback(
+    (sess: Session | null) => {
+      applyingSessionRef.current = true;
+      void applySessionWithTimeout(sess).finally(() => {
+        applyingSessionRef.current = false;
+        if (pendingSessionRef.current.queued) {
+          const { session: queued } = pendingSessionRef.current;
+          pendingSessionRef.current = { queued: false, session: null };
+          runApplySessionRef.current(queued);
+        }
+      });
+    },
+    [applySessionWithTimeout],
+  );
+
+  useEffect(() => {
+    runApplySessionRef.current = runApplySession;
+  }, [runApplySession]);
+
   useEffect(() => {
     if (!configured) {
       setLoading(false);
@@ -176,10 +198,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       .then(({ data: { session: initial } }) => {
         if (cancelled) return;
         if (!applyingSessionRef.current) {
-          applyingSessionRef.current = true;
-          void applySessionWithTimeout(initial).finally(() => {
-            applyingSessionRef.current = false;
-          });
+          runApplySession(initial);
         }
       })
       .catch(() => {
@@ -193,10 +212,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         setNeedsPasswordRecovery(true);
       }
       if (!applyingSessionRef.current) {
-        applyingSessionRef.current = true;
-        void applySessionWithTimeout(next).finally(() => {
-          applyingSessionRef.current = false;
-        });
+        runApplySession(next);
+      } else {
+        pendingSessionRef.current = { queued: true, session: next };
       }
     });
 
@@ -204,7 +222,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [configured, applySessionWithTimeout]);
+  }, [configured, runApplySession]);
 
   useEffect(() => {
     if (!configured || !session?.user?.id) {
@@ -288,9 +306,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       return;
     }
     if (data.session) {
-      await applySession(data.session);
+      await applySessionWithTimeout(data.session);
     }
-  }, [configured, applySession]);
+  }, [configured, applySessionWithTimeout]);
 
   const resendSignupConfirmationEmail = useCallback(
     async (emailOverride?: string) => {

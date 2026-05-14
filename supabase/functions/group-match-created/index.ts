@@ -534,6 +534,15 @@ async function processSingle(
 
 Deno.serve(async (req) => {
   try {
+    const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? '';
+    const headerSecret = req.headers.get('x-internal-secret') ?? '';
+    if (internalSecret && headerSecret !== internalSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     let body: { mode?: string; deliveryId?: string; limit?: number } = {};
     try {
       body = await req.json();

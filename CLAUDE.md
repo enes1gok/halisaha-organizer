@@ -22,6 +22,9 @@ npm run test:rls:sql       # pgTAP RLS tests (requires: supabase start)
 npm run test:rls:integration  # Jest integration tests against local Supabase
 npm run test:rls           # both SQL + integration (full RLS suite)
 
+# Type checking
+npx tsc --noEmit           # check types without emitting (run before committing)
+
 # Lint / style guardrails
 npm run lint:styles        # check for hardcoded hex colors and inline styles in changed files
 
@@ -44,13 +47,20 @@ eval "$(npx supabase status -o env)"
 export SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
 ```
 
+**App env vars** — create `.env.local` in the repo root (not committed):
+```
+EXPO_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+```
+Read at runtime via `Constants.expoConfig.extra` in [src/lib/supabase.ts](src/lib/supabase.ts). Missing vars disable Supabase features gracefully (`isSupabaseConfigured()` returns false).
+
 ## App identity
 
 | Field | Value |
 |--------|--------|
 | Display name | Halısaha: Maç Organize Et (Expo `name`) |
 | Expo slug | `halisaha-mac-organize-et` |
-| UI | Dark mode (`userInterfaceStyle: "dark"`), portrait |
+| UI | Default dark (`userInterfaceStyle: "dark"` in app.json); runtime Sistem/Açık/Karanlık switching via `usePreferencesStore` + `ThemeContext` |
 | React Native | New Architecture enabled (`newArchEnabled: true`) |
 | Config | [app.json](app.json) |
 
@@ -58,7 +68,7 @@ export SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
 
 - **Runtime**: Expo ~54, React 19, React Native ~0.81, TypeScript.
 - **Navigation**: **React Navigation** v7 — root **bottom tabs** + per-tab **stack** navigators. Entry: [AppNavigator.tsx](src/navigation/AppNavigator.tsx). Param lists: [types.ts](src/navigation/types.ts).
-- **Styling**: **Design tokens** in [src/theme/index.ts](src/theme/index.ts) (`colors`, `spacing`, `typography`, `radius`, `shadows`) + **`StyleSheet`** in components. No NativeWind / Expo Router.
+- **Styling**: **Design tokens** in [src/theme/index.ts](src/theme/index.ts) (`colors`, `spacing`, `typography`, `radius`, `shadows`) + **`StyleSheet`** in components. No NativeWind / Expo Router. Theme-aware components use `useTheme()` / `makeStyles()` from [src/theme/ThemeContext.tsx](src/theme/ThemeContext.tsx).
 - **State**: Single **Zustand** store with **persist** (`AsyncStorage`), composed from domain **slices** under [src/store/](src/store/) — entry [useAppStore.ts](src/store/useAppStore.ts), barrel [index.ts](src/store/index.ts) exports **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`**, **`usePreferencesStore`**, **`useMatchTemplatesStore`** (prefer these in UI over raw `useAppStore`). Prefer **atomic selectors** and `useShallow` when selecting multiple fields — avoid subscribing to the full store object in new components.
 - **Domain model**: [src/types/domain.ts](src/types/domain.ts) — `Player`, `Match`, `Attendee`, `ScoreResult`, enums (`Position`, `RSVPStatus`, `MatchStatus`, …). Do not duplicate these shapes elsewhere.
 - **Data / seed**: [src/data/seed.ts](src/data/seed.ts) (and related) for demo/bootstrap data; `resetToSeed` on the store restores it.
@@ -109,7 +119,8 @@ Orchestration layer between store slices and Supabase services. Receives injecte
 
 | File | Role |
 |------|------|
-| `SupabaseAuthContext.tsx` | Session lifecycle orchestrator (433 lines): bootstrap with 15 s timeout, PKCE deep-link exchange, profile sync, initial hydration, push token upsert/deactivate, realtime start/stop, sign-out teardown. Exposes `useSupabaseAuth()`. |
+| `SupabaseAuthContext.tsx` | Session lifecycle orchestrator: bootstrap with 15 s timeout, PKCE deep-link exchange, profile sync, initial hydration, push token upsert/deactivate, realtime start/stop, sign-out teardown. Exposes `useSupabaseAuth()`. |
+| `ToastContext.tsx` | Global toast queue. Exposes `useToast()` → `showToast(opts)`. Rendered by `ToastHost` in the navigation tree. Prefer `useUserFeedback()` wrappers in screens. |
 
 **Other** — [src/hooks/](src/hooks/), [src/utils/](src/utils/) (e.g. `id`, `stats`), [src/store/](src/store/).
 

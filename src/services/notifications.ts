@@ -363,20 +363,15 @@ export function startContextAwareNotificationSync(): () => void {
 }
 
 export async function registerForPushToken(): Promise<string | null> {
-  console.log('[PushToken] isDevice:', Device.isDevice);
   if (!Device.isDevice) return null;
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  console.log('[PushToken] permission status:', existingStatus);
   let finalStatus = existingStatus;
   if (existingStatus !== 'granted') {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
-  if (finalStatus !== 'granted') {
-    console.log('[PushToken] permission not granted, final status:', finalStatus);
-    return null;
-  }
+  if (finalStatus !== 'granted') return null;
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -386,9 +381,7 @@ export async function registerForPushToken(): Promise<string | null> {
   }
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
-  console.log('[PushToken] projectId:', projectId ?? 'undefined');
   const token = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-  console.log('[PushToken] token:', token.data ?? 'null');
   return token.data ?? null;
 }
 
