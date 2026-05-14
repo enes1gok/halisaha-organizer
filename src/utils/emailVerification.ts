@@ -13,3 +13,12 @@ export function isEmailNotConfirmedSignInError(message: string): boolean {
   if (m.includes('not confirmed') && m.includes('email')) return true;
   return false;
 }
+
+const AUTH_ERROR_TR: Record<string, string> = {
+  'email rate limit exceeded':
+    'E-posta gönderme limiti aşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.',
+};
+
+export function translateAuthError(rawMessage: string): string {
+  return AUTH_ERROR_TR[rawMessage.toLowerCase().trim()] ?? rawMessage;
+}

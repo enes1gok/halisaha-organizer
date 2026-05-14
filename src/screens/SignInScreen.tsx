@@ -16,7 +16,7 @@ import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import type { OnboardingStackParamList } from '../navigation/types';
 import { spacing } from '../theme';
 import { useUserFeedback } from '../utils/userFeedback';
-import { isEmailNotConfirmedSignInError } from '../utils/emailVerification';
+import { isEmailNotConfirmedSignInError, translateAuthError } from '../utils/emailVerification';
 import { EmailPasswordFields } from './EmailPasswordFields';
 import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 
@@ -68,7 +68,7 @@ export function SignInScreen() {
               void (async () => {
                 const { error: resendErr } = await resendSignupConfirmationEmail(trimmed);
                 if (resendErr) {
-                  showToast({ title: 'E-posta', message: resendErr.message, variant: 'error' });
+                  showToast({ title: 'E-posta', message: translateAuthError(resendErr.message), variant: 'error' });
                 } else {
                   showToast({
                     title: 'E-posta',
@@ -96,7 +96,7 @@ export function SignInScreen() {
     const { error } = await requestPasswordResetEmail(trimmed);
     setBusy(false);
     if (error) {
-      showToast({ title: 'Şifre sıfırlama', message: error.message, variant: 'error' });
+      showToast({ title: 'Şifre sıfırlama', message: translateAuthError(error.message), variant: 'error' });
       return;
     }
     showToast({

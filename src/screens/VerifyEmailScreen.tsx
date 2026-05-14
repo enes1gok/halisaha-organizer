@@ -10,11 +10,12 @@ import { spacing, typography } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useOnboardingAuthStyles } from './onboardingAuthStyles';
 import { useUserFeedback } from '../utils/userFeedback';
+import { translateAuthError } from '../utils/emailVerification';
 
 type Nav = StackNavigationProp<OnboardingStackParamList, 'VerifyEmail'>;
 type VerifyRoute = RouteProp<OnboardingStackParamList, 'VerifyEmail'>;
 
-const RESEND_COOLDOWN_SEC = 45;
+const RESEND_COOLDOWN_SEC = 120;
 
 export function VerifyEmailScreen() {
   const styles = useOnboardingAuthStyles();
@@ -47,7 +48,7 @@ export function VerifyEmailScreen() {
     const { error } = await resendSignupConfirmationEmail(email);
     setResendBusy(false);
     if (error) {
-      showToast({ title: 'E-posta', message: error.message, variant: 'error' });
+      showToast({ title: 'E-posta', message: translateAuthError(error.message), variant: 'error' });
       return;
     }
     startCooldown();
