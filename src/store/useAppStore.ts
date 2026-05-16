@@ -22,6 +22,7 @@ type PersistedShape = {
   groupMemberships: GroupMembership[];
   themePreference: ThemePreference;
   matchTemplates: MatchTemplate[];
+  remoteUserId: string | null;
 };
 
 const VALID_PREFERENCES: ReadonlyArray<ThemePreference> = ['system', 'light', 'dark'];
@@ -74,6 +75,7 @@ export const useAppStore = create<AppState>()(
         groupMemberships: s.groupMemberships,
         themePreference: s.themePreference,
         matchTemplates: s.matchTemplates,
+        remoteUserId: s.remoteUserId,
       }),
       migrate: (persisted: unknown, version: number): PersistedShape => {
         if (version < 4) {
@@ -87,6 +89,7 @@ export const useAppStore = create<AppState>()(
             groupMemberships: safe.groupMemberships ?? [],
             themePreference: coerceThemePreference(safe.themePreference),
             matchTemplates: coerceMatchTemplates(safe.matchTemplates),
+            remoteUserId: safe.remoteUserId ?? null,
           };
         }
 
@@ -98,6 +101,7 @@ export const useAppStore = create<AppState>()(
           groupMemberships: safe.groupMemberships ?? [],
           themePreference: coerceThemePreference(safe.themePreference),
           matchTemplates: coerceMatchTemplates(safe.matchTemplates),
+          remoteUserId: safe.remoteUserId ?? null,
         };
       },
       onRehydrateStorage: () => (state, error) => {
