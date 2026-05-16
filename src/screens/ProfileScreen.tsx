@@ -442,14 +442,6 @@ export function ProfileScreen() {
               <Text style={styles.pickPhotoTxt}>Galeriden seç</Text>
             )}
           </Pressable>
-          <Text style={styles.label}>Fotoğraf URL (isteğe bağlı)</Text>
-          <BottomSheetTextInput
-            value={photoUri}
-            onChangeText={setPhotoUri}
-            style={styles.input}
-            placeholder="https://"
-            placeholderTextColor={colors.textMuted}
-          />
           <Text style={styles.label}>Pozisyon</Text>
           <View style={styles.rowWrap}>
             {POSITIONS.map((p) => (

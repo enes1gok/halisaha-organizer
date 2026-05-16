@@ -125,21 +125,33 @@ const useStyles = makeStyles((t) =>
     container: { gap: spacing.sm },
     sectionHead: { ...typography.subtitle, color: t.colors.text },
     roBody: { ...typography.body, color: t.colors.textMuted },
-    scoreBlock: { gap: 0, marginBottom: spacing.sm },
-    teamScoreLine: {
+    scoreBlock: { gap: spacing.sm, marginBottom: spacing.sm },
+    scoreTeamRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: spacing.sm,
-      paddingVertical: spacing.sm,
     },
-    teamDivider: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: t.colors.border,
-      marginVertical: spacing.xs,
+    scoreTeamLbl: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      flex: 1,
+      textAlign: 'center',
+      minWidth: 0,
     },
-    teamLbl: { ...typography.caption, color: t.colors.textMuted, flex: 1, minWidth: 0, marginRight: spacing.sm },
-    bigScore: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
+    scoreVs: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginHorizontal: spacing.xs,
+    },
+    scoreSeparator: {
+      fontSize: 32,
+      fontFamily: 'Inter_700Bold',
+      color: t.colors.textMuted,
+      marginHorizontal: spacing.sm,
+    },
+    bigScore: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    bigScoreSide: { flex: 1, justifyContent: 'center' },
     scoreTxt: {
       fontSize: 44,
       fontFamily: 'Inter_700Bold',
@@ -348,11 +360,18 @@ export function PostMatchScoreForm({
       <Text style={styles.sectionHead}>Maç sonucu</Text>
       {canEditScore ? (
         <View style={styles.scoreBlock}>
-          <View style={styles.teamScoreLine}>
-            <Text style={styles.teamLbl} numberOfLines={2}>
+          <View style={styles.scoreTeamRow}>
+            <Text style={styles.scoreTeamLbl} numberOfLines={1}>
               {TEAM_SIDE_LABELS.A}
             </Text>
-            <View style={styles.bigScore}>
+            <Text style={styles.scoreVs}>vs</Text>
+            <Text style={styles.scoreTeamLbl} numberOfLines={1}>
+              {TEAM_SIDE_LABELS.B}
+            </Text>
+          </View>
+
+          <View style={styles.scoreTeamRow}>
+            <View style={[styles.bigScore, styles.bigScoreSide]}>
               <Pressable onPress={() => setScoreA(Math.max(0, scoreA - 1))} style={styles.stepBtn} testID="postmatch:scoreA:dec">
                 <Text style={styles.stepTxt}>−</Text>
               </Pressable>
@@ -361,13 +380,8 @@ export function PostMatchScoreForm({
                 <Text style={styles.stepTxt}>+</Text>
               </Pressable>
             </View>
-          </View>
-          <View style={styles.teamDivider} />
-          <View style={styles.teamScoreLine}>
-            <Text style={styles.teamLbl} numberOfLines={2}>
-              {TEAM_SIDE_LABELS.B}
-            </Text>
-            <View style={styles.bigScore}>
+            <Text style={styles.scoreSeparator}>–</Text>
+            <View style={[styles.bigScore, styles.bigScoreSide]}>
               <Pressable onPress={() => setScoreB(Math.max(0, scoreB - 1))} style={styles.stepBtn} testID="postmatch:scoreB:dec">
                 <Text style={styles.stepTxt}>−</Text>
               </Pressable>

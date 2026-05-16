@@ -76,6 +76,19 @@ export function ProfileIdentityHeader({ player, badgeTiles, showEditControls, em
               {emailVerified ? '✓ Doğrulandı' : '✗ Doğrulanmadı'}
             </Text>
           )}
+          <View style={styles.attrRow}>
+            <View style={styles.attrItem}>
+              <View style={styles.attrValueRow}>
+                <View style={[styles.posDot, { backgroundColor: colors.position[player.position] }]} />
+                <Text style={styles.attrValue}>{positionLabel(player.position)}</Text>
+              </View>
+              <Text style={styles.attrLabel}>Pozisyon</Text>
+            </View>
+            <View style={styles.attrItem}>
+              <Text style={styles.attrValue}>{footLabel(player.preferredFoot)}</Text>
+              <Text style={styles.attrLabel}>Tercih</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.ratingCol} accessibilityLabel={`Ortalama puan: ${rating != null ? rating.toFixed(1) : 'yok'}`}>
@@ -86,23 +99,7 @@ export function ProfileIdentityHeader({ player, badgeTiles, showEditControls, em
         </View>
       </View>
 
-      {/* Zone 2: Özellik şeridi */}
-      <View style={styles.attributeStrip}>
-        <View style={styles.attributeCell}>
-          <View style={styles.attributeRow}>
-            <View style={[styles.posDot, { backgroundColor: colors.position[player.position] }]} />
-            <Text style={styles.attributeVal} numberOfLines={1}>{positionLabel(player.position)}</Text>
-          </View>
-          <Text style={styles.attributeLbl}>Pozisyon</Text>
-        </View>
-        <View style={styles.attributeDivider} />
-        <View style={styles.attributeCell}>
-          <Text style={styles.attributeVal}>{footLabel(player.preferredFoot)}</Text>
-          <Text style={styles.attributeLbl}>Tercih</Text>
-        </View>
-      </View>
-
-      {/* Zone 3: Rozetler */}
+      {/* Zone 2: Rozetler */}
       {badgeTiles && badgeTiles.length > 0 ? (
         <>
           <ScrollView
@@ -185,9 +182,36 @@ const useStyles = makeStyles((t) =>
       color: t.colors.danger,
     },
     editBtn: {
-      minHeight: 36,
-      paddingVertical: spacing.xs,
-      paddingHorizontal: spacing.md,
+      minHeight: 28,
+      paddingVertical: 2,
+      paddingHorizontal: spacing.sm,
+    },
+    attrRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.xs,
+    },
+    attrItem: {
+      gap: 2,
+    },
+    attrValueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    attrValue: {
+      ...typography.caption,
+      fontFamily: 'Inter_600SemiBold',
+      color: t.colors.text,
+    },
+    attrLabel: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+    },
+    posDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
     },
     ratingCol: {
       width: 88,
@@ -210,41 +234,6 @@ const useStyles = makeStyles((t) =>
       ...typography.micro,
       color: t.colors.textMuted,
       textAlign: 'center',
-    },
-    attributeStrip: {
-      flexDirection: 'row',
-      borderTopWidth: 1,
-      borderTopColor: t.colors.glassBorder,
-    },
-    attributeCell: {
-      flex: 1,
-      alignItems: 'center',
-      paddingVertical: spacing.sm,
-      gap: 2,
-    },
-    attributeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-    },
-    posDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-    },
-    attributeVal: {
-      ...typography.body,
-      fontFamily: 'Inter_600SemiBold',
-      color: t.colors.text,
-    },
-    attributeLbl: {
-      ...typography.micro,
-      color: t.colors.textMuted,
-    },
-    attributeDivider: {
-      width: 1,
-      backgroundColor: t.colors.glassBorder,
-      marginVertical: spacing.xs,
     },
     badgeScroll: {
       flexDirection: 'row',
