@@ -51,6 +51,14 @@ export interface ScoreResult {
   ownGoals: StatLine[];
 }
 
+export interface MatchScoreVoteTally {
+  scoreA: number;
+  scoreB: number;
+  /** Organizatör oyu 2x, diğerleri 1x olmak üzere toplam ağırlık. */
+  voteWeight: number;
+  voterCount: number;
+}
+
 export type SelfReportType = 'goal' | 'assist';
 
 export type SelfReportApprovalStatus = 'pending' | 'approved' | 'rejected';

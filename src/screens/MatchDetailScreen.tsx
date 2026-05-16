@@ -37,6 +37,7 @@ import { sortAttendeesWithPlayers } from '../store/helpers';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import { useUserFeedback } from '../utils/userFeedback';
+import { MatchScoreVoteCard } from '../components/MatchScoreVoteCard';
 import { MatchDetailHero } from './MatchDetail/components/MatchDetailHero';
 import { MatchDetailRosterPanel } from './MatchDetail/components/MatchDetailRosterPanel';
 import { MatchDetailSegmentControl } from './MatchDetail/components/MatchDetailSegmentControl';
@@ -349,6 +350,15 @@ export function MatchDetailScreen() {
       match.status !== 'cancelled'
   );
 
+  const showScoreVoteCard = Boolean(
+    match &&
+      isRemoteMatchId(matchId) &&
+      pastScheduledEnd &&
+      match.status !== 'finished' &&
+      match.status !== 'cancelled' &&
+      (userOnMatchLineup || canManageMatch)
+  );
+
   const handleWizardCompleted = useCallback(() => {
     navigation.navigate('MatchSummary', { matchId });
   }, [navigation, matchId]);
@@ -383,6 +393,14 @@ export function MatchDetailScreen() {
         contentContainerStyle={[styles.tabScrollContent, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
+        {tab === 'summary' && showScoreVoteCard && match && (
+          <MatchScoreVoteCard
+            matchId={match.id}
+            isOrganizer={canManageMatch}
+            canVote={userOnMatchLineup || canManageMatch}
+          />
+        )}
+
         {tab === 'summary' ? (
           <MatchDetailSummaryPanel
             match={match}

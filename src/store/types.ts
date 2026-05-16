@@ -9,6 +9,7 @@ import type {
   GroupWeeklySeries,
   Match,
   MatchPaymentMethod,
+  MatchScoreVoteTally,
   MatchStatus,
   MatchTemplate,
   Player,
@@ -20,6 +21,7 @@ import type { RemoteHydrateOpts } from '../types/remoteHydration';
 import type { MatchGraphPageCursor } from '../services/supabase/matchGraph';
 
 export type { MatchRatingPublicSummaryDb, PeerRatingInput };
+export type { MatchScoreVoteTally };
 
 export type CreateMatchInput = {
   venue: string;
@@ -142,6 +144,13 @@ export interface MatchesSlice {
   setMatchStatus: (matchId: string, status: MatchStatus) => Promise<void>;
   /** Organizer cancels an upcoming match; backend trigger pushes 'match_cancelled' to going attendees. */
   cancelMatch: (matchId: string) => Promise<void>;
+
+  /** Persist dışı: post-maç skor önerileri tally (matchId → tally listesi, ağırlığa göre sıralı). */
+  scoreVoteTalliesByMatchId: Record<string, MatchScoreVoteTally[] | undefined>;
+  /** Skor tallysini yükler. Uzak olmayan maçlar için no-op. */
+  fetchScoreVoteTally: (matchId: string) => Promise<void>;
+  /** Skor önerisi gönderir ve tally'yi günceller. */
+  submitMatchScoreVote: (matchId: string, scoreA: number, scoreB: number) => Promise<void>;
 }
 
 export type CreateGroupResult = {

@@ -20,7 +20,7 @@ import { QUICK_RATING_BANDS } from '../utils/matchPeerRatingQuickBands';
 import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { radius, spacing, typography } from '../theme';
-import type { Match, Player } from '../types/domain';
+import type { Match, MatchScoreVoteTally, Player } from '../types/domain';
 import { useMatchesStore, usePlayersStore } from '../store';
 import { useUserFeedback } from '../utils/userFeedback';
 import { sortPeersByMatchContribution } from '../utils/matchPlayerContribution';
@@ -33,6 +33,8 @@ export type PostMatchInlineWizardProps = {
 };
 
 type WizardStep = 'score' | 'statlines' | 'rating';
+
+const EMPTY_TALLIES: import('../types/domain').MatchScoreVoteTally[] = [];
 
 const useStyles = makeStyles((t) =>
   StyleSheet.create({
@@ -184,6 +186,15 @@ const useStyles = makeStyles((t) =>
       gap: spacing.md,
     },
     waitingText: { ...typography.body, color: t.colors.textMuted, textAlign: 'center' },
+    tallyHint: {
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 8,
+      marginBottom: spacing.sm,
+      alignItems: 'center',
+    },
+    tallyHintText: { ...typography.caption, fontWeight: '600' },
     stepFooter: {
       flexDirection: 'row',
       gap: spacing.sm,
@@ -255,6 +266,7 @@ function ScoreStepContent({
   scoreB,
   onScoreAChange,
   onScoreBChange,
+  leadingTally,
 }: {
   match: Match;
   canManageMatch: boolean;
@@ -262,8 +274,10 @@ function ScoreStepContent({
   scoreB: number;
   onScoreAChange: (v: number) => void;
   onScoreBChange: (v: number) => void;
+  leadingTally?: MatchScoreVoteTally;
 }) {
   const styles = useStyles();
+  const { colors } = useTheme();
 
   if (!canManageMatch) {
     return (
@@ -276,6 +290,24 @@ function ScoreStepContent({
 
   return (
     <View style={styles.stepContent}>
+      {leadingTally != null && (
+        <Pressable
+          style={[
+            styles.tallyHint,
+            { backgroundColor: colors.accentMuted, borderColor: colors.accent },
+          ]}
+          onPress={() => {
+            onScoreAChange(leadingTally.scoreA);
+            onScoreBChange(leadingTally.scoreB);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`${leadingTally.voterCount} kişi ${leadingTally.scoreA}-${leadingTally.scoreB} önerdi. Uygula.`}
+        >
+          <Text style={[styles.tallyHintText, { color: colors.accent }]}>
+            {leadingTally.voterCount} kişi {leadingTally.scoreA}–{leadingTally.scoreB} önerdi · Uygula
+          </Text>
+        </Pressable>
+      )}
       <View style={styles.scoreBlock}>
         <View style={[styles.teamCard, styles.teamCardBlack]}>
           <Text style={[styles.teamLabel, styles.teamLabelBlack]}>
@@ -616,7 +648,13 @@ export function PostMatchInlineWizard({
   const submitScore = useMatchesStore((s) => s.submitScore);
   const submitMatchRatings = useMatchesStore((s) => s.submitMatchRatings);
   const addSelfReport = useMatchesStore((s) => s.addSelfReport);
+  const fetchScoreVoteTally = useMatchesStore((s) => s.fetchScoreVoteTally);
+  const scoreVoteTallies = useMatchesStore(
+    (s) => s.scoreVoteTalliesByMatchId[match.id] ?? EMPTY_TALLIES,
+  );
   const { showUserFacingError } = useUserFeedback();
+
+  const leadingTally = scoreVoteTallies[0];
 
   const [step, setStep] = useState<WizardStep>(() => getInitialStep(match));
   const [scoreA, setScoreA] = useState(() => match.result?.scoreA ?? 0);
@@ -642,6 +680,12 @@ export function PostMatchInlineWizard({
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [motmId, setMotmId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (canManageMatch) void fetchScoreVoteTally(match.id);
+    // fetchScoreVoteTally Zustand aksiyonu — stabil referans, deps'e gerek yok
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match.id, canManageMatch]);
 
   useEffect(() => {
     setStep(getInitialStep(match));
@@ -807,6 +851,7 @@ export function PostMatchInlineWizard({
               scoreB={scoreB}
               onScoreAChange={setScoreA}
               onScoreBChange={setScoreB}
+              leadingTally={leadingTally}
             />
             {canManageMatch && (
               <View style={styles.stepFooter}>

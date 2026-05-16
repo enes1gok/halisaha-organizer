@@ -58,6 +58,7 @@ export const useAppStore = create<AppState>()(
           remoteUserId: null,
           matchRatingSummariesById: {},
           matchRatingsSubmissionByMatchId: {},
+          scoreVoteTalliesByMatchId: {},
           matchIdsPendingListEntrance: [],
           themePreference: DEFAULT_THEME_PREFERENCE,
           matchTemplates: [],

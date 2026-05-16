@@ -15,12 +15,16 @@ import {
   type PeerRatingInput,
 } from '../services/supabase/matchRatings';
 import {
+  fetchMatchScoreVoteTallyRemote,
+  upsertMatchScoreVoteRemote,
+} from '../services/supabase/matchScoreVotes';
+import {
   insertMatchWithOrganizerAttendee,
   joinMatchByJoinCode as joinMatchByJoinCodeRpc,
   submitMatchResultRpc,
 } from '../services/supabase/matches';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
-import type { Match, MatchStatus, Player, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
+import type { Match, MatchScoreVoteTally, MatchStatus, Player, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import type { CreateMatchInput, EditMatchInput } from '../store/types';
@@ -474,6 +478,39 @@ export async function submitMatchRatingsUseCase(
       'submitMatchRatings',
       error,
       'Derecelendirme kaydedilemedi. Kontrol edip tekrar deneyin.',
+    );
+  }
+}
+
+export async function fetchScoreVoteTallyUseCase(
+  matchId: string,
+): Promise<MatchScoreVoteTally[]> {
+  if (!isRemoteMatchId(matchId)) return [];
+  try {
+    return await fetchMatchScoreVoteTallyRemote(matchId);
+  } catch (error) {
+    rethrowUseCaseError(
+      'fetchScoreVoteTally',
+      error,
+      'Skor oylaması yüklenemedi.',
+    );
+    return [];
+  }
+}
+
+export async function submitMatchScoreVoteUseCase(
+  matchId: string,
+  scoreA: number,
+  scoreB: number,
+): Promise<void> {
+  if (!isRemoteMatchId(matchId)) return;
+  try {
+    await upsertMatchScoreVoteRemote(matchId, scoreA, scoreB);
+  } catch (error) {
+    rethrowUseCaseError(
+      'submitMatchScoreVote',
+      error,
+      'Skor oyunuz kaydedilemedi. Tekrar deneyin.',
     );
   }
 }

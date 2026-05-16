@@ -173,6 +173,10 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.matchRosterFull',
     code: 'VALIDATION',
   },
+  ERR_SCORE_VOTE_NOT_ALLOWED: {
+    key: 'errors.rpc.scoreVoteNotAllowed',
+    code: 'VALIDATION',
+  },
 };
 
 export function isAppError(error: unknown): error is AppError {
@@ -428,6 +432,8 @@ const KNOWN_PGRST202_RPCS: Array<{ name: string; paramHints?: string[] }> = [
     paramHints: ['p_payment_method', 'p_iban_account_name', 'p_payment_note'],
   },
   { name: 'delete_group' },
+  { name: 'upsert_match_score_vote' },
+  { name: 'get_match_score_vote_tally' },
 ];
 
 function detectMissingDeployedRpc(parsed: SupabaseLikeError): string | undefined {

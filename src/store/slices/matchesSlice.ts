@@ -16,6 +16,7 @@ import {
   addSelfReportUseCase,
   cancelMatchUseCase,
   createMatchUseCase,
+  fetchScoreVoteTallyUseCase,
   hydrateRemoteMatchesUseCase,
   joinMatchByJoinCodeUseCase,
   loadMatchRatingSummaryUseCase,
@@ -29,6 +30,7 @@ import {
   setRsvpUseCase,
   setSelfReportEnabledUseCase,
   submitMatchRatingsUseCase,
+  submitMatchScoreVoteUseCase,
   submitScoreUseCase,
   updateMatchDetailsUseCase,
 } from '../../usecases/matches';
@@ -385,6 +387,8 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
 
   matchRatingsSubmissionByMatchId: {},
 
+  scoreVoteTalliesByMatchId: {},
+
   matchIdsPendingListEntrance: [],
 
   hasMoreRemoteMatches: false,
@@ -424,6 +428,23 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
     set((s) => ({
       matchRatingsSubmissionByMatchId: { ...s.matchRatingsSubmissionByMatchId, [matchId]: true },
     }));
+  },
+
+  fetchScoreVoteTally: async (matchId) => {
+    if (!get().remoteUserId || !isRemoteMatchId(matchId)) return;
+    try {
+      const tallies = await fetchScoreVoteTallyUseCase(matchId);
+      set((s) => ({
+        scoreVoteTalliesByMatchId: { ...s.scoreVoteTalliesByMatchId, [matchId]: tallies },
+      }));
+    } catch {
+      // silent — tally is non-critical; UI degrades gracefully
+    }
+  },
+
+  submitMatchScoreVote: async (matchId, scoreA, scoreB) => {
+    await submitMatchScoreVoteUseCase(matchId, scoreA, scoreB);
+    await get().fetchScoreVoteTally(matchId);
   },
 
   hydrateRemoteMatches: (opts) =>

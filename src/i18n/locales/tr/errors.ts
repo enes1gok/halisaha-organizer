@@ -71,4 +71,6 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Puanlama penceresi kapandı. Sonuçlar yakında açıklanacak.',
   'errors.rpc.matchRosterFull':
     'Maç kadrosu doldu. Artık bu maça katılamazsın.',
+  'errors.rpc.scoreVoteNotAllowed':
+    'Skor oylaması bu aşamada yapılamaz.',
 };
