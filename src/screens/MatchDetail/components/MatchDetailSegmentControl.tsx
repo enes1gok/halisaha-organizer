@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { LayoutAnimation, Platform, Pressable, StyleSheet, Text, UIManager, View } from 'react-native';
-import { colors, letterSpacing, radius, shadows, spacing, typography } from '../../../theme';
+import { letterSpacing, radius, shadows, spacing, typography } from '../../../theme';
+import { makeStyles } from '../../../theme/ThemeContext';
 import { selectionTick } from '../../../utils/haptics';
 import type { MatchDetailTab } from '../types';
 
@@ -18,7 +19,52 @@ type Props = {
   onChange: (next: MatchDetailTab) => void;
 };
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    shell: {
+      flexDirection: 'row',
+      backgroundColor: t.colors.surfaceGlass,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: t.colors.glassBorder,
+      padding: 4,
+      gap: 4,
+      ...shadows.sm,
+    },
+    cell: {
+      flex: 1,
+      minHeight: 44,
+      minWidth: 44,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cellActive: {
+      backgroundColor: t.colors.accentMuted,
+      borderWidth: 1,
+      borderColor: t.colors.accent,
+    },
+    cellPressed: {
+      backgroundColor: t.colors.glassHighlight,
+    },
+    label: {
+      ...typography.caption,
+      letterSpacing: letterSpacing.normal,
+    },
+    labelActive: {
+      color: t.colors.accent,
+      fontFamily: typography.subtitle.fontFamily,
+      fontWeight: typography.subtitle.fontWeight,
+    },
+    labelInactive: {
+      color: t.colors.textMuted,
+    },
+  })
+);
+
 export function MatchDetailSegmentControl({ value, onChange }: Props) {
+  const styles = useStyles();
   const handlePress = useCallback(
     (next: MatchDetailTab) => {
       if (next === value) return;
@@ -62,45 +108,3 @@ export function MatchDetailSegmentControl({ value, onChange }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  shell: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceGlass,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    padding: 4,
-    gap: 4,
-    ...shadows.sm,
-  },
-  cell: {
-    flex: 1,
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cellActive: {
-    backgroundColor: colors.accentMuted,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  cellPressed: {
-    backgroundColor: colors.glassHighlight,
-  },
-  label: {
-    ...typography.caption,
-    letterSpacing: letterSpacing.normal,
-  },
-  labelActive: {
-    color: colors.accent,
-    fontFamily: typography.subtitle.fontFamily,
-    fontWeight: typography.subtitle.fontWeight,
-  },
-  labelInactive: {
-    color: colors.textMuted,
-  },
-});
