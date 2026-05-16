@@ -76,6 +76,9 @@ const CONSTRAINT_TO_TRANSLATION_KEY: Record<string, ErrorTranslationKey> = {
   matches_payment_note_chk: 'errors.db.matches_payment_note_chk',
   profiles_display_name_len_chk: 'errors.db.profiles_display_name_len_chk',
   groups_name_check: 'errors.db.groups_name_check',
+  notification_deliveries_reminder_date_chk: 'errors.db.notification_delivery_invalid',
+  notification_deliveries_match_group_ctx_chk: 'errors.db.notification_delivery_invalid',
+  notification_deliveries_type_check: 'errors.db.notification_delivery_invalid',
 };
 
 /** RPC/trigger ERR_* message token → translation key + classification */

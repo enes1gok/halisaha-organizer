@@ -15,6 +15,8 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
   'errors.db.profiles_display_name_len_chk':
     'Görünen ad en fazla 80 karakter olabilir.',
   'errors.db.groups_name_check': 'Grup adı en az 2 karakter olmalı.',
+  'errors.db.notification_delivery_invalid':
+    'Bildirim kaydı oluşturulamadı. Lütfen tekrar deneyin.',
 
   'errors.rpc.authRequired': 'Bu işlem için giriş yapmanız gerekiyor.',
   'errors.rpc.forbidden': 'Bu işlem için yetkiniz bulunmuyor.',

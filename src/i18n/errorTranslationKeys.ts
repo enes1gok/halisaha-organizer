@@ -7,6 +7,7 @@ export type ErrorTranslationKey =
   | 'errors.db.matches_payment_note_chk'
   | 'errors.db.profiles_display_name_len_chk'
   | 'errors.db.groups_name_check'
+  | 'errors.db.notification_delivery_invalid'
   | 'errors.rpc.authRequired'
   | 'errors.rpc.forbidden'
   | 'errors.rpc.matchLineupLocked'
