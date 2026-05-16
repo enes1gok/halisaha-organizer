@@ -141,6 +141,8 @@ export interface MatchesSlice {
   unlockLineup: (matchId: string) => Promise<void>;
 
   submitScore: (matchId: string, result: ScoreResult) => Promise<void>;
+  /** Organizatör bitmiş maçta skoru/istatistikleri düzenler; rating penceresi sıfırlanmaz. */
+  updateMatchResultOrganizer: (matchId: string, result: ScoreResult) => Promise<void>;
   setMatchStatus: (matchId: string, status: MatchStatus) => Promise<void>;
   /** Organizer cancels an upcoming match; backend trigger pushes 'match_cancelled' to going attendees. */
   cancelMatch: (matchId: string) => Promise<void>;

@@ -22,6 +22,7 @@ import {
   insertMatchWithOrganizerAttendee,
   joinMatchByJoinCode as joinMatchByJoinCodeRpc,
   submitMatchResultRpc,
+  updateMatchResultOrganizerRpc,
 } from '../services/supabase/matches';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
 import type { Match, MatchScoreVoteTally, MatchStatus, Player, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
@@ -443,6 +444,30 @@ export async function submitScoreUseCase(
     return;
   }
   deps.submitLocalScore(matchId, result);
+}
+
+export async function updateMatchResultOrganizerUseCase(
+  deps: MatchesDeps,
+  matchId: string,
+  result: ScoreResult,
+): Promise<void> {
+  const payload = scoreResultToRpcPayload(result);
+  await withOptimisticMatch({
+    applyOptimistic: () => deps.submitLocalScore(matchId, result),
+    rpc: () =>
+      updateMatchResultOrganizerRpc({
+        matchId,
+        scoreA: result.scoreA,
+        scoreB: result.scoreB,
+        scorers: payload.scorers,
+        assists: payload.assists,
+        ownGoals: payload.own_goals,
+      }),
+    getSnapshot: deps.getMatchesSnapshot,
+    restoreSnapshot: deps.restoreMatchesSnapshot,
+    getPlayersSnapshot: deps.getPlayersSnapshot,
+    restorePlayersSnapshot: deps.restorePlayersSnapshot,
+  });
 }
 
 export async function loadMatchRatingSummaryUseCase(matchId: string) {

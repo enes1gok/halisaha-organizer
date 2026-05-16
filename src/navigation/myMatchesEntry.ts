@@ -30,8 +30,8 @@ export function resolveMyMatchesEntryScreen(
     return 'MatchSummary';
   }
 
-  // Puanlama penceresi kapandıysa final ekrana git
-  if (match.ratingWindowEndsAt && new Date(match.ratingWindowEndsAt).getTime() < Date.now()) {
+  // Pencere yoksa (eski maç) veya süresi dolduysa → final ekrana git
+  if (!match.ratingWindowEndsAt || new Date(match.ratingWindowEndsAt).getTime() < Date.now()) {
     return 'MatchSummary';
   }
 

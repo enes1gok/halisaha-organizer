@@ -73,4 +73,6 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Maç kadrosu doldu. Artık bu maça katılamazsın.',
   'errors.rpc.scoreVoteNotAllowed':
     'Skor oylaması bu aşamada yapılamaz.',
+  'errors.rpc.matchNotFinished':
+    'Bu işlem yalnızca bitmiş maçlarda yapılabilir.',
 };

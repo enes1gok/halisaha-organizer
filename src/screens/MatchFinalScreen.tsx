@@ -2,7 +2,8 @@ import * as Sharing from 'expo-sharing';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import { MatchFinishedResultCard } from '../components/MatchFinishedResultCard';
@@ -11,6 +12,7 @@ import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import { PostMatchInlineWizard } from '../components/PostMatchInlineWizard';
 import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { computeBadgesEarnedInMatch } from '../domain/badges/computeBadgesEarnedInMatch';
@@ -21,7 +23,7 @@ import { formatMatchDateTime } from '../utils/dates';
 import { getMatchContribution } from '../utils/matchPlayerContribution';
 import { getPlayerMatchOutcome } from '../utils/matchOutcome';
 import { useShallow } from 'zustand/react/shallow';
-import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { useUserFeedback } from '../utils/userFeedback';
 
 type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
@@ -101,11 +103,22 @@ const useStyles = makeStyles((t) =>
       backgroundColor: t.colors.accentMuted,
     },
     waitingTitle: { ...typography.subtitle, color: t.colors.accent },
+    modalOverlay: { flex: 1, backgroundColor: t.colors.background },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+    },
+    modalTitle: { ...typography.subtitle, color: t.colors.text },
   }),
 );
 
 export function MatchFinalScreen() {
   const styles = useStyles();
+  const { colors } = useTheme();
   const route = useRoute<R>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
@@ -114,9 +127,11 @@ export function MatchFinalScreen() {
 
   const cardRef = useRef<View>(null);
   const [shareBusy, setShareBusy] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const getPlayer = usePlayersStore((s) => s.getPlayer);
+  const groupMemberships = useGroupsStore((s) => s.groupMemberships);
   const { match, hasSubmittedRatings, loadSummary, ratingSummary } = useMatchesStore(
     useShallow((s) => ({
       match: s.getMatch(matchId),
@@ -137,6 +152,32 @@ export function MatchFinalScreen() {
   }, [match?.id, match?.status, loadSummary]);
 
   const ratingWindow = useRatingWindow(match?.ratingWindowEndsAt ?? ratingSummary?.rating_window_ends_at);
+
+  const isOrganizer = match?.organizerId === userId;
+  const myGroupMembership = match
+    ? groupMemberships.find((m) => m.groupId === match.groupId && m.playerId === userId)
+    : undefined;
+  const isGroupManager =
+    myGroupMembership?.role === 'owner' || myGroupMembership?.role === 'admin';
+  const canManageMatch = isOrganizer || (match?.groupId != null && isGroupManager);
+
+  React.useEffect(() => {
+    if (!canManageMatch) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => setIsEditing(true)}
+          hitSlop={8}
+          style={{ marginRight: spacing.sm }}
+          accessibilityRole="button"
+          accessibilityLabel="Sonucu düzenle"
+          testID="summary:edit-result:press"
+        >
+          <Ionicons name="pencil-outline" size={22} color={colors.text} />
+        </Pressable>
+      ),
+    });
+  }, [canManageMatch, navigation, colors.text]);
 
   const onShareCardImage = useCallback(async () => {
     const shareSummaryText = [
@@ -230,6 +271,32 @@ export function MatchFinalScreen() {
   const showRatingCta = onLineup && !hasSubmittedRatings && isRemoteMatchId(match.id) && !windowClosed;
 
   return (
+    <>
+      {canManageMatch && (
+        <Modal
+          visible={isEditing}
+          animationType="slide"
+          onRequestClose={() => setIsEditing(false)}
+        >
+          <SafeAreaView style={styles.modalOverlay}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sonucu Düzenle</Text>
+              <Pressable onPress={() => setIsEditing(false)} hitSlop={8}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
+              <PostMatchInlineWizard
+                match={match}
+                canManageMatch={true}
+                currentUserId={userId}
+                hideRating={true}
+                onCompleted={() => setIsEditing(false)}
+              />
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
     <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: getTabBarListPaddingBottom(insets.bottom) }}>
       <View style={styles.pad}>
         <MatchFinishedResultCard
@@ -351,5 +418,6 @@ export function MatchFinalScreen() {
         />
       </View>
     </ScrollView>
+    </>
   );
 }

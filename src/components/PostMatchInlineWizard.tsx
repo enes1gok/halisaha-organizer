@@ -30,6 +30,8 @@ export type PostMatchInlineWizardProps = {
   canManageMatch: boolean;
   currentUserId: string;
   onCompleted: () => void;
+  /** Düzenleme modunda rating adımını gizler ve statlines kaydedince onCompleted çağırır. */
+  hideRating?: boolean;
 };
 
 type WizardStep = 'score' | 'statlines' | 'rating';
@@ -248,8 +250,9 @@ const useStyles = makeStyles((t) =>
   })
 );
 
-function getInitialStep(match: Match): WizardStep {
+function getInitialStep(match: Match, hideRating?: boolean): WizardStep {
   if (!match.result) return 'score';
+  if (hideRating) return 'score';
   const goalsMap = Object.fromEntries(
     match.result.scorers.map((s) => [s.playerId, s.count])
   );
@@ -643,9 +646,11 @@ export function PostMatchInlineWizard({
   canManageMatch,
   currentUserId,
   onCompleted,
+  hideRating,
 }: PostMatchInlineWizardProps) {
   const styles = useStyles();
   const submitScore = useMatchesStore((s) => s.submitScore);
+  const updateMatchResultOrganizer = useMatchesStore((s) => s.updateMatchResultOrganizer);
   const submitMatchRatings = useMatchesStore((s) => s.submitMatchRatings);
   const hasSubmittedRatings = useMatchesStore(
     (s) => !!s.matchRatingsSubmissionByMatchId[match.id],
@@ -659,7 +664,7 @@ export function PostMatchInlineWizard({
 
   const leadingTally = scoreVoteTallies[0];
 
-  const [step, setStep] = useState<WizardStep>(() => getInitialStep(match));
+  const [step, setStep] = useState<WizardStep>(() => getInitialStep(match, hideRating));
   const [scoreA, setScoreA] = useState(() => match.result?.scoreA ?? 0);
   const [scoreB, setScoreB] = useState(() => match.result?.scoreB ?? 0);
   const [goals, setGoals] = useState<Record<string, number>>(() => {
@@ -684,6 +689,11 @@ export function PostMatchInlineWizard({
   const [motmId, setMotmId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const ratingWindowOpen = useMemo(() => {
+    if (!match.ratingWindowEndsAt) return false;
+    return new Date(match.ratingWindowEndsAt).getTime() > Date.now();
+  }, [match.ratingWindowEndsAt]);
+
   useEffect(() => {
     if (canManageMatch) void fetchScoreVoteTally(match.id);
     // fetchScoreVoteTally Zustand aksiyonu — stabil referans, deps'e gerek yok
@@ -691,7 +701,7 @@ export function PostMatchInlineWizard({
   }, [match.id, canManageMatch]);
 
   useEffect(() => {
-    setStep(getInitialStep(match));
+    setStep(getInitialStep(match, hideRating));
     setScoreA(match.result?.scoreA ?? 0);
     setScoreB(match.result?.scoreB ?? 0);
     const g: Record<string, number> = {};
@@ -713,13 +723,20 @@ export function PostMatchInlineWizard({
   const handleSubmitScore = async () => {
     setSubmitting(true);
     try {
-      await submitScore(match.id, {
+      const result = {
         scoreA,
         scoreB,
         scorers: match.result?.scorers ?? [],
         assists: match.result?.assists ?? [],
         ownGoals: match.result?.ownGoals ?? [],
-      });
+      };
+      // İlk gönderimde submitScore (rating penceresi açılır),
+      // düzenleme modunda updateMatchResultOrganizer (pencere sıfırlanmaz).
+      if (match.result) {
+        await updateMatchResultOrganizer(match.id, result);
+      } else {
+        await submitScore(match.id, result);
+      }
       setStep('statlines');
     } catch (e) {
       showUserFacingError(e, {
@@ -736,14 +753,19 @@ export function PostMatchInlineWizard({
     if (!match.result) return;
     setSubmitting(true);
     try {
-      await submitScore(match.id, {
+      const result = {
         scoreA: match.result.scoreA,
         scoreB: match.result.scoreB,
         scorers: toScoreLines(goals),
         assists: toScoreLines(assists),
         ownGoals: [],
-      });
-      setStep('rating');
+      };
+      await updateMatchResultOrganizer(match.id, result);
+      if (hideRating) {
+        onCompleted();
+      } else {
+        setStep('rating');
+      }
     } catch (e) {
       showUserFacingError(e, {
         uiOperation: 'PostMatchInlineWizard.submitStatLines',
@@ -816,8 +838,10 @@ export function PostMatchInlineWizard({
       >
         <Pressable
           style={styles.stepCardHeader}
-          disabled={step !== 'score'}
-          onPress={() => step === 'score' && undefined}
+          onPress={() => {
+            if (canManageMatch && match.result && step !== 'score') setStep('score');
+          }}
+          disabled={!(canManageMatch && match.result && step !== 'score')}
         >
           <View
             style={[
@@ -895,8 +919,10 @@ export function PostMatchInlineWizard({
       >
         <Pressable
           style={styles.stepCardHeader}
-          disabled={step !== 'statlines'}
-          onPress={() => step === 'statlines' && undefined}
+          onPress={() => {
+            if (canManageMatch && match.result && step !== 'statlines') setStep('statlines');
+          }}
+          disabled={!(canManageMatch && match.result && step !== 'statlines')}
         >
           <View
             style={[
@@ -1000,33 +1026,44 @@ export function PostMatchInlineWizard({
       </View>
 
       {/* Rating Step Card */}
-      <View
+      {!hideRating && <View
         style={[
           styles.stepCard,
-          step === 'rating' && styles.stepCardActive,
-          step !== 'rating' ? styles.stepCardLocked : undefined,
+          step === 'rating' && !hasSubmittedRatings && ratingWindowOpen && styles.stepCardActive,
+          hasSubmittedRatings ? styles.stepCardCompleted : undefined,
+          (step !== 'rating' || !ratingWindowOpen) && !hasSubmittedRatings ? styles.stepCardLocked : undefined,
         ]}
       >
         <Pressable
           style={styles.stepCardHeader}
-          disabled={step !== 'rating'}
-          onPress={() => step === 'rating' && undefined}
+          disabled
+          onPress={undefined}
         >
           <View
             style={[
               styles.stepIconCircle,
-              step === 'rating' && styles.stepIconCircleActive,
-              step !== 'rating' ? styles.stepIconCircleLocked : undefined,
+              step === 'rating' && !hasSubmittedRatings && ratingWindowOpen && styles.stepIconCircleActive,
+              hasSubmittedRatings ? styles.stepIconCircleCompleted : undefined,
+              (step !== 'rating' || !ratingWindowOpen) && !hasSubmittedRatings ? styles.stepIconCircleLocked : undefined,
             ]}
           >
-            <Text style={styles.stepIconText}>3</Text>
+            {hasSubmittedRatings ? (
+              <Ionicons name="checkmark" size={18} style={styles.stepIconCheckmark} />
+            ) : !ratingWindowOpen ? (
+              <Ionicons name="lock-closed" size={14} style={styles.stepIconCheckmark} />
+            ) : (
+              <Text style={styles.stepIconText}>3</Text>
+            )}
           </View>
           <View style={styles.stepHeaderMeta}>
             <Text style={styles.stepTitle}>Değerlendir</Text>
+            {!hasSubmittedRatings && !ratingWindowOpen && (
+              <Text style={styles.stepSummary}>Süre doldu</Text>
+            )}
           </View>
         </Pressable>
 
-        {step === 'rating' && (() => {
+        {step === 'rating' && !hasSubmittedRatings && ratingWindowOpen && (() => {
           const ids = new Set<string>();
           match.teamAIds.forEach((id) => ids.add(id));
           match.teamBIds.forEach((id) => ids.add(id));
@@ -1065,7 +1102,7 @@ export function PostMatchInlineWizard({
             </>
           );
         })()}
-      </View>
+      </View>}
     </View>
   );
 }

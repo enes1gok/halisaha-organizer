@@ -177,6 +177,10 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.scoreVoteNotAllowed',
     code: 'VALIDATION',
   },
+  ERR_MATCH_NOT_FINISHED: {
+    key: 'errors.rpc.matchNotFinished',
+    code: 'VALIDATION',
+  },
 };
 
 export function isAppError(error: unknown): error is AppError {

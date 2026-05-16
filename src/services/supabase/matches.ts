@@ -79,6 +79,39 @@ export async function joinMatchByJoinCode(joinCode: string): Promise<string | nu
   return data as string | null;
 }
 
+export async function updateMatchResultOrganizerRpc(params: {
+  matchId: string;
+  scoreA: number;
+  scoreB: number;
+  scorers: StatLinePayload[];
+  assists: StatLinePayload[];
+  ownGoals: StatLinePayload[];
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const traceId = generateTraceId();
+  const { error } = await supabase.rpc('update_match_result_organizer', {
+    p_match_id: params.matchId,
+    p_score_a: params.scoreA,
+    p_score_b: params.scoreB,
+    p_scorers: params.scorers,
+    p_assists: params.assists,
+    p_own_goals: params.ownGoals,
+  });
+  if (error) {
+    throw mapSupabaseError(error, 'updateMatchResultOrganizerRpc', {
+      traceId,
+      requestPayload: {
+        matchId: params.matchId,
+        scoreA: params.scoreA,
+        scoreB: params.scoreB,
+        scorerLines: params.scorers.length,
+        assistLines: params.assists.length,
+        ownGoalLines: params.ownGoals.length,
+      },
+    });
+  }
+}
+
 export async function submitMatchResultRpc(params: {
   matchId: string;
   scoreA: number;

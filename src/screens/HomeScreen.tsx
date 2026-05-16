@@ -31,6 +31,7 @@ import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { countGoing } from '../utils/matchRoster';
 import { getLastFinishedMatchForPlayer } from '../utils/matchOutcome';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
+import { resolveMyMatchesEntryScreen } from '../navigation/myMatchesEntry';
 import {
   HOME_ACTION_STRIP_GAP,
   HOME_ACTION_STRIP_HEIGHT,
@@ -59,6 +60,7 @@ export function HomeScreen() {
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const remoteUserId = useAuthStore((s) => s.remoteUserId);
   const hydrateRemoteMatches = useMatchesStore((s) => s.hydrateRemoteMatches);
+  const ratingsSubmission = useMatchesStore((s) => s.matchRatingsSubmissionByMatchId);
   const { configured, loading } = useSupabaseAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState(false);
@@ -117,7 +119,14 @@ export function HomeScreen() {
           <HomeLastMatchCard
             match={lastMatch}
             playerId={userId}
-            onPress={() => navigation.navigate('MatchDetail', { matchId: lastMatch.id })}
+            onPress={() => {
+              if (!userId) return;
+              const dest = resolveMyMatchesEntryScreen(lastMatch, userId, ratingsSubmission);
+              const params = { matchId: lastMatch.id };
+              if (dest === 'MatchRatingFlow') navigation.navigate('MatchRatingFlow', params);
+              else if (dest === 'MatchSummary') navigation.navigate('MatchSummary', params);
+              else navigation.navigate('MatchDetail', params);
+            }}
           />
         ) : null}
         <HomeUpcomingHeroCard
@@ -132,7 +141,7 @@ export function HomeScreen() {
         />
       </View>
     ),
-    [getPlayer, lastMatch, navigation, nextMatch, userHasPaid, userId],
+    [getPlayer, lastMatch, navigation, nextMatch, ratingsSubmission, userHasPaid, userId],
   );
 
   if (showInitialSkeleton) {

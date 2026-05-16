@@ -33,6 +33,7 @@ import {
   submitMatchScoreVoteUseCase,
   submitScoreUseCase,
   updateMatchDetailsUseCase,
+  updateMatchResultOrganizerUseCase,
 } from '../../usecases/matches';
 import { isRemoteMatchId } from '../../utils/matchId';
 import { patchPlayersStatsForMatchTransition } from '../../utils/stats';
@@ -535,4 +536,7 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
   cancelMatch: (matchId) => cancelMatchUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 
   submitScore: (matchId, result) => submitScoreUseCase(buildMatchesUseCaseDeps(set, get), matchId, result),
+
+  updateMatchResultOrganizer: (matchId, result) =>
+    updateMatchResultOrganizerUseCase(buildMatchesUseCaseDeps(set, get), matchId, result),
 });
