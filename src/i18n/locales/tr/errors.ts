@@ -57,7 +57,7 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
   'errors.rpc.ratingFinishedOnly':
     'Derecelendirme yalnızca bitmiş maçlarda yapılabilir.',
   'errors.rpc.ratingInvalidRatee': 'Geçersiz oyuncu seçimi.',
-  'errors.rpc.ratingScoreRange': 'Puan 1 ile 10 arasında olmalı.',
+  'errors.rpc.ratingScoreRange': 'Puan 0 ile 100 arasında olmalı.',
   'errors.rpc.ratingRateeIneligible':
     'Bu oyuncu bu maç için derecelendirilemez.',
   'errors.rpc.motmCannotVote': 'Bu maç için oy kullanamazsınız.',

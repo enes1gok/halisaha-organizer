@@ -459,6 +459,14 @@ export async function submitMatchRatingsUseCase(
   args: { scores: PeerRatingInput[]; motmPickId: string },
 ): Promise<void> {
   if (!isRemoteMatchId(matchId)) return;
+
+  // Validate score range (0-100)
+  for (const ratingInput of args.scores) {
+    if (ratingInput.score < 0 || ratingInput.score > 100) {
+      throw new Error('ERR_RATING_SCORE_RANGE');
+    }
+  }
+
   try {
     await submitMatchRatingsBundleRemote(matchId, args.scores, args.motmPickId);
   } catch (error) {
