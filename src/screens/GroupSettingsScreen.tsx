@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, usePlayersStore } from '../store';
-import { colors, letterSpacing, radius, spacing, typography } from '../theme';
+import { letterSpacing, radius, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useUserFeedback } from '../utils/userFeedback';
 import { isRemoteUuid } from '../utils/matchId';
@@ -32,7 +32,7 @@ function roleSortOrder(role: GroupRole): number {
 
 function roleLabel(role: GroupRole): string {
   if (role === 'owner') return 'Yönetici';
-  if (role === 'admin') return 'Yardımcı';
+  if (role === 'admin') return 'Organizatör';
   return 'Üye';
 }
 
@@ -40,6 +40,7 @@ export function GroupSettingsScreen() {
   const route = useRoute<SettingsRoute>();
   const navigation = useNavigation<Nav>();
   const styles = useStyles();
+  const { colors: themeColors } = useTheme();
   const insets = useSafeAreaInsets();
   const { groupId } = route.params;
   const userId = useAuthStore((s) => s.getCurrentUserId());
@@ -210,11 +211,11 @@ export function GroupSettingsScreen() {
       if (isOwner) {
         if (targetRole === 'member') {
           buttons.push({
-            text: 'Yardımcı Yönetici Yap',
+            text: 'Organizatör Yap',
             onPress: () => {
               Alert.alert(
-                'Yardımcı Yönetici Yap',
-                `${targetName} grubun yardımcı yöneticisi olacak. Devam etmek istiyor musun?`,
+                'Organizatör Yap',
+                `${targetName} grubun organizatörü olacak. Devam etmek istiyor musun?`,
                 [
                   { text: 'İptal', style: 'cancel' },
                   {
@@ -240,11 +241,11 @@ export function GroupSettingsScreen() {
         }
         if (targetRole === 'admin') {
           buttons.push({
-            text: 'Yardımcılığı Kaldır',
+            text: 'Organizatörlüğü Kaldır',
             onPress: () => {
               Alert.alert(
-                'Yardımcılığı Kaldır',
-                `${targetName} artık yardımcı yönetici olmayacak.`,
+                'Organizatörlüğü Kaldır',
+                `${targetName} artık organizatör olmayacak.`,
                 [
                   { text: 'İptal', style: 'cancel' },
                   {
@@ -371,7 +372,7 @@ export function GroupSettingsScreen() {
           title={copyCodeLabel}
           variant="accent"
           onPress={onPressCopyJoinCode}
-          titleColor={codeCopied ? colors.copyFeedbackLight : undefined}
+          titleColor={codeCopied ? themeColors.copyFeedbackLight : undefined}
         />
       </Card>
 
@@ -443,7 +444,7 @@ export function GroupSettingsScreen() {
           <PillButton
             title="Grubu kaldır"
             variant="ghost"
-            titleColor={colors.textMuted}
+            titleColor={themeColors.textMuted}
             onPress={onPressDeleteGroup}
             loading={deleting}
             disabled={deleting}

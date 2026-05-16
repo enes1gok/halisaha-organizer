@@ -9,7 +9,8 @@ import { WeeklySeriesFormSkeleton } from '../components/skeleton';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useUserFeedback } from '../utils/userFeedback';
 import { useAuthStore, useGroupsStore } from '../store';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import {
   formatIbanForInput,
   isValidTurkishIban,
@@ -49,9 +50,43 @@ function parseTimeToDate(t: string): Date {
   return d;
 }
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    scroll: { padding: spacing.md, gap: spacing.md },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
+    muted: { ...typography.body, color: t.colors.textMuted, textAlign: 'center' },
+    loadingLabel: { ...typography.caption, color: t.colors.textMuted, marginTop: spacing.sm },
+    lead: { ...typography.caption, color: t.colors.textMuted },
+    label: { ...typography.subtitle, color: t.colors.text },
+    rowBetween: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: t.colors.surface,
+      padding: spacing.md,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+    },
+    weekRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    input: {
+      ...typography.body,
+      color: t.colors.text,
+      backgroundColor: t.colors.surface,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+  })
+);
+
 export function GroupWeeklySeriesScreen() {
   const { groupId } = useRoute<Route>().params;
   const insets = useSafeAreaInsets();
+  const styles = useStyles();
+  const { colors: themeColors } = useTheme();
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const group = useGroupsStore((s) => s.groups.find((g) => g.id === groupId));
   const fetchSeries = useGroupsStore((s) => s.fetchGroupWeeklySeries);
@@ -258,7 +293,7 @@ export function GroupWeeklySeriesScreen() {
         value={venue}
         onChangeText={setVenue}
         placeholder="Örn: Kadıköy Halısaha"
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={themeColors.textMuted}
         testID="groups:weekly:venue"
       />
 
@@ -278,7 +313,7 @@ export function GroupWeeklySeriesScreen() {
         onChangeText={handlePriceChange}
         keyboardType="decimal-pad"
         placeholder="0 ₺"
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={themeColors.textMuted}
         testID="groups:weekly:price"
       />
 
@@ -300,33 +335,3 @@ export function GroupWeeklySeriesScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: { padding: spacing.md, gap: spacing.md },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
-  muted: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
-  loadingLabel: { ...typography.caption, color: colors.textMuted, marginTop: spacing.sm },
-  lead: { ...typography.caption, color: colors.textMuted },
-  label: { ...typography.subtitle, color: colors.text },
-  rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  weekRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-});

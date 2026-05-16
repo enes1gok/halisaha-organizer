@@ -12,15 +12,60 @@ import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, useMatchesStore } from '../store';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 import { countGoing } from '../utils/matchRoster';
 
 type DetailRoute = RouteProp<GroupsStackParamList, 'GroupDetail'>;
 type Nav = NativeStackNavigationProp<GroupsStackParamList, 'GroupDetail'>;
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.colors.background },
+    deniedWrap: {
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    listContent: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      gap: spacing.md,
+      flexGrow: 1,
+    },
+    listHeader: {
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    titleBlock: {
+      gap: spacing.xs,
+      marginBottom: spacing.xs,
+    },
+    title: { ...typography.title, color: t.colors.text },
+    meta: { ...typography.caption, color: t.colors.textMuted },
+    headerBtnText: {
+      ...typography.caption,
+      color: t.colors.text,
+      fontWeight: '600',
+    },
+    sectionLabel: {
+      ...typography.subtitle,
+      color: t.colors.text,
+      marginTop: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    empty: {
+      ...typography.body,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      marginTop: spacing.md,
+    },
+  })
+);
+
 export function GroupDetailScreen() {
   const route = useRoute<DetailRoute>();
   const navigation = useNavigation<Nav>();
+  const styles = useStyles();
   const { groupId } = route.params;
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.getCurrentUserId());
@@ -146,44 +191,3 @@ export function GroupDetailScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  deniedWrap: {
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  listContent: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    gap: spacing.md,
-    flexGrow: 1,
-  },
-  listHeader: {
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  titleBlock: {
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  title: { ...typography.title, color: colors.text },
-  meta: { ...typography.caption, color: colors.textMuted },
-  headerBtnText: {
-    ...typography.caption,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  sectionLabel: {
-    ...typography.subtitle,
-    color: colors.text,
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  empty: {
-    ...typography.body,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: spacing.md,
-  },
-});
