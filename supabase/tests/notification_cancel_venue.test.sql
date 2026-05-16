@@ -1,6 +1,6 @@
 -- Match cancellation clears pending deliveries and enqueues match_cancelled
--- for going attendees only ("katılıyorum" diyenler). Maybe / non-attending /
--- non-attendee group members are excluded; organizer is excluded.
+-- for going or maybe attendees ("katılıyorum" veya "belki" diyenler).
+-- Non-attendee group members are excluded; organizer is excluded.
 -- Venue updates enqueue venue_change for going attendees only (respects prefs).
 
 begin;
@@ -75,14 +75,14 @@ update public.matches
 set status = 'cancelled'::public.match_status
 where id = 'f0000000-0000-4000-8000-000000000080'::uuid;
 
--- After cancel: only going attendees (011) get match_cancelled. Pending purged
--- and replaced; 012 (maybe) and 013 (no RSVP) get nothing.
+-- After cancel: going (011) and maybe (012) get match_cancelled. Pending purged
+-- and replaced; 013 (no RSVP) gets nothing.
 select is(
   (select count(*)::int from public.notification_deliveries
    where match_id = 'f0000000-0000-4000-8000-000000000080'::uuid
      and status = 'pending'),
-  1,
-  'after cancel: only going attendees (1) remain pending'
+  2,
+  'after cancel: going + maybe attendees (2) remain pending'
 );
 
 select is(
@@ -94,12 +94,13 @@ select is(
   'match_cancelled enqueued for going attendee (011)'
 );
 
-select is_empty(
-  $$ select 1 from public.notification_deliveries
-     where match_id = 'f0000000-0000-4000-8000-000000000080'::uuid
-       and type = 'match_cancelled'
-       and recipient_id = 'e0000000-0000-4000-8000-000000000012'::uuid $$,
-  'maybe attendee (012) does not receive cancellation push enqueue'
+select is(
+  (select count(*)::int from public.notification_deliveries
+   where match_id = 'f0000000-0000-4000-8000-000000000080'::uuid
+     and type = 'match_cancelled'
+     and recipient_id = 'e0000000-0000-4000-8000-000000000012'::uuid),
+  1,
+  'maybe attendee (012) receives cancellation push enqueue'
 );
 
 select is_empty(

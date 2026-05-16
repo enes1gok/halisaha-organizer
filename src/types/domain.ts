@@ -131,6 +131,10 @@ export interface Match {
   teamBIds: string[];
   /** Kadro şablonu kimliği (`src/data/lineupFormations.ts`). Uzak DB ile senkronize edilmez; yenilemede yerelden korunur. */
   lineupFormationId?: string | null;
+  /** Yerel-only: formasyon modunda slot konumlarını korur (remote DB'ye gönderilmez). index=slot pozisyonu, null=boş slot. */
+  lineupSlotsA?: (string | null)[];
+  /** Yerel-only: formasyon modunda slot konumlarını korur (remote DB'ye gönderilmez). index=slot pozisyonu, null=boş slot. */
+  lineupSlotsB?: (string | null)[];
   lineupLocked: boolean;
   selfReportEnabled: boolean;
   status: MatchStatus;

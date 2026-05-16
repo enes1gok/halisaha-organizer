@@ -264,6 +264,8 @@ function setLocalMatchTeams(
   teamAIds: string[],
   teamBIds: string[],
   lineupFormationId?: string | null,
+  lineupSlotsA?: (string | null)[] | null,
+  lineupSlotsB?: (string | null)[] | null,
 ) {
   set((state) => ({
     matches: state.matches.map((m) => {
@@ -271,6 +273,12 @@ function setLocalMatchTeams(
       const patch: Partial<Match> = { teamAIds, teamBIds };
       if (lineupFormationId !== undefined) {
         patch.lineupFormationId = lineupFormationId;
+      }
+      if (lineupSlotsA !== undefined) {
+        patch.lineupSlotsA = lineupSlotsA ?? undefined;
+      }
+      if (lineupSlotsB !== undefined) {
+        patch.lineupSlotsB = lineupSlotsB ?? undefined;
       }
       return { ...m, ...patch };
     }),
@@ -350,7 +358,9 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
       teamAIds: string[],
       teamBIds: string[],
       lineupFormationId?: string | null,
-    ) => setLocalMatchTeams(set, matchId, teamAIds, teamBIds, lineupFormationId),
+      lineupSlotsA?: (string | null)[] | null,
+      lineupSlotsB?: (string | null)[] | null,
+    ) => setLocalMatchTeams(set, matchId, teamAIds, teamBIds, lineupFormationId, lineupSlotsA, lineupSlotsB),
     lockLocalLineup: (matchId: string) => lockLocalLineup(set, matchId),
     unlockLocalLineup: (matchId: string) => unlockLocalLineup(set, matchId),
     setLocalMatchStatus: (matchId: string, status: MatchStatus) => setLocalMatchStatus(set, matchId, status),
@@ -484,8 +494,16 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
   respondSelfReport: (matchId, requestId, approve) =>
     respondSelfReportUseCase(buildMatchesUseCaseDeps(set, get), matchId, requestId, approve),
 
-  setMatchTeams: (matchId, teamAIds, teamBIds, lineupFormationId) =>
-    setMatchTeamsUseCase(buildMatchesUseCaseDeps(set, get), matchId, teamAIds, teamBIds, lineupFormationId),
+  setMatchTeams: (matchId, teamAIds, teamBIds, lineupFormationId, lineupSlotsA, lineupSlotsB) =>
+    setMatchTeamsUseCase(
+      buildMatchesUseCaseDeps(set, get),
+      matchId,
+      teamAIds,
+      teamBIds,
+      lineupFormationId,
+      lineupSlotsA,
+      lineupSlotsB,
+    ),
 
   lockLineup: (matchId) => lockLineupUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 

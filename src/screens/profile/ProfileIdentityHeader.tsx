@@ -48,8 +48,20 @@ export function ProfileIdentityHeader({ player, badgeTiles, showEditControls, em
     <View style={styles.hero} accessibilityLabel={`${player.name}, ${player.position}`}>
       {/* Zone 1: Avatar + kimlik + rating */}
       <View style={styles.identityZone}>
-        <View style={[styles.avatarRing, { borderColor: colors.accent }]}>
-          <PlayerAvatar name={player.name} uri={player.photoUri} size={80} />
+        {/* Avatar + Edit Button (stacked) */}
+        <View style={styles.avatarCol}>
+          <View style={[styles.avatarRing, { borderColor: colors.accent }]}>
+            <PlayerAvatar name={player.name} uri={player.photoUri} size={80} />
+          </View>
+          {showEditControls ? (
+            <PillButton
+              title="Düzenle"
+              variant="ghost"
+              onPress={onEditPress}
+              style={styles.editBtn}
+              testID="profile:edit:press"
+            />
+          ) : null}
         </View>
 
         <View style={styles.nameCol}>
@@ -64,15 +76,6 @@ export function ProfileIdentityHeader({ player, badgeTiles, showEditControls, em
               {emailVerified ? '✓ Doğrulandı' : '✗ Doğrulanmadı'}
             </Text>
           )}
-          {showEditControls ? (
-            <PillButton
-              title="Profili Düzenle"
-              variant="ghost"
-              onPress={onEditPress}
-              style={styles.editBtn}
-              testID="profile:edit:press"
-            />
-          ) : null}
         </View>
 
         <View style={styles.ratingCol} accessibilityLabel={`Ortalama puan: ${rating != null ? rating.toFixed(1) : 'yok'}`}>
@@ -144,11 +147,15 @@ const useStyles = makeStyles((t) =>
     },
     identityZone: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       gap: spacing.md,
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.md,
       paddingBottom: spacing.sm,
+    },
+    avatarCol: {
+      alignItems: 'center',
+      gap: spacing.xs,
     },
     avatarRing: {
       borderRadius: 999,
@@ -178,8 +185,9 @@ const useStyles = makeStyles((t) =>
       color: t.colors.danger,
     },
     editBtn: {
-      marginTop: spacing.xs,
-      alignSelf: 'flex-start',
+      minHeight: 36,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
     },
     ratingCol: {
       width: 88,

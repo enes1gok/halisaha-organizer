@@ -22,7 +22,7 @@ export function ProfileStackNav() {
   );
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'İstatistiklerim' }} />
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'Profil' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ayarlar' }} />
       <Stack.Screen
         name="NotificationSettings"

@@ -132,6 +132,8 @@ export interface MatchesSlice {
     teamAIds: string[],
     teamBIds: string[],
     lineupFormationId?: string | null,
+    lineupSlotsA?: (string | null)[] | null,
+    lineupSlotsB?: (string | null)[] | null,
   ) => Promise<void>;
   lockLineup: (matchId: string) => Promise<void>;
   unlockLineup: (matchId: string) => Promise<void>;

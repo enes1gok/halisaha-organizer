@@ -620,8 +620,17 @@ export function LineupBuilderScreen() {
     const f = getLineupFormationById(fid);
     if (!f) return;
     setFormationId(fid);
-    setSlotsA(buildSlotsFromCompact(match.teamAIds, f.playersPerTeam));
-    setSlotsB(buildSlotsFromCompact(match.teamBIds, f.playersPerTeam));
+    // Slot pozisyon bilgisi yerel store'da korunuyorsa kullan; yoksa compact diziden inşa et.
+    const initA =
+      match.lineupSlotsA && match.lineupSlotsA.length === f.playersPerTeam
+        ? match.lineupSlotsA
+        : buildSlotsFromCompact(match.teamAIds, f.playersPerTeam);
+    const initB =
+      match.lineupSlotsB && match.lineupSlotsB.length === f.playersPerTeam
+        ? match.lineupSlotsB
+        : buildSlotsFromCompact(match.teamBIds, f.playersPerTeam);
+    setSlotsA(initA);
+    setSlotsB(initB);
   }, [match, formationMode, formationsForCount, formationRosterTotal]);
 
   useEffect(() => {
@@ -641,10 +650,11 @@ export function LineupBuilderScreen() {
     if (!match || match.lineupLocked || !formationMode || !lineupDimensionsReady) return;
     const a = compactSlots(slotsA);
     const b = compactSlots(slotsB);
-    const fk = `${resolvedFormationId}|${JSON.stringify(a)}|${JSON.stringify(b)}`;
+    // Fingerprint sparse dizileri kapsar; compact aynı kalsa bile slot değişimi algılanır.
+    const fk = `${resolvedFormationId}|${JSON.stringify(slotsA)}|${JSON.stringify(slotsB)}`;
     if (lastPersistKey.current === fk) return;
     lastPersistKey.current = fk;
-    void setMatchTeams(match.id, a, b, resolvedFormationId ?? undefined).catch((err) =>
+    void setMatchTeams(match.id, a, b, resolvedFormationId ?? undefined, slotsA, slotsB).catch((err) =>
       showApiErrorToast(err, {
         uiOperation: 'LineupBuilder:persistFormation',
         fallbackMessage: 'Kadro kaydedilemedi.',
@@ -738,7 +748,7 @@ export function LineupBuilderScreen() {
     const empty = Array.from<string | null>({ length: selectedFormation.playersPerTeam }).fill(null);
     setSlotsA(empty);
     setSlotsB(empty);
-    void setMatchTeams(match.id, [], [], resolvedFormationId ?? undefined).catch((err) =>
+    void setMatchTeams(match.id, [], [], resolvedFormationId ?? undefined, empty, empty).catch((err) =>
       showApiErrorToast(err, {
         uiOperation: 'LineupBuilder:reset',
         fallbackMessage: 'Kadro sıfırlanamadı.',

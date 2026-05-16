@@ -68,7 +68,13 @@ Read at runtime via `Constants.expoConfig.extra` in [src/lib/supabase.ts](src/li
 
 - **Runtime**: Expo ~54, React 19, React Native ~0.81, TypeScript.
 - **Navigation**: **React Navigation** v7 — root **bottom tabs** + per-tab **stack** navigators. Entry: [AppNavigator.tsx](src/navigation/AppNavigator.tsx). Param lists: [types.ts](src/navigation/types.ts).
-- **Styling**: **Design tokens** in [src/theme/index.ts](src/theme/index.ts) (`colors`, `spacing`, `typography`, `radius`, `shadows`) + **`StyleSheet`** in components. No NativeWind / Expo Router. Theme-aware components use `useTheme()` / `makeStyles()` from [src/theme/ThemeContext.tsx](src/theme/ThemeContext.tsx).
+- **Styling**: **Design tokens** in [src/theme/index.ts](src/theme/index.ts) (`colors`, `spacing`, `typography`, `radius`, `shadows`) + **`StyleSheet`** in components. No NativeWind / Expo Router. Theme-aware components use `useTheme()` / `makeStyles()` from [src/theme/ThemeContext.tsx](src/theme/ThemeContext.tsx). The `makeStyles` factory returns a hook — call it at module level, invoke the hook inside the component:
+  ```ts
+  const useStyles = makeStyles((t) => StyleSheet.create({
+    screen: { backgroundColor: t.colors.background },
+  }));
+  function MyScreen() { const styles = useStyles(); … }
+  ```
 - **State**: Single **Zustand** store with **persist** (`AsyncStorage`), composed from domain **slices** under [src/store/](src/store/) — entry [useAppStore.ts](src/store/useAppStore.ts), barrel [index.ts](src/store/index.ts) exports **`useAuthStore`**, **`usePlayersStore`**, **`useMatchesStore`**, **`useGroupsStore`**, **`usePreferencesStore`**, **`useMatchTemplatesStore`** (prefer these in UI over raw `useAppStore`). Prefer **atomic selectors** and `useShallow` when selecting multiple fields — avoid subscribing to the full store object in new components.
 - **Domain model**: [src/types/domain.ts](src/types/domain.ts) — `Player`, `Match`, `Attendee`, `ScoreResult`, enums (`Position`, `RSVPStatus`, `MatchStatus`, …). Do not duplicate these shapes elsewhere.
 - **Data / seed**: [src/data/seed.ts](src/data/seed.ts) (and related) for demo/bootstrap data; `resetToSeed` on the store restores it.
@@ -122,7 +128,32 @@ Orchestration layer between store slices and Supabase services. Receives injecte
 | `SupabaseAuthContext.tsx` | Session lifecycle orchestrator: bootstrap with 15 s timeout, PKCE deep-link exchange, profile sync, initial hydration, push token upsert/deactivate, realtime start/stop, sign-out teardown. Exposes `useSupabaseAuth()`. |
 | `ToastContext.tsx` | Global toast queue. Exposes `useToast()` → `showToast(opts)`. Rendered by `ToastHost` in the navigation tree. Prefer `useUserFeedback()` wrappers in screens. |
 
-**Other** — [src/hooks/](src/hooks/), [src/utils/](src/utils/) (e.g. `id`, `stats`), [src/store/](src/store/).
+**Hooks** — [src/hooks/](src/hooks/)
+
+| Hook | Role |
+|------|------|
+| `useEffectiveMatchStatus` | Derives live match status from `MatchStatus` + clock (`matchEffectiveStatus` util underneath) |
+| `useMatchPostMatchWindow` | True while the post-match rating/report window is open |
+| `useRatingWindow` | Whether the peer-rating window is still open for a match |
+| `useCountdown` | Generic countdown timer (used for match start / rating deadlines) |
+| `useReduceMotion` | Wraps `AccessibilityInfo.isReduceMotionEnabled` — required by motion + tactical board rules |
+
+**Utils** — [src/utils/](src/utils/)
+
+Domain helpers with no React/Zustand dependency — all unit-testable.
+
+| File | Role |
+|------|------|
+| `userFeedback.ts` | **Primary user-feedback API** — see "User feedback pattern" below |
+| `matchEffectiveStatus.ts` | Pure status resolution: `MatchStatus` + elapsed time → effective state |
+| `balanceTeamsByRating.ts` | Team auto-balance algorithm |
+| `leaderboard.ts` | Leaderboard sort / stat aggregation |
+| `stats.ts` | Per-player match stats computation |
+| `animations.ts` | Shared Reanimated presets (`NavDurations`, `Springs`, `TabSlide`, …) |
+| `haptics.ts` | `selectionTick`, light/medium impact wrappers |
+| `asyncPool.ts` | Bounded `Promise.all` — use for batched Supabase fetches |
+| `photoUri.ts` | `stripUrlQueryForStorage` / `appendPhotoUriCacheBuster` for avatar URL handling |
+| `lineupFormationDrop.ts` | Drop-zone hit-testing and swap logic for tactical board |
 
 ## Architectural invariants
 
@@ -130,6 +161,36 @@ Orchestration layer between store slices and Supabase services. Receives injecte
 2. **Single source of truth**: Match and player mutations go through store actions (via domain hooks or **`useAppStore`**); after model changes, keep **`recomputePlayerStatsFromMatches`** / score merge logic consistent with [helpers.ts](src/store/helpers.ts) / [useAppStore.ts](src/store/useAppStore.ts).
 3. **Persistence**: Store shape is versioned (`STORE_VERSION`, migrate in `persist`). Changing persisted fields requires a migration or bump strategy.
 4. **Copy/i18n**: User-visible strings are currently **Turkish inline** in UI. Error tokens are localized via `src/i18n/` (`ErrorTranslationKey` union → `locales/tr/errors.ts` → `translateError.ts`; see [error-handling-governance.md](.claude/rules/error-handling-governance.md)). General UI strings remain inline until a broader i18n layer is introduced.
+5. **Supabase guard**: Every function in `src/services/supabase/` must start with `if (!isSupabaseConfigured()) throw createAuthRequiredError(...)`. Never call `getSupabaseClient()` without this guard.
+
+## User feedback pattern
+
+All user-facing feedback goes through `useUserFeedback()` from [src/utils/userFeedback.ts](src/utils/userFeedback.ts). Never call `useToast()` directly in screens.
+
+```ts
+const { showValidationToast, showApiErrorToast, showUserFacingError, showToast } = useUserFeedback();
+
+// Input / guard rejection (warning toast)
+showValidationToast('Giriş gerekli', 'Devam etmek için oturum açın.');
+
+// Supabase / API errors (error toast + reportError + optional retry)
+showApiErrorToast(error, { uiOperation: 'match:join', fallbackMessage: 'Katılım başarısız.' });
+
+// Critical errors with copyable technical detail (error toast + "Teknik detay" action)
+showUserFacingError(error, { uiOperation: 'match:score', fallbackMessage: 'Skor gönderilemedi.' });
+```
+
+Use `Alert.alert` **only** for destructive confirmations (delete, leave group, cancel match) or flows that require explicit branching (e.g. email-not-verified dialog). Everything else uses toasts.
+
+## Supabase Storage
+
+Single bucket: **`avatars`**. Two path conventions:
+- Profile avatar: `{userId}/avatar.jpg`
+- Group photo: `groups/{groupId}/photo.jpg`
+
+Upload service: [src/services/supabase/avatarUpload.ts](src/services/supabase/avatarUpload.ts). Uses `expo-image-manipulator` (resize to 512 px, JPEG 0.85) then `expo-file-system` (`readAsStringAsync` base64 → `Uint8Array`) before calling `supabase.storage.upload`. Do **not** use `fetch(localUri).blob()` — it fails on React Native local file URIs.
+
+Avatar URLs are stored without query strings (`stripUrlQueryForStorage`) and displayed with a cache-buster suffix (`appendPhotoUriCacheBuster`) — see [src/utils/photoUri.ts](src/utils/photoUri.ts).
 
 ## Operational governance
 

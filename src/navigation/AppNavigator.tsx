@@ -70,7 +70,7 @@ function renderIonicon(routeName: string, color: string) {
     case 'GroupsTab':
       return <Ionicons name="people-outline" size={size} color={color} />;
     case 'ProfileTab':
-      return <Ionicons name="stats-chart-outline" size={size} color={color} />;
+      return <Ionicons name="person-outline" size={size} color={color} />;
     default:
       return null;
   }
@@ -121,7 +121,7 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
       case 'GroupsTab':
         return 'Gruplar';
       case 'ProfileTab':
-        return 'İstatistikler';
+        return 'Profil';
       default:
         return '';
     }

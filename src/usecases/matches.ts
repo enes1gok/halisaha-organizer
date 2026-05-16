@@ -48,6 +48,8 @@ type MatchesDeps = {
     teamAIds: string[],
     teamBIds: string[],
     lineupFormationId?: string | null,
+    lineupSlotsA?: (string | null)[] | null,
+    lineupSlotsB?: (string | null)[] | null,
   ) => void;
   lockLocalLineup: (matchId: string) => void;
   unlockLocalLineup: (matchId: string) => void;
@@ -336,17 +338,20 @@ export async function setMatchTeamsUseCase(
   teamAIds: string[],
   teamBIds: string[],
   lineupFormationId?: string | null,
+  lineupSlotsA?: (string | null)[] | null,
+  lineupSlotsB?: (string | null)[] | null,
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
     await withOptimisticMatch({
-      applyOptimistic: () => deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId),
+      applyOptimistic: () =>
+        deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId, lineupSlotsA, lineupSlotsB),
       rpc: () => replaceMatchTeamPlayersRemote(matchId, teamAIds, teamBIds),
       getSnapshot: deps.getMatchesSnapshot,
       restoreSnapshot: deps.restoreMatchesSnapshot,
     });
     return;
   }
-  deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId);
+  deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId, lineupSlotsA, lineupSlotsB);
 }
 
 export async function lockLineupUseCase(deps: MatchesDeps, matchId: string): Promise<void> {
