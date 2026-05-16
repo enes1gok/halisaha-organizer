@@ -125,31 +125,98 @@ const useStyles = makeStyles((t) =>
     container: { gap: spacing.sm },
     sectionHead: { ...typography.subtitle, color: t.colors.text },
     roBody: { ...typography.body, color: t.colors.textMuted },
-    scoreBlock: { gap: spacing.sm, marginBottom: spacing.sm },
-    scoreTeamRow: {
+    scoreBlock: {
       flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
       gap: spacing.sm,
+      marginBottom: spacing.sm,
     },
-    scoreTeamLbl: {
-      ...typography.caption,
-      color: t.colors.textMuted,
+    teamCardBlack: {
       flex: 1,
-      textAlign: 'center',
-      minWidth: 0,
+      borderRadius: radius.card,
+      padding: spacing.md,
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: '#111111',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 10,
+      elevation: 8,
     },
-    scoreVs: {
+    teamCardLblBlack: {
       ...typography.caption,
-      color: t.colors.textMuted,
-      marginHorizontal: spacing.xs,
+      color: 'rgba(255,255,255,0.55)',
+      textAlign: 'center',
     },
-    scoreSeparator: {
-      fontSize: 32,
+    teamCardDividerBlack: {
+      width: '100%',
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: 'rgba(255,255,255,0.12)',
+    },
+    teamCardWhite: {
+      flex: 1,
+      borderRadius: radius.card,
+      padding: spacing.md,
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: 'rgba(0,0,0,0.08)',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 6,
+    },
+    teamCardLblWhite: {
+      ...typography.caption,
+      color: 'rgba(0,0,0,0.45)',
+      textAlign: 'center',
+    },
+    teamCardDividerWhite: {
+      width: '100%',
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: 'rgba(0,0,0,0.1)',
+    },
+    stepBtnBlack: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    stepTxtOnBlack: { fontSize: 22, color: '#FFFFFF', fontFamily: 'Inter_600SemiBold' },
+    scoreTxtOnBlack: {
+      fontSize: 44,
       fontFamily: 'Inter_700Bold',
-      color: t.colors.textMuted,
-      marginHorizontal: spacing.sm,
+      color: '#FFFFFF',
+      minWidth: 52,
+      textAlign: 'center',
     },
+    stepBtnWhite: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: 'rgba(0,0,0,0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+    stepTxtOnWhite: { fontSize: 22, color: '#111111', fontFamily: 'Inter_600SemiBold' },
+    scoreTxtOnWhite: {
+      fontSize: 44,
+      fontFamily: 'Inter_700Bold',
+      color: '#111111',
+      minWidth: 52,
+      textAlign: 'center',
+    },
+    bigScoreCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     bigScore: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     bigScoreSide: { flex: 1, justifyContent: 'center' },
     scoreTxt: {
@@ -360,34 +427,36 @@ export function PostMatchScoreForm({
       <Text style={styles.sectionHead}>Maç sonucu</Text>
       {canEditScore ? (
         <View style={styles.scoreBlock}>
-          <View style={styles.scoreTeamRow}>
-            <Text style={styles.scoreTeamLbl} numberOfLines={1}>
+          {/* Siyah Takım kartı */}
+          <View style={styles.teamCardBlack}>
+            <Text style={styles.teamCardLblBlack} numberOfLines={1}>
               {TEAM_SIDE_LABELS.A}
             </Text>
-            <Text style={styles.scoreVs}>vs</Text>
-            <Text style={styles.scoreTeamLbl} numberOfLines={1}>
-              {TEAM_SIDE_LABELS.B}
-            </Text>
-          </View>
-
-          <View style={styles.scoreTeamRow}>
-            <View style={[styles.bigScore, styles.bigScoreSide]}>
-              <Pressable onPress={() => setScoreA(Math.max(0, scoreA - 1))} style={styles.stepBtn} testID="postmatch:scoreA:dec">
-                <Text style={styles.stepTxt}>−</Text>
+            <View style={styles.teamCardDividerBlack} />
+            <View style={styles.bigScoreCard}>
+              <Pressable onPress={() => setScoreA(Math.max(0, scoreA - 1))} style={styles.stepBtnBlack} testID="postmatch:scoreA:dec">
+                <Text style={styles.stepTxtOnBlack}>−</Text>
               </Pressable>
-              <Text style={styles.scoreTxt}>{scoreA}</Text>
-              <Pressable onPress={() => setScoreA(scoreA + 1)} style={styles.stepBtn} testID="postmatch:scoreA:inc">
-                <Text style={styles.stepTxt}>+</Text>
+              <Text style={styles.scoreTxtOnBlack}>{scoreA}</Text>
+              <Pressable onPress={() => setScoreA(scoreA + 1)} style={styles.stepBtnBlack} testID="postmatch:scoreA:inc">
+                <Text style={styles.stepTxtOnBlack}>+</Text>
               </Pressable>
             </View>
-            <Text style={styles.scoreSeparator}>–</Text>
-            <View style={[styles.bigScore, styles.bigScoreSide]}>
-              <Pressable onPress={() => setScoreB(Math.max(0, scoreB - 1))} style={styles.stepBtn} testID="postmatch:scoreB:dec">
-                <Text style={styles.stepTxt}>−</Text>
+          </View>
+
+          {/* Beyaz Takım kartı */}
+          <View style={styles.teamCardWhite}>
+            <Text style={styles.teamCardLblWhite} numberOfLines={1}>
+              {TEAM_SIDE_LABELS.B}
+            </Text>
+            <View style={styles.teamCardDividerWhite} />
+            <View style={styles.bigScoreCard}>
+              <Pressable onPress={() => setScoreB(Math.max(0, scoreB - 1))} style={styles.stepBtnWhite} testID="postmatch:scoreB:dec">
+                <Text style={styles.stepTxtOnWhite}>−</Text>
               </Pressable>
-              <Text style={styles.scoreTxt}>{scoreB}</Text>
-              <Pressable onPress={() => setScoreB(scoreB + 1)} style={styles.stepBtn} testID="postmatch:scoreB:inc">
-                <Text style={styles.stepTxt}>+</Text>
+              <Text style={styles.scoreTxtOnWhite}>{scoreB}</Text>
+              <Pressable onPress={() => setScoreB(scoreB + 1)} style={styles.stepBtnWhite} testID="postmatch:scoreB:inc">
+                <Text style={styles.stepTxtOnWhite}>+</Text>
               </Pressable>
             </View>
           </View>

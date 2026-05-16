@@ -112,19 +112,21 @@ export function MatchDetailSummaryPanel({
         <Text style={styles.body}>{organizerName}</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Katılım kodu</Text>
-        <View style={styles.rowBetween}>
-          <Text style={styles.code}>{match.joinCode}</Text>
-          <PillButton
-            title={joinCopyLabel}
-            variant="ghost"
-            onPress={onPressCopyJoin}
-            titleColor={joinCopied ? colors.copyFeedbackLight : undefined}
-            accessibilityLabel={joinCopied ? 'Kopyalandı' : 'Katılım kodunu panoya kopyala'}
-          />
+      {(match.status === 'upcoming' || match.status === 'ongoing') ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Katılım kodu</Text>
+          <View style={styles.rowBetween}>
+            <Text style={styles.code}>{match.joinCode}</Text>
+            <PillButton
+              title={joinCopyLabel}
+              variant="ghost"
+              onPress={onPressCopyJoin}
+              titleColor={joinCopied ? colors.copyFeedbackLight : undefined}
+              accessibilityLabel={joinCopied ? 'Kopyalandı' : 'Katılım kodunu panoya kopyala'}
+            />
+          </View>
         </View>
-      </View>
+      ) : null}
 
       {showInlineScore ? (
         <View style={styles.section}>
