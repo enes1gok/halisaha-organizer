@@ -647,6 +647,9 @@ export function PostMatchInlineWizard({
   const styles = useStyles();
   const submitScore = useMatchesStore((s) => s.submitScore);
   const submitMatchRatings = useMatchesStore((s) => s.submitMatchRatings);
+  const hasSubmittedRatings = useMatchesStore(
+    (s) => !!s.matchRatingsSubmissionByMatchId[match.id],
+  );
   const addSelfReport = useMatchesStore((s) => s.addSelfReport);
   const fetchScoreVoteTally = useMatchesStore((s) => s.fetchScoreVoteTally);
   const scoreVoteTallies = useMatchesStore(

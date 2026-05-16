@@ -7,18 +7,19 @@ import {
 } from '@expo-google-fonts/inter';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Notifications from 'expo-notifications';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Appearance,
   AppState,
-  Image,
   Text,
   TextInput,
   View,
   type AppStateStatus,
 } from 'react-native';
+
+
+SplashScreen.preventAutoHideAsync();
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SupabaseAuthProvider, useSupabaseAuth } from './src/context/SupabaseAuthContext';
@@ -31,7 +32,6 @@ import { openGroupDetail, openMatchDetail, openProfileMain } from './src/navigat
 import { drainPendingInAppDeliveries, startContextAwareNotificationSync } from './src/services/notifications';
 import { registerBackgroundSyncTask, unregisterBackgroundSyncTask } from './src/services/sync/backgroundTask';
 import { runRemoteCatchUp } from './src/services/sync/remoteCatchUp';
-import { palettes } from './src/theme';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { useAppStore, useAuthStore } from './src/store';
 
@@ -51,11 +51,6 @@ const TextInputWithDefaults = TextInput as unknown as {
 };
 TextInputWithDefaults.defaultProps = TextInputWithDefaults.defaultProps ?? {};
 TextInputWithDefaults.defaultProps.maxFontSizeMultiplier = FONT_SCALE_CAP;
-
-function bootstrapPalette() {
-  const scheme = Appearance.getColorScheme() === 'light' ? 'light' : 'dark';
-  return palettes[scheme];
-}
 
 function AppShell() {
   const { configured, loading, session, needsPasswordRecovery } = useSupabaseAuth();
@@ -203,27 +198,14 @@ export default function App() {
     return () => clearTimeout(watchdogTimer);
   }, [hydrated]);
 
+  useEffect(() => {
+    if (fontsLoaded && hydrated) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, hydrated]);
+
   if (!fontsLoaded || !hydrated) {
-    const boot = bootstrapPalette();
-    return (
-      <View style={{ flex: 1, backgroundColor: boot.background, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
-        <Image
-          source={require('./assets/splash-icon.png')}
-          style={{ width: 72, height: 72, borderRadius: 16, marginBottom: 16 }}
-          resizeMode="contain"
-        />
-        <Text style={{ fontSize: 22, fontWeight: '700', color: boot.text, letterSpacing: 0.5, marginBottom: 4 }}>
-          Halısaha
-        </Text>
-        <Text style={{ fontSize: 13, color: boot.textMuted, marginBottom: 32 }}>
-          Maç Organize Et
-        </Text>
-        <ActivityIndicator color={boot.accent} size="large" />
-        <Text style={{ fontSize: 15, color: boot.textMuted, marginTop: 12 }}>
-          Yükleniyor…
-        </Text>
-      </View>
-    );
+    return null;
   }
 
   return (

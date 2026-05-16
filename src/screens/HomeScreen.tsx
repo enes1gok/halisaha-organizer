@@ -10,6 +10,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeActionCard } from '../components/HomeActionCard';
 import { HomeLastMatchCard } from '../components/HomeLastMatchCard';
@@ -162,40 +163,42 @@ export function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      <FlatList
-        data={restUpcoming}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={listHeader}
-        contentContainerStyle={[styles.list, { paddingBottom: adjustedListPaddingBottom }]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
-        }
-        renderItem={({ item }) => {
-          const goingC = countGoing(item);
-          const mine = item.attendees.find((a) => a.playerId === userId);
-          return (
-            <MatchCardListRow matchId={item.id}>
-              <MatchCard
-                match={item}
-                goingCount={goingC}
-                userRsvp={mine?.status ?? null}
-                onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
+      <Animated.View style={styles.fill} entering={FadeIn.duration(180)}>
+        <FlatList
+          data={restUpcoming}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={listHeader}
+          contentContainerStyle={[styles.list, { paddingBottom: adjustedListPaddingBottom }]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
+          }
+          renderItem={({ item }) => {
+            const goingC = countGoing(item);
+            const mine = item.attendees.find((a) => a.playerId === userId);
+            return (
+              <MatchCardListRow matchId={item.id}>
+                <MatchCard
+                  match={item}
+                  goingCount={goingC}
+                  userRsvp={mine?.status ?? null}
+                  onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
+                />
+              </MatchCardListRow>
+            );
+          }}
+          ListEmptyComponent={
+            fetchError && matches.length === 0 ? (
+              <EmptyState
+                variant="connection-error"
+                title="Bağlantı hatası"
+                subtitle="Veriler yüklenemedi. İnternet bağlantınızı kontrol edin."
+                actionLabel="Tekrar dene"
+                onAction={onRefresh}
               />
-            </MatchCardListRow>
-          );
-        }}
-        ListEmptyComponent={
-          fetchError && matches.length === 0 ? (
-            <EmptyState
-              variant="connection-error"
-              title="Bağlantı hatası"
-              subtitle="Veriler yüklenemedi. İnternet bağlantınızı kontrol edin."
-              actionLabel="Tekrar dene"
-              onAction={onRefresh}
-            />
-          ) : null
-        }
-      />
+            ) : null
+          }
+        />
+      </Animated.View>
 
       <View
         style={[
@@ -223,6 +226,9 @@ const useStyles = makeStyles((t) =>
     screen: {
       flex: 1,
       backgroundColor: t.colors.background,
+    },
+    fill: {
+      flex: 1,
     },
     list: {
       padding: spacing.md,
