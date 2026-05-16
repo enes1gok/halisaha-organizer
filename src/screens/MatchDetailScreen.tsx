@@ -118,7 +118,7 @@ export function MatchDetailScreen() {
   const groupMemberships = useGroupsStore((s) => s.groupMemberships);
   const organizer = match ? getPlayer(match.organizerId) : undefined;
   const isOrganizer = match?.organizerId === userId;
-  const myGroupMembership = groupMemberships.find(
+  const myGroupMembership = match && groupMemberships.find(
     (m) => m.groupId === match?.groupId && m.playerId === userId,
   );
   const isGroupManager =
@@ -152,6 +152,18 @@ export function MatchDetailScreen() {
     }
     return m;
   }, [ratingSummary]);
+
+  const actionablePending = useMemo(() => {
+    if (!userId || !match) return [];
+    return match.selfReports.filter(
+      (r) =>
+        r.status === 'pending' && canRespondToSelfReportRequest(match, r.playerId, userId),
+    );
+  }, [match, userId]);
+
+  const currentUserRsvp =
+    userId && match ? (match.attendees.find((a) => a.playerId === userId)?.status ?? null) : null;
+
 
   useFocusEffect(
     useCallback(() => {
@@ -197,9 +209,6 @@ export function MatchDetailScreen() {
     }, [matchId, refreshRemoteMatch]),
   );
 
-  const { label: joinCopyLabel, runCopy: runJoinCopy, isCopied: joinCopied } = useClipboardCopyFeedback({
-    idleLabel: 'Kodu Kopyala',
-  });
   const { label: ibanCopyLabel, runCopy: runIbanCopy, isCopied: ibanCopied } = useClipboardCopyFeedback({
     idleLabel: 'IBAN Kopyala',
   });
@@ -208,13 +217,6 @@ export function MatchDetailScreen() {
     if (!match) return [];
     return sortAttendeesWithPlayers(match.attendees, getPlayer);
   }, [match, getPlayer]);
-
-  const onPressCopyJoin = useCallback(() => {
-    if (!match) return;
-    runJoinCopy(async () => {
-      await Clipboard.setStringAsync(match.joinCode);
-    });
-  }, [match, runJoinCopy]);
 
   const onPressCopyIban = useCallback(() => {
     const iban = match?.iban;
@@ -339,6 +341,18 @@ export function MatchDetailScreen() {
     }
   };
 
+  const showInlineWizard = Boolean(
+    match &&
+      isRemoteMatchId(matchId) &&
+      (currentUserRsvp === 'going' || canManageMatch) &&
+      (effectiveStatus === 'finished' || pastScheduledEnd) &&
+      match.status !== 'cancelled'
+  );
+
+  const handleWizardCompleted = useCallback(() => {
+    navigation.navigate('MatchSummary', { matchId });
+  }, [navigation, matchId]);
+
   if (!match) {
     return (
       <View style={matchDetailStyles.center}>
@@ -347,20 +361,9 @@ export function MatchDetailScreen() {
     );
   }
 
-  const actionablePending = useMemo(() => {
-    if (!userId) return [];
-    return match.selfReports.filter(
-      (r) =>
-        r.status === 'pending' && canRespondToSelfReportRequest(match, r.playerId, userId),
-    );
-  }, [match, userId]);
-
   const paidConfirmMessage =
     paidConfirm &&
     `${paidConfirm.playerName} için ödeme durumu “${paidConfirm.nextPaid ? 'Ödendi' : 'Ödenmedi'}” olarak kaydedilsin mi?`;
-
-  const currentUserRsvp =
-    userId && match ? (match.attendees.find((a) => a.playerId === userId)?.status ?? null) : null;
 
   return (
     <View style={matchDetailStyles.screen}>
@@ -384,10 +387,6 @@ export function MatchDetailScreen() {
           <MatchDetailSummaryPanel
             match={match}
             navigation={navigation}
-            organizerName={organizer?.name ?? '—'}
-            joinCopyLabel={joinCopyLabel}
-            joinCopied={joinCopied}
-            onPressCopyJoin={onPressCopyJoin}
             isOrganizer={canManageMatch}
             canManageMatch={canManageMatch}
             userOnMatchLineup={userOnMatchLineup}
@@ -429,6 +428,9 @@ export function MatchDetailScreen() {
               )
             }
             currentUserRsvp={currentUserRsvp}
+            showInlineWizard={showInlineWizard}
+            onWizardCompleted={handleWizardCompleted}
+            currentUserId={userId ?? ''}
           />
         ) : null}
 
@@ -445,6 +447,7 @@ export function MatchDetailScreen() {
             onPressCopyIban={onPressCopyIban}
             onPressEditPaid={handlePressEditPaid}
             effectiveStatus={effectiveStatus}
+            organizerName={organizer?.name ?? '—'}
           />
         ) : null}
       </ScrollView>

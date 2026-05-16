@@ -21,6 +21,7 @@ type Props = {
   onPressCopyIban: () => void;
   onPressEditPaid: (playerId: string, playerName: string, nextPaid: boolean) => void;
   effectiveStatus: EffectiveStatus;
+  organizerName: string;
 };
 
 export function MatchDetailRosterPanel({
@@ -35,6 +36,7 @@ export function MatchDetailRosterPanel({
   onPressCopyIban,
   onPressEditPaid,
   effectiveStatus,
+  organizerName,
 }: Props) {
   const { colors } = useTheme();
   const styles = useMatchDetailStyles();
@@ -47,6 +49,11 @@ export function MatchDetailRosterPanel({
 
   return (
     <>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Organizatör</Text>
+        <Text style={styles.body}>{organizerName}</Text>
+      </View>
+
       {showPaymentSection && effectiveStatus === 'upcoming' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ödeme bilgisi</Text>

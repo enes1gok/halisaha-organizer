@@ -120,6 +120,8 @@ function QuickSelectPlayerRow({
   );
 }
 
+export { QuickSelectPlayerRow };
+
 const useStyles = makeStyles((t) =>
   StyleSheet.create({
     container: { gap: spacing.sm },

@@ -2,7 +2,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { Switch, Text, View } from 'react-native';
 import { PillButton } from '../../../components/PillButton';
-import { PostMatchScoreForm } from '../../../components/PostMatchScoreForm';
+import { PostMatchInlineWizard } from '../../../components/PostMatchInlineWizard';
 import { RsvpOptionButton } from '../../../components/RsvpOptionButton';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../../../navigation/types';
 import { useTheme } from '../../../theme/ThemeContext';
@@ -18,10 +18,6 @@ type Nav = NativeStackNavigationProp<MatchStacks>;
 type Props = {
   match: Match;
   navigation: Nav;
-  organizerName: string;
-  joinCopyLabel: string;
-  joinCopied: boolean;
-  onPressCopyJoin: () => void;
   isOrganizer: boolean;
   canManageMatch: boolean;
   userOnMatchLineup: boolean;
@@ -39,15 +35,14 @@ type Props = {
   /** Kullanıcının kendi katılım durumu; katılımcı değilse null */
   currentUserRsvp: RSVPStatus | null;
   effectiveStatus: EffectiveStatus;
+  showInlineWizard: boolean;
+  onWizardCompleted: () => void;
+  currentUserId: string;
 };
 
 export function MatchDetailSummaryPanel({
   match,
   navigation,
-  organizerName,
-  joinCopyLabel,
-  joinCopied,
-  onPressCopyJoin,
   isOrganizer,
   canManageMatch,
   userOnMatchLineup,
@@ -64,20 +59,28 @@ export function MatchDetailSummaryPanel({
   onSetSelfReportEnabled,
   currentUserRsvp,
   effectiveStatus,
+  showInlineWizard,
+  onWizardCompleted,
+  currentUserId,
 }: Props) {
   const matchId = match.id;
   const { colors } = useTheme();
   const styles = useMatchDetailStyles();
 
-  const isOngoing = effectiveStatus === 'ongoing';
-  const showInlineScore =
-    isOrganizer &&
-    isRemoteMatchId(match.id) &&
-    (isOngoing || pastScheduledEnd) &&
-    match.status !== 'finished';
-
   return (
     <>
+      {showInlineWizard ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Maç Sonucu</Text>
+          <PostMatchInlineWizard
+            match={match}
+            canManageMatch={canManageMatch}
+            currentUserId={currentUserId}
+            onCompleted={onWizardCompleted}
+          />
+        </View>
+      ) : null}
+
       {match.status === 'finished' && match.result ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Skor detayı</Text>
@@ -107,39 +110,7 @@ export function MatchDetailSummaryPanel({
         </View>
       ) : null}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Organizatör</Text>
-        <Text style={styles.body}>{organizerName}</Text>
-      </View>
-
-      {(match.status === 'upcoming' || match.status === 'ongoing') ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Katılım kodu</Text>
-          <View style={styles.rowBetween}>
-            <Text style={styles.code}>{match.joinCode}</Text>
-            <PillButton
-              title={joinCopyLabel}
-              variant="ghost"
-              onPress={onPressCopyJoin}
-              titleColor={joinCopied ? colors.copyFeedbackLight : undefined}
-              accessibilityLabel={joinCopied ? 'Kopyalandı' : 'Katılım kodunu panoya kopyala'}
-            />
-          </View>
-        </View>
-      ) : null}
-
-      {showInlineScore ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Skor Girişi</Text>
-          <PostMatchScoreForm
-            match={match}
-            canEditScore={true}
-            showSelfReportToggle={false}
-          />
-        </View>
-      ) : null}
-
-      {isOrganizer && match.status !== 'cancelled' ? (
+      {isOrganizer && match.status !== 'cancelled' && effectiveStatus === 'upcoming' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yönetim</Text>
           <View style={styles.rowWrap}>
@@ -252,7 +223,7 @@ export function MatchDetailSummaryPanel({
         </View>
       ) : null}
 
-      {match.selfReportEnabled && isOngoing && currentUserRsvp === 'going' ? (
+      {match.selfReportEnabled && effectiveStatus === 'ongoing' && currentUserRsvp === 'going' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Maç İstatistikleri</Text>
           <View style={styles.rowWrap}>
