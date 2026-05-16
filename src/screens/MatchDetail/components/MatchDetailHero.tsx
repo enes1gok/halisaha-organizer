@@ -100,8 +100,8 @@ export function MatchDetailHero({
               borderColor: rsvpInfo.border,
             },
           ]}
-          onPress={isOngoing ? undefined : onPressRsvp}
-          disabled={isOngoing}
+          onPress={effectiveStatus === 'upcoming' ? onPressRsvp : undefined}
+          disabled={effectiveStatus !== 'upcoming'}
         >
           <Ionicons name={rsvpInfo.icon as any} size={18} color={rsvpInfo.content} />
           <Text style={[styles.heroRsvpText, { color: rsvpInfo.content }]}>
