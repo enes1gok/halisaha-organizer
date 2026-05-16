@@ -10,7 +10,8 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, radius, shadows, spacing, typography } from '../../theme';
+import { radius, shadows, spacing, typography } from '../../theme';
+import { makeStyles, useTheme } from '../../theme/ThemeContext';
 
 type Props = {
   reduceMotion: boolean;
@@ -19,7 +20,87 @@ type Props = {
 const BAR_COUNT = 5;
 const BAR_MAX = 72;
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    wrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 220,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      gap: spacing.md,
+    },
+    playerCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      maxWidth: 320,
+      padding: spacing.md,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      gap: spacing.md,
+    },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: t.colors.accentMuted,
+      borderWidth: 2,
+      borderColor: t.colors.accent,
+    },
+    playerMeta: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    playerName: {
+      ...typography.subtitle,
+      color: t.colors.text,
+    },
+    playerHint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    spark: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: t.colors.indigoMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sparkText: {
+      fontSize: 18,
+      color: t.colors.indigo,
+    },
+    chart: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      height: 88,
+      width: '100%',
+      maxWidth: 280,
+    },
+    barTrack: {
+      width: 28,
+      height: BAR_MAX,
+      borderRadius: radius.sm,
+      backgroundColor: t.colors.border,
+      justifyContent: 'flex-end',
+      overflow: 'hidden',
+    },
+    barFill: {
+      width: '100%',
+      borderRadius: radius.sm,
+      minHeight: 12,
+    },
+  }),
+);
+
 export function StatsLeaderboardHero({ reduceMotion }: Props) {
+  const styles = useStyles();
+  const { colors: themeColors } = useTheme();
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -40,7 +121,7 @@ export function StatsLeaderboardHero({ reduceMotion }: Props) {
   return (
     <View style={styles.wrap} accessibilityRole="image" accessibilityLabel="Oyuncu kartı ve istatistik grafiği önizlemesi">
       <LinearGradient
-        colors={[colors.surface, colors.surfaceSoft]}
+        colors={[themeColors.surface, themeColors.surfaceSoft]}
         style={[styles.playerCard, shadows.md]}
       >
         <View style={styles.avatar} />
@@ -71,6 +152,8 @@ function Bar({
   progress: SharedValue<number>;
   reduceMotion: boolean;
 }) {
+  const styles = useStyles();
+  const { colors: themeColors } = useTheme();
   const targetHeight = 22 + ((index + 2) * 10) % BAR_MAX;
   const style = useAnimatedStyle(() => {
     const t = reduceMotion ? 1 : progress.value;
@@ -84,7 +167,7 @@ function Bar({
         style={[
           styles.barFill,
           {
-            backgroundColor: index === BAR_COUNT - 1 ? colors.accent : colors.indigoMuted,
+            backgroundColor: index === BAR_COUNT - 1 ? themeColors.accent : themeColors.indigoMuted,
           },
           style,
         ]}
@@ -92,79 +175,3 @@ function Bar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 220,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-  },
-  playerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 320,
-    padding: spacing.md,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.accentMuted,
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
-  playerMeta: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  playerName: {
-    ...typography.subtitle,
-    color: colors.text,
-  },
-  playerHint: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  spark: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.indigoMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sparkText: {
-    fontSize: 18,
-    color: colors.indigo,
-  },
-  chart: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    height: 88,
-    width: '100%',
-    maxWidth: 280,
-  },
-  barTrack: {
-    width: 28,
-    height: BAR_MAX,
-    borderRadius: radius.sm,
-    backgroundColor: colors.border,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  barFill: {
-    width: '100%',
-    borderRadius: radius.sm,
-    minHeight: 12,
-  },
-});

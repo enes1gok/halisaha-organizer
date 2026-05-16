@@ -4,6 +4,7 @@ import { PillButton } from '../../../components/PillButton';
 import { PlayerAvatar } from '../../../components/PlayerAvatar';
 import { PositionBadge } from '../../../components/PositionBadge';
 import type { Attendee, Match, Player } from '../../../types/domain';
+import type { EffectiveStatus } from '../../../utils/matchEffectiveStatus';
 import { useTheme } from '../../../theme/ThemeContext';
 import { maskIban } from '../../../utils/iban';
 import { useMatchDetailStyles } from '../matchDetailStyles';
@@ -19,6 +20,7 @@ type Props = {
   ibanCopied: boolean;
   onPressCopyIban: () => void;
   onPressEditPaid: (playerId: string, playerName: string, nextPaid: boolean) => void;
+  effectiveStatus: EffectiveStatus;
 };
 
 export function MatchDetailRosterPanel({
@@ -32,6 +34,7 @@ export function MatchDetailRosterPanel({
   ibanCopied,
   onPressCopyIban,
   onPressEditPaid,
+  effectiveStatus,
 }: Props) {
   const { colors } = useTheme();
   const styles = useMatchDetailStyles();
@@ -44,7 +47,7 @@ export function MatchDetailRosterPanel({
 
   return (
     <>
-      {showPaymentSection ? (
+      {showPaymentSection && effectiveStatus === 'upcoming' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ödeme bilgisi</Text>
           {showPrice ? <Text style={styles.muted}>Kişi başı ₺{match.pricePerPerson}</Text> : null}
@@ -78,7 +81,7 @@ export function MatchDetailRosterPanel({
           const inMatchLineup =
             match.teamAIds.includes(a.playerId) || match.teamBIds.includes(a.playerId);
           const rr = inMatchLineup ? ratingByPid.get(a.playerId) : undefined;
-          const showPaidToggle = isIban && (isOrganizer || p!.id === userId);
+          const showPaidToggle = isIban && effectiveStatus === 'upcoming' && (isOrganizer || p!.id === userId);
 
           return (
             <View key={a.playerId} style={styles.playerRow}>

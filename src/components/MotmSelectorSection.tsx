@@ -1,7 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PlayerAvatar } from './PlayerAvatar';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 import type { Match, Player } from '../types/domain';
 import { getMatchContribution } from '../utils/matchPlayerContribution';
 
@@ -14,7 +15,32 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    container: { gap: spacing.xs },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      padding: spacing.sm,
+      borderRadius: radius.card,
+      backgroundColor: t.colors.surface,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      ...shadows.sm,
+    },
+    rowOn: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    meta: { flex: 1, minWidth: 0 },
+    name: { ...typography.body, color: t.colors.text, flexShrink: 1 },
+    micro: { ...typography.micro, color: t.colors.textMuted },
+  }),
+);
+
 export function MotmSelectorSection({ match, choices, selectedId, onSelect }: Props) {
+  const styles = useStyles();
   return (
     <View style={styles.container}>
       {choices.map(({ id, p }) => {
@@ -46,25 +72,3 @@ export function MotmSelectorSection({ match, choices, selectedId, onSelect }: Pr
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: spacing.xs },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm,
-    borderRadius: radius.card,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.sm,
-  },
-  rowOn: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  meta: { flex: 1, minWidth: 0 },
-  name: { ...typography.body, color: colors.text, flexShrink: 1 },
-  micro: { ...typography.micro, color: colors.textMuted },
-});

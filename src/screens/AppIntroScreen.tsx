@@ -30,7 +30,8 @@ import {
 } from '../components/app-intro';
 import { PillButton } from '../components/PillButton';
 import { useReduceMotion } from '../hooks/useReduceMotion';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { Durations, Springs } from '../utils/animations';
 
 export type AppIntroScreenProps = {
@@ -66,7 +67,77 @@ const SLIDES: Slide[] = [
 
 const AnimatedFlatList = Animated.FlatList<Slide>;
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+      minHeight: 44,
+      alignItems: 'center',
+    },
+    skipBtn: {
+      minWidth: 44,
+      minHeight: 44,
+      paddingHorizontal: spacing.sm,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    skipPressed: {
+      opacity: 0.75,
+    },
+    skipLabel: {
+      ...typography.subtitle,
+      color: t.colors.textMuted,
+    },
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      flexGrow: 1,
+    },
+    slide: {
+      flex: 1,
+      paddingHorizontal: spacing.lg,
+    },
+    copyBlock: {
+      paddingTop: spacing.md,
+      gap: spacing.sm,
+    },
+    title: {
+      ...typography.headlineStrong,
+      color: t.colors.text,
+      letterSpacing: 0.2,
+    },
+    body: {
+      ...typography.body,
+      color: t.colors.textMuted,
+      lineHeight: 22,
+    },
+    footer: {
+      position: 'relative',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+      gap: spacing.lg,
+    },
+    finishingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(10,10,10,0.35)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  }),
+);
+
 export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
+  const styles = useStyles();
+  const { colors: themeColors } = useTheme();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
@@ -268,75 +339,9 @@ export function AppIntroScreen({ onComplete }: AppIntroScreenProps) {
 
       {finishing ? (
         <View style={styles.finishingOverlay} pointerEvents="none">
-          <ActivityIndicator color={colors.accent} size="large" />
+          <ActivityIndicator color={themeColors.accent} size="large" />
         </View>
       ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    minHeight: 44,
-    alignItems: 'center',
-  },
-  skipBtn: {
-    minWidth: 44,
-    minHeight: 44,
-    paddingHorizontal: spacing.sm,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  skipPressed: {
-    opacity: 0.75,
-  },
-  skipLabel: {
-    ...typography.subtitle,
-    color: colors.textMuted,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    flexGrow: 1,
-  },
-  slide: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
-  copyBlock: {
-    paddingTop: spacing.md,
-    gap: spacing.sm,
-  },
-  title: {
-    ...typography.headlineStrong,
-    color: colors.text,
-    letterSpacing: 0.2,
-  },
-  body: {
-    ...typography.body,
-    color: colors.textMuted,
-    lineHeight: 22,
-  },
-  footer: {
-    position: 'relative',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.lg,
-  },
-  finishingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10,10,10,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

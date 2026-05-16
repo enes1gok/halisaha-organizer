@@ -444,6 +444,7 @@ export function MatchDetailScreen() {
             ibanCopied={ibanCopied}
             onPressCopyIban={onPressCopyIban}
             onPressEditPaid={handlePressEditPaid}
+            effectiveStatus={effectiveStatus}
           />
         ) : null}
       </ScrollView>

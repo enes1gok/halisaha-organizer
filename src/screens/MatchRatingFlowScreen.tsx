@@ -16,7 +16,8 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
 import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useRatingWindow } from '../hooks/useRatingWindow';
 import { QUICK_RATING_BANDS, nearestQuickBandId } from '../utils/matchPeerRatingQuickBands';
 import { getMatchContribution, sortPeersByMatchContribution } from '../utils/matchPlayerContribution';
@@ -44,7 +45,67 @@ function formatCountdown(secondsLeft: number): string {
   return `${s}s`;
 }
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.colors.background },
+    content: { padding: spacing.md, gap: spacing.md },
+    center: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    emptyMsg: { ...typography.body, color: t.colors.textMuted, textAlign: 'center' },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    stepLabel: { ...typography.subtitle, color: t.colors.textMuted },
+    countdown: { ...typography.caption, color: t.colors.accent },
+    anonHint: { ...typography.caption, color: t.colors.textMuted },
+    card: {
+      backgroundColor: t.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      padding: spacing.lg,
+      gap: spacing.md,
+      ...shadows.sm,
+    },
+    cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    cardMeta: { flex: 1, minWidth: 0, gap: spacing.xs },
+    playerName: { ...typography.subtitle, color: t.colors.text },
+    contrib: { ...typography.caption, color: t.colors.textMuted },
+    scoreLbl: { ...typography.body, color: t.colors.accent, fontFamily: 'Inter_700Bold' },
+    bandsRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+    bandChip: {
+      flex: 1,
+      minWidth: 70,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.pill,
+      backgroundColor: t.colors.background,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      paddingHorizontal: spacing.sm,
+    },
+    bandChipOn: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    bandLbl: { ...typography.caption, color: t.colors.text, fontWeight: '600' },
+    bandLblOn: { color: t.colors.accent },
+    sectionTitle: { ...typography.subtitle, color: t.colors.text },
+    mt: { marginTop: spacing.sm },
+  }),
+);
+
 export function MatchRatingFlowScreen() {
+  const styles = useStyles();
   const route = useRoute<RatingFlowRoute>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
@@ -299,60 +360,3 @@ export function MatchRatingFlowScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, gap: spacing.md },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  emptyMsg: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  stepLabel: { ...typography.subtitle, color: colors.textMuted },
-  countdown: { ...typography.caption, color: colors.accent },
-  anonHint: { ...typography.caption, color: colors.textMuted },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    gap: spacing.md,
-    ...shadows.sm,
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  cardMeta: { flex: 1, minWidth: 0, gap: spacing.xs },
-  playerName: { ...typography.subtitle, color: colors.text },
-  contrib: { ...typography.caption, color: colors.textMuted },
-  scoreLbl: { ...typography.body, color: colors.accent, fontFamily: 'Inter_700Bold' },
-  bandsRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
-  bandChip: {
-    flex: 1,
-    minWidth: 70,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.sm,
-  },
-  bandChipOn: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  bandLbl: { ...typography.caption, color: colors.text, fontWeight: '600' },
-  bandLblOn: { color: colors.accent },
-  sectionTitle: { ...typography.subtitle, color: colors.text },
-  mt: { marginTop: spacing.sm },
-});

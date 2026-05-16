@@ -9,7 +9,8 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, radius, spacing } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { makeStyles, useTheme } from '../../theme/ThemeContext';
 
 type Props = {
   reduceMotion: boolean;
@@ -17,7 +18,89 @@ type Props = {
 
 const STRIPE_COUNT = 14;
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    root: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: radius.card,
+      overflow: 'hidden',
+    },
+    stripe: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: 1,
+      backgroundColor: 'rgba(255, 255, 255, 0.045)',
+    },
+    halfCircle: {
+      position: 'absolute',
+      alignSelf: 'center',
+      bottom: -8,
+      width: 140,
+      height: 70,
+      borderTopLeftRadius: 70,
+      borderTopRightRadius: 70,
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      borderColor: t.colors.pitch.line,
+      opacity: 0.35,
+    },
+    centerLine: {
+      position: 'absolute',
+      left: '50%',
+      marginLeft: -0.5,
+      top: '10%',
+      bottom: '18%',
+      width: 1,
+      backgroundColor: t.colors.pitch.line,
+      opacity: 0.35,
+    },
+    ballWrap: {
+      position: 'absolute',
+      right: spacing.md,
+      bottom: spacing.md,
+    },
+    ball: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 2,
+      borderColor: 'rgba(255, 255, 255, 0.5)',
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 6,
+      elevation: 6,
+    },
+    ballPatchA: {
+      position: 'absolute',
+      width: 14,
+      height: 14,
+      borderRadius: 4,
+      backgroundColor: t.colors.surface,
+      top: 10,
+      left: 8,
+      opacity: 0.95,
+      transform: [{ rotate: '-18deg' }],
+    },
+    ballPatchB: {
+      position: 'absolute',
+      width: 10,
+      height: 10,
+      borderRadius: 3,
+      backgroundColor: t.colors.background,
+      bottom: 9,
+      right: 10,
+      opacity: 0.88,
+      transform: [{ rotate: '24deg' }],
+    },
+  }),
+);
+
 export function WelcomePitchBackdrop({ reduceMotion }: Props) {
+  const styles = useStyles();
+  const { colors: themeColors } = useTheme();
   const float = useSharedValue(0);
 
   useEffect(() => {
@@ -51,7 +134,7 @@ export function WelcomePitchBackdrop({ reduceMotion }: Props) {
       accessibilityElementsHidden
     >
       <LinearGradient
-        colors={[colors.pitch.grassDeep, colors.pitch.grassMid, colors.pitch.grassLight]}
+        colors={[themeColors.pitch.grassDeep, themeColors.pitch.grassMid, themeColors.pitch.grassLight]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -87,7 +170,7 @@ export function WelcomePitchBackdrop({ reduceMotion }: Props) {
 
       <Animated.View style={[styles.ballWrap, ballMotion]}>
         <LinearGradient
-          colors={['#F2F2F2', colors.border]}
+          colors={['#F2F2F2', themeColors.border]}
           style={styles.ball}
           start={{ x: 0.2, y: 0.15 }}
           end={{ x: 0.85, y: 0.95 }}
@@ -99,81 +182,3 @@ export function WelcomePitchBackdrop({ reduceMotion }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: radius.card,
-    overflow: 'hidden',
-  },
-  stripe: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.045)',
-  },
-  halfCircle: {
-    position: 'absolute',
-    alignSelf: 'center',
-    bottom: -8,
-    width: 140,
-    height: 70,
-    borderTopLeftRadius: 70,
-    borderTopRightRadius: 70,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: colors.pitch.line,
-    opacity: 0.35,
-  },
-  centerLine: {
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -0.5,
-    top: '10%',
-    bottom: '18%',
-    width: 1,
-    backgroundColor: colors.pitch.line,
-    opacity: 0.35,
-  },
-  ballWrap: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
-  },
-  ball: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  ballPatchA: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 4,
-    backgroundColor: colors.surface,
-    top: 10,
-    left: 8,
-    opacity: 0.95,
-    transform: [{ rotate: '-18deg' }],
-  },
-  ballPatchB: {
-    position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 3,
-    backgroundColor: colors.background,
-    bottom: 9,
-    right: 10,
-    opacity: 0.88,
-    transform: [{ rotate: '24deg' }],
-  },
-});

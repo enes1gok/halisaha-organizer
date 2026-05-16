@@ -19,7 +19,8 @@ import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/supabase/profiles';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import {
   type NotificationPreferences,
   defaultNotificationPreferences,
@@ -66,7 +67,129 @@ function permissionLabel(status: Notifications.PermissionStatus): string {
 
 type QuietField = 'start' | 'end';
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    loadingFull: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    savingSpinner: {
+      marginTop: spacing.sm,
+    },
+    screen: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      gap: spacing.md,
+    },
+    section: {
+      backgroundColor: t.colors.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    sectionDisabled: {
+      opacity: 0.55,
+    },
+    sectionTitle: {
+      ...typography.subtitle,
+      color: t.colors.text,
+    },
+    muted: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    caption: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    captionStrong: {
+      color: t.colors.text,
+    },
+    hint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    rowText: {
+      flex: 1,
+      gap: 2,
+    },
+    rowTitle: {
+      ...typography.body,
+      color: t.colors.text,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    linkBtn: {
+      alignSelf: 'flex-start',
+      minHeight: 44,
+      paddingHorizontal: spacing.sm,
+      justifyContent: 'center',
+      borderRadius: 12,
+    },
+    linkBtnCta: {
+      alignSelf: 'stretch',
+      paddingHorizontal: spacing.md,
+      backgroundColor: t.colors.accentMuted,
+    },
+    linkBtnNeutral: {
+      paddingVertical: spacing.xs,
+    },
+    linkText: {
+      ...typography.body,
+      color: t.colors.accent,
+      fontFamily: 'Inter_600SemiBold',
+    },
+    linkTextCta: {
+      textAlign: 'center',
+    },
+    label: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      marginTop: spacing.xs,
+    },
+    input: {
+      ...typography.body,
+      color: t.colors.text,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: spacing.md,
+      paddingVertical: Platform.OS === 'ios' ? spacing.sm : spacing.xs,
+      backgroundColor: t.colors.background,
+    },
+    timePressable: {
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    inputText: {
+      ...typography.body,
+      color: t.colors.text,
+    },
+    inputDisabled: {
+      opacity: 0.5,
+    },
+    inputTextDisabled: {
+      color: t.colors.textMuted,
+    },
+  }),
+);
+
 export function NotificationSettingsScreen() {
+  const styles = useStyles();
+  const { colors: themeColors } = useTheme();
   const insets = useSafeAreaInsets();
   const { configured, session } = useSupabaseAuth();
   const { showValidationToast, showApiErrorToast } = useUserFeedback();
@@ -393,8 +516,8 @@ export function NotificationSettingsScreen() {
             value={prefs.push_enabled}
             onValueChange={onTogglePush}
             disabled={saving}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.push_enabled ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.push_enabled ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:push-enabled:switch"
             accessibilityLabel="Uygulama bildirimleri"
           />
@@ -412,8 +535,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_initial}
             onValueChange={onToggleInitial}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_initial ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_initial ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-initial:switch"
             accessibilityLabel="Yeni grup maçı bildirimleri"
           />
@@ -427,8 +550,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_reminder}
             onValueChange={onToggleReminder}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_reminder ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_reminder ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-reminder:switch"
             accessibilityLabel="RSVP hatırlatma bildirimleri"
           />
@@ -442,8 +565,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_cancelled}
             onValueChange={onToggleCancelled}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_cancelled ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_cancelled ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-cancelled:switch"
             accessibilityLabel="Maç iptali bildirimleri"
           />
@@ -457,8 +580,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_venue_change}
             onValueChange={onToggleVenueChange}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_venue_change ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_venue_change ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-venue:switch"
             accessibilityLabel="Saha güncelleme bildirimleri"
           />
@@ -472,8 +595,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_lineup_published}
             onValueChange={onToggleLineupPublished}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_lineup_published ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_lineup_published ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-lineup-published:switch"
             accessibilityLabel="Kadro yayınlandı bildirimleri"
           />
@@ -487,8 +610,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_payment_reminder}
             onValueChange={onTogglePaymentReminder}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_payment_reminder ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_payment_reminder ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-payment-reminder:switch"
             accessibilityLabel="Ödeme hatırlatıcı bildirimleri"
           />
@@ -502,8 +625,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_post_match_rating_reminder}
             onValueChange={onTogglePostMatchRatingReminder}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_post_match_rating_reminder ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_post_match_rating_reminder ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-post-match-rating:switch"
             accessibilityLabel="Maç sonu oylama bildirimleri"
           />
@@ -517,8 +640,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_match_result}
             onValueChange={onToggleMatchResult}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_match_result ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_match_result ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-match-result:switch"
             accessibilityLabel="Maç sonucu bildirimleri"
           />
@@ -534,8 +657,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_streak_at_risk}
             onValueChange={onToggleStreakAtRisk}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_streak_at_risk ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_streak_at_risk ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-streak-at-risk:switch"
             accessibilityLabel="Haftalık seri hatırlatıcı bildirimleri"
           />
@@ -549,8 +672,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_payment_morning_reminder}
             onValueChange={onTogglePaymentMorningReminder}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_payment_morning_reminder ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_payment_morning_reminder ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-payment-morning:switch"
             accessibilityLabel="Nakit/Not maç sabahı bildirimleri"
           />
@@ -564,8 +687,8 @@ export function NotificationSettingsScreen() {
             value={prefs.types.group_match_roster_full_organizer}
             onValueChange={onToggleRosterFullOrganizer}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_roster_full_organizer ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.types.group_match_roster_full_organizer ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:type-roster-full:switch"
             accessibilityLabel="Kadro doldu organizatör bildirimleri"
           />
@@ -585,8 +708,8 @@ export function NotificationSettingsScreen() {
             value={prefs.quiet_hours.enabled}
             onValueChange={onToggleQuiet}
             disabled={saving || typesDisabled}
-            trackColor={{ false: colors.border, true: colors.accentMuted }}
-            thumbColor={Platform.OS === 'android' ? (prefs.quiet_hours.enabled ? colors.accent : colors.textMuted) : undefined}
+            trackColor={{ false: themeColors.border, true: themeColors.accentMuted }}
+            thumbColor={Platform.OS === 'android' ? (prefs.quiet_hours.enabled ? themeColors.accent : themeColors.textMuted) : undefined}
             testID="settings:notifications:quiet-enabled:switch"
             accessibilityLabel="Sessiz saatleri kullan"
           />
@@ -670,125 +793,7 @@ export function NotificationSettingsScreen() {
         ) : null}
       </View>
 
-      {saving ? <ActivityIndicator color={colors.accent} style={styles.savingSpinner} /> : null}
+      {saving ? <ActivityIndicator color={themeColors.accent} style={styles.savingSpinner} /> : null}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingFull: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  savingSpinner: {
-    marginTop: spacing.sm,
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  section: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  sectionDisabled: {
-    opacity: 0.55,
-  },
-  sectionTitle: {
-    ...typography.subtitle,
-    color: colors.text,
-  },
-  muted: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  caption: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  captionStrong: {
-    color: colors.text,
-  },
-  hint: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  rowText: {
-    flex: 1,
-    gap: 2,
-  },
-  rowTitle: {
-    ...typography.body,
-    color: colors.text,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  linkBtn: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    paddingHorizontal: spacing.sm,
-    justifyContent: 'center',
-    borderRadius: 12,
-  },
-  linkBtnCta: {
-    alignSelf: 'stretch',
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.accentMuted,
-  },
-  linkBtnNeutral: {
-    paddingVertical: spacing.xs,
-  },
-  linkText: {
-    ...typography.body,
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  linkTextCta: {
-    textAlign: 'center',
-  },
-  label: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? spacing.sm : spacing.xs,
-    backgroundColor: colors.background,
-  },
-  timePressable: {
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  inputText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  inputDisabled: {
-    opacity: 0.5,
-  },
-  inputTextDisabled: {
-    color: colors.textMuted,
-  },
-});

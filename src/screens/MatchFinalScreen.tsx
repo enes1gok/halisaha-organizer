@@ -11,7 +11,8 @@ import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
-import { colors, letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { computeBadgesEarnedInMatch } from '../domain/badges/computeBadgesEarnedInMatch';
 import { useRatingWindow } from '../hooks/useRatingWindow';
 import { countGoing } from '../utils/matchRoster';
@@ -30,7 +31,81 @@ type R =
   | RouteProp<GroupsStackParamList, 'MatchSummary'>;
 type Nav = NativeStackNavigationProp<Stacks>;
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.colors.background },
+    pad: { padding: spacing.md, gap: spacing.sm },
+    center: {
+      flex: 1,
+      backgroundColor: t.colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyMsg: { color: t.colors.textMuted },
+    infoCard: {
+      backgroundColor: t.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      padding: spacing.md,
+      ...shadows.sm,
+    },
+    infoLabel: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: letterSpacing.normal,
+    },
+    infoValue: { ...typography.subtitle, color: t.colors.accent, marginTop: spacing.xs },
+    section: {
+      backgroundColor: t.colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+      ...shadows.sm,
+    },
+    sectionTitle: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: letterSpacing.wide,
+    },
+    hint: { ...typography.caption, color: t.colors.textMuted },
+    motmRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    motmName: { ...typography.subtitle, color: t.colors.text },
+    motmBadge: { ...typography.caption, color: t.colors.accent },
+    playerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: t.colors.border,
+    },
+    playerName: { ...typography.body, color: t.colors.text, flex: 1 },
+    playerAvg: { ...typography.subtitle, color: t.colors.accent },
+    badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    badgeChip: {
+      backgroundColor: t.colors.accentMuted,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: t.colors.accent,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    badgeTitle: { ...typography.caption, color: t.colors.accent, fontWeight: '700' },
+    waitingCard: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    waitingTitle: { ...typography.subtitle, color: t.colors.accent },
+  }),
+);
+
 export function MatchFinalScreen() {
+  const styles = useStyles();
   const route = useRoute<R>();
   const navigation = useNavigation<Nav>();
   const { matchId } = route.params;
@@ -278,74 +353,3 @@ export function MatchFinalScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  pad: { padding: spacing.md, gap: spacing.sm },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyMsg: { color: colors.textMuted },
-  infoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    ...shadows.sm,
-  },
-  infoLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: letterSpacing.normal,
-  },
-  infoValue: { ...typography.subtitle, color: colors.accent, marginTop: spacing.xs },
-  section: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-    ...shadows.sm,
-  },
-  sectionTitle: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: letterSpacing.wide,
-  },
-  hint: { ...typography.caption, color: colors.textMuted },
-  motmRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  motmName: { ...typography.subtitle, color: colors.text },
-  motmBadge: { ...typography.caption, color: colors.accent },
-  playerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  playerName: { ...typography.body, color: colors.text, flex: 1 },
-  playerAvg: { ...typography.subtitle, color: colors.accent },
-  badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  badgeChip: {
-    backgroundColor: colors.accentMuted,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  badgeTitle: { ...typography.caption, color: colors.accent, fontWeight: '700' },
-  waitingCard: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentMuted,
-  },
-  waitingTitle: { ...typography.subtitle, color: colors.accent },
-});

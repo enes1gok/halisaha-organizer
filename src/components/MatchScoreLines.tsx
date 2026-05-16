@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import { makeStyles } from '../theme/ThemeContext';
 import type { Match, Player } from '../types/domain';
 
 type Props = {
@@ -8,7 +9,16 @@ type Props = {
   getPlayer: (id: string) => Player | undefined;
 };
 
+const useStyles = makeStyles((t) =>
+  StyleSheet.create({
+    container: { gap: spacing.xs },
+    line: { ...typography.body, color: t.colors.text },
+    muted: { ...typography.caption, color: t.colors.textMuted },
+  })
+);
+
 export function MatchScoreLines({ match, getPlayer }: Props) {
+  const styles = useStyles();
   if (!match.result) return null;
 
   const { scorers, assists, ownGoals } = match.result;
@@ -39,9 +49,3 @@ export function MatchScoreLines({ match, getPlayer }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: spacing.xs },
-  line: { ...typography.body, color: colors.text },
-  muted: { ...typography.caption, color: colors.textMuted },
-});

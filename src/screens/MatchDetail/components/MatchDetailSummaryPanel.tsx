@@ -141,7 +141,7 @@ export function MatchDetailSummaryPanel({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yönetim</Text>
           <View style={styles.rowWrap}>
-            {match.status === 'upcoming' && match.lineupLocked ? (
+            {effectiveStatus === 'upcoming' && match.lineupLocked ? (
               <PillButton
                 title="Kilidi kaldır"
                 variant="secondary"
@@ -150,7 +150,7 @@ export function MatchDetailSummaryPanel({
                 testID="match:lineup:unlock:press"
               />
             ) : null}
-            {!match.lineupLocked && match.status === 'upcoming' ? (
+            {!match.lineupLocked && effectiveStatus === 'upcoming' ? (
               <PillButton
                 title={hasAssignedLineup(match) ? 'Kadroyu düzenle' : 'Kadro Kur'}
                 onPress={() => navigation.navigate('LineupBuilder', { matchId })}
@@ -158,7 +158,7 @@ export function MatchDetailSummaryPanel({
                 testID="match:lineup:builder:press"
               />
             ) : null}
-            {canManageMatch && match.status === 'upcoming' && isRemoteMatchId(match.id) ? (
+            {canManageMatch && effectiveStatus === 'upcoming' && isRemoteMatchId(match.id) ? (
               <PillButton
                 title="Maç Detaylarını Düzenle"
                 variant="secondary"
@@ -167,7 +167,7 @@ export function MatchDetailSummaryPanel({
                 testID="match:edit-details:press"
               />
             ) : null}
-            {match.status === 'upcoming' ? (
+            {effectiveStatus === 'upcoming' ? (
               <PillButton
                 title="Maçı İptal Et"
                 variant="danger"
@@ -178,7 +178,7 @@ export function MatchDetailSummaryPanel({
               />
             ) : null}
           </View>
-          {match.status === 'upcoming' ? (
+          {effectiveStatus === 'upcoming' ? (
             <View style={styles.mt}>
               <View style={styles.rowBetween}>
                 <View style={styles.flex}>
