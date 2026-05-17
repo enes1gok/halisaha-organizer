@@ -1,5 +1,6 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import * as StoreReview from 'expo-store-review';
 import React, { useCallback, useState } from 'react';
 import {
   LayoutAnimation,
@@ -31,6 +32,11 @@ import { isEmailVerified } from '../utils/emailVerification';
 import { useUserFeedback } from '../utils/userFeedback';
 
 type Nav = StackNavigationProp<ProfileStackParamList, 'Settings'>;
+
+const STORE_URL = Platform.select({
+  ios: 'itms-apps://itunes.apple.com/app/com.enesgok.halisahamacorganizeet',
+  android: 'https://play.google.com/store/apps/details?id=com.enesgok.halisahamacorganizeet',
+});
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -168,11 +174,30 @@ export function SettingsScreen() {
     void Linking.openSettings();
   }, []);
 
+  const handleRateApp = useCallback(async () => {
+    const available = await StoreReview.isAvailableAsync();
+    if (available) {
+      await StoreReview.requestReview();
+    } else if (STORE_URL) {
+      await Linking.openURL(STORE_URL);
+    }
+  }, []);
+
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingBottom: getTabBarListPaddingBottom(insets.bottom) }]}
     >
+      <Card style={styles.section}>
+        <PillButton
+          title="Uygulamayı Puanla"
+          variant="ghost"
+          onPress={() => void handleRateApp()}
+          testID="profile:settings:rate-app:press"
+          accessibilityLabel="Uygulamayı puanla"
+        />
+      </Card>
+
       <Card style={styles.section}>
         <Text style={styles.sectionTitle} accessibilityRole="header">
           Hesap
