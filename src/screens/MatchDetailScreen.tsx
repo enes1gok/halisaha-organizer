@@ -19,6 +19,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { AddGuestModal } from '../components/AddGuestModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { PressableScale } from '../components/PressableScale';
 import { RsvpOptionButton } from '../components/RsvpOptionButton';
@@ -79,6 +80,8 @@ export function MatchDetailScreen() {
     loadMatchRatingSummary,
     unlockLineup,
     cancelMatch,
+    removeGuestAttendee,
+    setGuestPaid,
     match,
     ratingSummary,
   } = useMatchesStore(
@@ -92,6 +95,8 @@ export function MatchDetailScreen() {
       loadMatchRatingSummary: s.loadMatchRatingSummary,
       unlockLineup: s.unlockLineup,
       cancelMatch: s.cancelMatch,
+      removeGuestAttendee: s.removeGuestAttendee,
+      setGuestPaid: s.setGuestPaid,
       match: s.getMatch(matchId),
       ratingSummary: s.matchRatingSummariesById[matchId],
     })),
@@ -112,6 +117,7 @@ export function MatchDetailScreen() {
   const [rsvpGoingKey, setRsvpGoingKey] = useState(0);
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [addGuestVisible, setAddGuestVisible] = useState(false);
 
   const countdown = useCountdown(match?.startsAt ?? new Date().toISOString());
   const { effective: effectiveStatus, pastScheduledEnd } = useEffectiveMatchStatus(match);
@@ -317,6 +323,39 @@ export function MatchDetailScreen() {
     );
   }, [paidConfirm, match, userId, setPaid, showApiErrorToast]);
 
+  const handleRemoveGuest = useCallback((guestId: string, name: string) => {
+    if (!match) return;
+    Alert.alert(
+      'Misafiri Kaldır',
+      `${name} kadrodan çıkarılsın mı?`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Kaldır',
+          style: 'destructive',
+          onPress: () => {
+            void removeGuestAttendee(match.id, guestId).catch((err) =>
+              showApiErrorToast(err, {
+                uiOperation: 'MatchDetail:removeGuestAttendee',
+                fallbackMessage: 'Misafir kaldırılamadı.',
+              }),
+            );
+          },
+        },
+      ],
+    );
+  }, [match, removeGuestAttendee, showApiErrorToast]);
+
+  const handleEditGuestPaid = useCallback((guestId: string, name: string, nextPaid: boolean) => {
+    if (!match) return;
+    void setGuestPaid(match.id, guestId, nextPaid).catch((err) =>
+      showApiErrorToast(err, {
+        uiOperation: 'MatchDetail:setGuestPaid',
+        fallbackMessage: 'Kaydedilemedi.',
+      }),
+    );
+  }, [match, setGuestPaid, showApiErrorToast]);
+
   const renderBackdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
@@ -459,11 +498,15 @@ export function MatchDetailScreen() {
             motmWinnerIds={motmWinnerIds}
             ratingByPid={ratingByPid}
             isOrganizer={canManageMatch}
+            canAddGuest={canManageMatch && effectiveStatus === 'upcoming' && !match.lineupLocked}
             userId={userId}
             ibanCopyLabel={ibanCopyLabel}
             ibanCopied={ibanCopied}
             onPressCopyIban={onPressCopyIban}
             onPressEditPaid={handlePressEditPaid}
+            onPressEditGuestPaid={handleEditGuestPaid}
+            onAddGuest={() => setAddGuestVisible(true)}
+            onRemoveGuest={handleRemoveGuest}
             effectiveStatus={effectiveStatus}
             organizerName={organizer?.name ?? '—'}
           />
@@ -530,6 +573,13 @@ export function MatchDetailScreen() {
         cancelLabel="Vazgeç"
         onCancel={closePaidConfirm}
         onConfirm={onConfirmPaidChange}
+      />
+
+      <AddGuestModal
+        visible={addGuestVisible}
+        matchId={matchId}
+        onClose={() => setAddGuestVisible(false)}
+        onAdded={() => setAddGuestVisible(false)}
       />
     </View>
   );

@@ -2,6 +2,8 @@ import type { Match } from '../../types/domain';
 import { mapWithConcurrency } from '../../utils/asyncPool';
 import type {
   MatchAttendeeRow,
+  MatchGuestAttendeeRow,
+  MatchGuestTeamAssignmentRow,
   MatchRow,
   MatchStatLineRow,
   MatchTeamPlayerRow,
@@ -17,9 +19,10 @@ import {
   recordListMatchGraphRpcSuccess,
 } from './matchGraphRpcMonitoring';
 import { fetchProfilesByIds } from './profiles';
+import { fetchMatchGuestsRemote } from './guestAttendees';
 import { getSupabaseClient } from '../../lib/supabase';
 import { createNotFoundError, mapSupabaseError } from './errors';
-import { jsonArrayOrEmpty, rowsToMatch } from './mappers';
+import { jsonArrayOrEmpty, mapGuestAttendeeRow, rowsToMatch } from './mappers';
 
 type NestedMatchRow = MatchRow & {
   match_attendees?: MatchAttendeeRow[] | null;
@@ -101,6 +104,29 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function enrichWithGuests(payload: MatchGraphPayload, matchId: string): Promise<MatchGraphPayload> {
+  try {
+    const { guests, teamAssignments } = await fetchMatchGuestsRemote(matchId);
+    if (guests.length === 0) return payload;
+    const guestTeamAIds = teamAssignments.filter((g) => g.team === 'A').map((g) => g.guest_id);
+    const guestTeamBIds = teamAssignments.filter((g) => g.team === 'B').map((g) => g.guest_id);
+    const existingGuestIds = new Set((payload.match.guestAttendees ?? []).map((g) => g.id));
+    const registeredTeamAIds = payload.match.teamAIds.filter((id) => !existingGuestIds.has(id));
+    const registeredTeamBIds = payload.match.teamBIds.filter((id) => !existingGuestIds.has(id));
+    return {
+      ...payload,
+      match: {
+        ...payload.match,
+        guestAttendees: guests.map(mapGuestAttendeeRow),
+        teamAIds: [...registeredTeamAIds, ...guestTeamAIds],
+        teamBIds: [...registeredTeamBIds, ...guestTeamBIds],
+      },
+    };
+  } catch {
+    return payload;
+  }
+}
+
 export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayload> {
   const supabase = getSupabaseClient();
   const startedAt = Date.now();
@@ -118,7 +144,7 @@ export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayloa
     recordDetailMatchGraphRpcSuccess();
     const row = (Array.isArray(data) ? data[0] : data) as MatchGraphRpcRow | undefined;
     if (!row) throw createNotFoundError('fetchMatchGraph', 'Maç bulunamadı');
-    const payload = rpcRowToPayload(row);
+    const payload = await enrichWithGuests(rpcRowToPayload(row), matchId);
     detailRpcSuccessLogCounter += 1;
     if (detailRpcSuccessLogCounter === 1 || detailRpcSuccessLogCounter % 10 === 0) {
       reportDiagnosticMetric(
@@ -146,25 +172,30 @@ export async function fetchMatchGraph(matchId: string): Promise<MatchGraphPayloa
 
 async function fetchMatchGraphLegacy(matchId: string): Promise<MatchGraphPayload> {
   const supabase = getSupabaseClient();
-  const [matchRes, attendeesRes, teamsRes, statsRes, selfReportsRes] = await Promise.all([
-    supabase.rpc('get_match_detail_for_user', { p_match_id: matchId }),
-    supabase
-      .from('match_attendees')
-      .select('match_id,player_id,status,paid')
-      .eq('match_id', matchId),
-    supabase
-      .from('match_team_players')
-      .select('match_id,player_id,team')
-      .eq('match_id', matchId),
-    supabase
-      .from('match_stat_lines')
-      .select('match_id,player_id,kind,count')
-      .eq('match_id', matchId),
-    supabase
-      .from('self_report_requests')
-      .select('id,match_id,player_id,type,status')
-      .eq('match_id', matchId),
-  ]);
+  const [matchRes, attendeesRes, teamsRes, statsRes, selfReportsRes, guestsResult] =
+    await Promise.all([
+      supabase.rpc('get_match_detail_for_user', { p_match_id: matchId }),
+      supabase
+        .from('match_attendees')
+        .select('match_id,player_id,status,paid')
+        .eq('match_id', matchId),
+      supabase
+        .from('match_team_players')
+        .select('match_id,player_id,team')
+        .eq('match_id', matchId),
+      supabase
+        .from('match_stat_lines')
+        .select('match_id,player_id,kind,count')
+        .eq('match_id', matchId),
+      supabase
+        .from('self_report_requests')
+        .select('id,match_id,player_id,type,status')
+        .eq('match_id', matchId),
+      fetchMatchGuestsRemote(matchId).catch(() => ({
+        guests: [] as MatchGuestAttendeeRow[],
+        teamAssignments: [] as MatchGuestTeamAssignmentRow[],
+      })),
+    ]);
 
   if (matchRes.error) throw mapSupabaseError(matchRes.error, 'fetchMatchGraph.match_detail');
   if (attendeesRes.error) throw mapSupabaseError(attendeesRes.error, 'fetchMatchGraph.attendees');
@@ -183,7 +214,10 @@ async function fetchMatchGraphLegacy(matchId: string): Promise<MatchGraphPayload
 
   const profileIds = collectProfileIds(row, attendees, teamPlayers, statLines, selfReports);
   const profiles = await fetchProfilesByIds(profileIds, 'graph');
-  const match = rowsToMatch(row, attendees, teamPlayers, statLines, selfReports);
+  const match = rowsToMatch(
+    row, attendees, teamPlayers, statLines, selfReports,
+    guestsResult.guests, guestsResult.teamAssignments,
+  );
 
   return { match, profiles };
 }

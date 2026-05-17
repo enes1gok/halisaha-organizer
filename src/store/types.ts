@@ -13,6 +13,7 @@ import type {
   MatchStatus,
   MatchTemplate,
   Player,
+  Position,
   RSVPStatus,
   ScoreResult,
   SelfReportType,
@@ -153,6 +154,13 @@ export interface MatchesSlice {
   fetchScoreVoteTally: (matchId: string) => Promise<void>;
   /** Skor önerisi gönderir ve tally'yi günceller. */
   submitMatchScoreVote: (matchId: string, scoreA: number, scoreB: number) => Promise<void>;
+
+  /** Misafir oyuncu ekler (uygulamayı yüklememiş kişi). Organizatör yetkisi gerektirir. */
+  addGuestAttendee: (matchId: string, displayName: string, position: Position) => Promise<void>;
+  /** Misafir oyuncuyu maçtan kaldırır. */
+  removeGuestAttendee: (matchId: string, guestId: string) => Promise<void>;
+  /** Misafirin ödeme durumunu günceller. */
+  setGuestPaid: (matchId: string, guestId: string, paid: boolean) => Promise<void>;
 }
 
 export type CreateGroupResult = {

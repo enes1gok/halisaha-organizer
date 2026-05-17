@@ -44,7 +44,7 @@ import { useFontScale } from '../hooks/useFontScale';
 import { useReduceMotion } from '../hooks/useReduceMotion';
 import { radius, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
-import type { Player } from '../types/domain';
+import type { GuestAttendee, Player } from '../types/domain';
 import { lightImpact, selectionTick } from '../utils/haptics';
 import {
   applyLineupFormationDrop,
@@ -113,6 +113,7 @@ function DraggableCard({
   player,
   onDragEnd,
   testID,
+  isGuest,
   onDragActivated,
   onDragFinalize,
   onHoverMove,
@@ -124,6 +125,7 @@ function DraggableCard({
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
   testID: string;
+  isGuest?: boolean;
   onDragActivated?: (playerId: string) => void;
   onDragFinalize?: () => void;
   onHoverMove?: (absX: number, absY: number) => void;
@@ -228,7 +230,14 @@ function DraggableCard({
               <Text style={styles.cardName} numberOfLines={isLarge ? 2 : 1}>
                 {player.name}
               </Text>
-              <PositionBadge position={player.position} />
+              <View style={styles.cardBadgesRow}>
+                <PositionBadge position={player.position} />
+                {isGuest ? (
+                  <View style={styles.guestChip}>
+                    <Text style={styles.guestChipText}>M</Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           </>
         )}
@@ -509,13 +518,47 @@ export function LineupBuilderScreen() {
     zoneB.current?.measureInWindow(cb('B'));
   }, []);
 
-  const goingPlayers = useMemo(() => {
+  const guestIds = useMemo(
+    () => new Set((match?.guestAttendees ?? []).map((g) => g.id)),
+    [match?.guestAttendees],
+  );
+
+  const goingPlayers = useMemo((): Player[] => {
     if (!match) return [];
     const goingIds = new Set(
       match.attendees.filter((a) => a.status === 'going').map((a) => a.playerId),
     );
-    return playersAll.filter((p) => goingIds.has(p.id));
+    const registered = playersAll.filter((p) => goingIds.has(p.id));
+    const guestPlayers: Player[] = (match.guestAttendees ?? []).map(
+      (g: GuestAttendee): Player => ({
+        id: g.id,
+        name: g.displayName,
+        photoUri: undefined,
+        position: g.position,
+        preferredFoot: 'right',
+        stats: { matchesPlayed: 0, goals: 0, assists: 0, wins: 0, losses: 0, draws: 0 },
+      }),
+    );
+    return [...registered, ...guestPlayers];
   }, [match, playersAll]);
+
+  const getDisplayPlayer = useCallback(
+    (id: string): Player | undefined => {
+      const p = getPlayer(id);
+      if (p) return p;
+      const g = match?.guestAttendees?.find((ga) => ga.id === id);
+      if (!g) return undefined;
+      return {
+        id: g.id,
+        name: g.displayName,
+        photoUri: undefined,
+        position: g.position,
+        preferredFoot: 'right',
+        stats: { matchesPlayed: 0, goals: 0, assists: 0, wins: 0, losses: 0, draws: 0 },
+      };
+    },
+    [getPlayer, match?.guestAttendees],
+  );
 
   const formationRosterTotal = match?.maxPlayers ?? 0;
 
@@ -1058,12 +1101,13 @@ export function LineupBuilderScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {ids.map((id) => {
-          const p = getPlayer(id);
+          const p = getDisplayPlayer(id);
           if (!p) return null;
           return (
             <DraggableCard
               key={id}
               player={p}
+              isGuest={guestIds.has(id)}
               onDragEnd={onDrop}
               testID={`lineup:player-card:${id}`}
             />
@@ -1091,7 +1135,7 @@ export function LineupBuilderScreen() {
       stretch={horizontal}
       reduceMotion={reduceMotion}
       zonesRef={formationZonesRef}
-      getPlayer={getPlayer}
+      getPlayer={getDisplayPlayer}
       testID={`lineup:pitch:${side.toLowerCase()}`}
       horizontal={horizontal}
       teamTint={side === 'B' ? 'light' : 'dark'}
@@ -1124,7 +1168,7 @@ export function LineupBuilderScreen() {
   );
 
   if (formationMode && formationsForCount.length > 0 && selectedFormation) {
-    const poolDragPlayer = isDraggingFromPool && draggingPlayerId ? getPlayer(draggingPlayerId) : null;
+    const poolDragPlayer = isDraggingFromPool && draggingPlayerId ? getDisplayPlayer(draggingPlayerId) : null;
     return (
       // screenFormation is a row: leftSide (header+pitches+actions) + full-height player column
       <View
@@ -1224,7 +1268,7 @@ export function LineupBuilderScreen() {
             testID="lineup:bench:scroll"
           >
             {benchPlayerIds.map((id) => {
-              const p = getPlayer(id);
+              const p = getDisplayPlayer(id);
               if (!p) return null;
               return (
                 <PlayerColumnItem
@@ -1262,7 +1306,7 @@ export function LineupBuilderScreen() {
         {/* Ghost overlay for slot → slot drag — bypasses pitchesArea overflow:hidden stacking context */}
         {isDraggingFromSlot && draggingPlayerId ? (
           <SlotDragGhost
-            player={getPlayer(draggingPlayerId)!}
+            player={getDisplayPlayer(draggingPlayerId)!}
             ghostX={slotGhostX}
             ghostY={slotGhostY}
             ghostOpacity={slotGhostOpacity}
@@ -1716,6 +1760,22 @@ const useLineupStyles = makeStyles((t) =>
     },
     cardMeta: {
       flex: 1,
+    },
+    cardBadgesRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    guestChip: {
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      borderRadius: 3,
+      backgroundColor: t.colors.border,
+    },
+    guestChipText: {
+      ...typography.micro,
+      color: t.colors.textMuted,
+      fontWeight: '700',
     },
     actions: {
       gap: spacing.sm,

@@ -1,9 +1,11 @@
 import type { StateCreator } from 'zustand';
 import { createJoinCode } from '../../data/seed';
 import type {
+  GuestAttendee,
   Match,
   MatchStatus,
   Player,
+  Position,
   RSVPStatus,
   ScoreResult,
   SelfReportRequest,
@@ -13,6 +15,7 @@ import type { MatchGraphPageCursor, MatchGraphPayload } from '../../services/sup
 import { fetchMyMatchesGraphPage, MATCH_PAGE_SIZE } from '../../services/supabase/matchGraph';
 import { createId } from '../../utils/id';
 import {
+  addGuestAttendeeUseCase,
   addSelfReportUseCase,
   cancelMatchUseCase,
   createMatchUseCase,
@@ -23,7 +26,9 @@ import {
   lockLineupUseCase,
   unlockLineupUseCase,
   refreshRemoteMatchUseCase,
+  removeGuestAttendeeUseCase,
   respondSelfReportUseCase,
+  setGuestPaidUseCase,
   setMatchStatusUseCase,
   setMatchTeamsUseCase,
   setPaidUseCase,
@@ -101,6 +106,7 @@ function createLocalMatch(
     selfReportEnabled: false,
     status: 'upcoming',
     selfReports: [],
+    guestAttendees: [],
   };
   set((state) => ({
     matches: [match, ...state.matches],
@@ -338,6 +344,55 @@ function submitLocalScore(set: Parameters<StateCreator<AppState>>[0], matchId: s
   });
 }
 
+function addLocalGuestAttendee(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  guest: GuestAttendee,
+) {
+  set((state) => ({
+    matches: state.matches.map((m) =>
+      m.id !== matchId ? m : { ...m, guestAttendees: [...(m.guestAttendees ?? []), guest] },
+    ),
+  }));
+}
+
+function removeLocalGuestAttendee(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  guestId: string,
+) {
+  set((state) => ({
+    matches: state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      return {
+        ...m,
+        guestAttendees: (m.guestAttendees ?? []).filter((g) => g.id !== guestId),
+        teamAIds: m.teamAIds.filter((id) => id !== guestId),
+        teamBIds: m.teamBIds.filter((id) => id !== guestId),
+      };
+    }),
+  }));
+}
+
+function setLocalGuestPaid(
+  set: Parameters<StateCreator<AppState>>[0],
+  matchId: string,
+  guestId: string,
+  paid: boolean,
+) {
+  set((state) => ({
+    matches: state.matches.map((m) => {
+      if (m.id !== matchId) return m;
+      return {
+        ...m,
+        guestAttendees: (m.guestAttendees ?? []).map((g) =>
+          g.id === guestId ? { ...g, paid } : g,
+        ),
+      };
+    }),
+  }));
+}
+
 function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get: Parameters<StateCreator<AppState>>[1]) {
   return {
     getRemoteUserId: () => get().remoteUserId,
@@ -368,6 +423,12 @@ function buildMatchesUseCaseDeps(set: Parameters<StateCreator<AppState>>[0], get
     unlockLocalLineup: (matchId: string) => unlockLocalLineup(set, matchId),
     setLocalMatchStatus: (matchId: string, status: MatchStatus) => setLocalMatchStatus(set, matchId, status),
     submitLocalScore: (matchId: string, result: ScoreResult) => submitLocalScore(set, matchId, result),
+    addLocalGuestAttendee: (matchId: string, guest: GuestAttendee) =>
+      addLocalGuestAttendee(set, matchId, guest),
+    removeLocalGuestAttendee: (matchId: string, guestId: string) =>
+      removeLocalGuestAttendee(set, matchId, guestId),
+    setLocalGuestPaid: (matchId: string, guestId: string, paid: boolean) =>
+      setLocalGuestPaid(set, matchId, guestId, paid),
     getMatchesSnapshot: () => get().matches,
     restoreMatchesSnapshot: (snapshot: Match[]) => set({ matches: snapshot }),
     getPlayersSnapshot: () => get().players,
@@ -539,4 +600,13 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
 
   updateMatchResultOrganizer: (matchId, result) =>
     updateMatchResultOrganizerUseCase(buildMatchesUseCaseDeps(set, get), matchId, result),
+
+  addGuestAttendee: (matchId, displayName, position) =>
+    addGuestAttendeeUseCase(buildMatchesUseCaseDeps(set, get), matchId, displayName, position),
+
+  removeGuestAttendee: (matchId, guestId) =>
+    removeGuestAttendeeUseCase(buildMatchesUseCaseDeps(set, get), matchId, guestId),
+
+  setGuestPaid: (matchId, guestId, paid) =>
+    setGuestPaidUseCase(buildMatchesUseCaseDeps(set, get), matchId, guestId, paid),
 });

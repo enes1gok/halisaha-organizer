@@ -37,6 +37,17 @@ export interface Attendee {
   paid: boolean;
 }
 
+/** App yüklememiş oyuncu — organizatör tarafından isim/soyisim ile eklenir. */
+export interface GuestAttendee {
+  /** match_guest_attendees.id — teamAIds/teamBIds'e dahil edilir. */
+  id: string;
+  matchId: string;
+  displayName: string;
+  position: Position;
+  paid: boolean;
+  addedBy: string;
+}
+
 export interface StatLine {
   playerId: string;
   count: number;
@@ -148,6 +159,8 @@ export interface Match {
   status: MatchStatus;
   result?: ScoreResult;
   selfReports: SelfReportRequest[];
+  /** App yüklememiş misafir oyuncular. teamAIds/teamBIds içinde UUID olarak taşınır. */
+  guestAttendees?: GuestAttendee[];
   /** ISO timestamp: puanlama penceresinin kapanış zamanı. submit_match_result tarafından doldurulur. */
   ratingWindowEndsAt?: string;
 }

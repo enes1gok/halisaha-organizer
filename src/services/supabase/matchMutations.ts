@@ -47,6 +47,24 @@ export async function replaceMatchTeamPlayersRemote(
   if (ins.error) throw mapSupabaseError(ins.error, 'replaceMatchTeamPlayersRemote.insert_new');
 }
 
+export async function replaceMatchTeamsWithGuestsRemote(
+  matchId: string,
+  teamAPlayerIds: string[],
+  teamBPlayerIds: string[],
+  teamAGuestIds: string[],
+  teamBGuestIds: string[],
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc('set_match_teams_v2', {
+    p_match_id: matchId,
+    p_team_a_player_ids: teamAPlayerIds,
+    p_team_b_player_ids: teamBPlayerIds,
+    p_team_a_guest_ids: teamAGuestIds,
+    p_team_b_guest_ids: teamBGuestIds,
+  });
+  if (error) throw mapSupabaseError(error, 'replaceMatchTeamsWithGuestsRemote');
+}
+
 export async function updateMatchOrganizerFieldsRemote(
   matchId: string,
   patch: Partial<{

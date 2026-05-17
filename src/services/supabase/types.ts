@@ -142,6 +142,22 @@ export interface SelfReportRequestRow {
   status: SelfReportStatusRow;
 }
 
+export interface MatchGuestAttendeeRow {
+  id: string;
+  match_id: string;
+  display_name: string;
+  position: PlayerPositionRow;
+  paid: boolean;
+  added_by: string;
+  created_at: string;
+}
+
+export interface MatchGuestTeamAssignmentRow {
+  match_id: string;
+  guest_id: string;
+  team: TeamSideRow;
+}
+
 export interface StatLinePayload {
   player_id: string;
   count?: number;

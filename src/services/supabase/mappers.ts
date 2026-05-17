@@ -3,8 +3,10 @@ import type {
   Group,
   GroupMembership,
   GroupWeeklySeries,
+  GuestAttendee,
   Match,
   MatchStatus,
+  Position,
   RSVPStatus,
   ScoreResult,
   SelfReportApprovalStatus,
@@ -17,6 +19,8 @@ import type {
   GroupRow,
   GroupWeeklySeriesRow,
   MatchAttendeeRow,
+  MatchGuestAttendeeRow,
+  MatchGuestTeamAssignmentRow,
   MatchRow,
   MatchStatLineRow,
   MatchTeamPlayerRow,
@@ -52,15 +56,32 @@ export function mapSelfReportType(t: SelfReportTypeRow): SelfReportType {
   return t;
 }
 
+export function mapGuestAttendeeRow(g: MatchGuestAttendeeRow): GuestAttendee {
+  return {
+    id: g.id,
+    matchId: g.match_id,
+    displayName: g.display_name,
+    position: g.position as Position,
+    paid: g.paid,
+    addedBy: g.added_by,
+  };
+}
+
 export function rowsToMatch(
   row: MatchRow,
   attendees: MatchAttendeeRow[],
   teamPlayers: MatchTeamPlayerRow[],
   statLines: MatchStatLineRow[],
   selfReports: SelfReportRequestRow[],
+  guestAttendeeRows: MatchGuestAttendeeRow[] = [],
+  guestTeamRows: MatchGuestTeamAssignmentRow[] = [],
 ): Match {
-  const teamAIds = teamPlayers.filter((t) => t.team === 'A').map((t) => t.player_id);
-  const teamBIds = teamPlayers.filter((t) => t.team === 'B').map((t) => t.player_id);
+  const registeredTeamAIds = teamPlayers.filter((t) => t.team === 'A').map((t) => t.player_id);
+  const registeredTeamBIds = teamPlayers.filter((t) => t.team === 'B').map((t) => t.player_id);
+  const guestTeamAIds = guestTeamRows.filter((g) => g.team === 'A').map((g) => g.guest_id);
+  const guestTeamBIds = guestTeamRows.filter((g) => g.team === 'B').map((g) => g.guest_id);
+  const teamAIds = [...registeredTeamAIds, ...guestTeamAIds];
+  const teamBIds = [...registeredTeamBIds, ...guestTeamBIds];
 
   const domainAttendees: Attendee[] = attendees.map((a) => ({
     playerId: a.player_id,
@@ -123,6 +144,7 @@ export function rowsToMatch(
     result,
     selfReports: domainSelf,
     ratingWindowEndsAt: row.rating_window_ends_at ?? undefined,
+    guestAttendees: guestAttendeeRows.map(mapGuestAttendeeRow),
   };
 }
 
