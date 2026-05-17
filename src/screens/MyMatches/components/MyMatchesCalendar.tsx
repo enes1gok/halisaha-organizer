@@ -26,6 +26,8 @@ const MAX_DOTS = 3;
 
 type Direction = 'forward' | 'backward' | 'none';
 
+const MAX_CALENDAR_BODY_HEIGHT = 420;
+
 type Props = {
   monthAnchor: Date;
   selectedDateKey: string | null;
@@ -33,7 +35,8 @@ type Props = {
   dotsByDay: Map<string, number>;
   onChangeMonth: (delta: number) => void;
   onSelectDay: (key: string) => void;
-  onResetToToday: () => void;
+  expanded: boolean;
+  onToggle: () => void;
 };
 
 function MyMatchesCalendarBase({
@@ -43,7 +46,8 @@ function MyMatchesCalendarBase({
   dotsByDay,
   onChangeMonth,
   onSelectDay,
-  onResetToToday,
+  expanded,
+  onToggle,
 }: Props) {
   const styles = useCalendarStyles();
   const c = useThemeColors();
@@ -53,6 +57,22 @@ function MyMatchesCalendarBase({
   const opacity = useSharedValue(1);
   const translateX = useSharedValue(0);
   const lastAnchorRef = useRef<number>(monthAnchor.getTime());
+
+  const bodyHeight = useSharedValue(expanded ? MAX_CALENDAR_BODY_HEIGHT : 0);
+
+  useEffect(() => {
+    const toHeight = expanded ? MAX_CALENDAR_BODY_HEIGHT : 0;
+    if (reduceMotion) {
+      bodyHeight.value = toHeight;
+    } else {
+      bodyHeight.value = withTiming(toHeight, { duration: Durations.normal, easing: Easing.out(Easing.cubic) });
+    }
+  }, [expanded, reduceMotion, bodyHeight]);
+
+  const bodyAnimatedStyle = useAnimatedStyle(() => ({
+    maxHeight: bodyHeight.value,
+    overflow: 'hidden',
+  }));
 
   useEffect(() => {
     const prev = lastAnchorRef.current;
@@ -99,10 +119,10 @@ function MyMatchesCalendarBase({
     onChangeMonth(1);
   }, [onChangeMonth]);
 
-  const handleResetToToday = useCallback(() => {
+  const handleToggle = useCallback(() => {
     void lightImpact();
-    onResetToToday();
-  }, [onResetToToday]);
+    onToggle();
+  }, [onToggle]);
 
   return (
     <View style={styles.shell}>
@@ -119,14 +139,13 @@ function MyMatchesCalendarBase({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Bugüne dön"
+          accessibilityLabel={expanded ? 'Takvimi kapat' : 'Takvimi aç'}
           testID="myMatches:calendar:title"
-          onPress={handleResetToToday}
+          onPress={handleToggle}
           hitSlop={6}
           style={({ pressed }) => [styles.titleWrap, pressed && styles.titlePressed]}
         >
           <Text style={styles.title}>{formatMonthTitle(monthAnchor)}</Text>
-          <Text style={styles.titleHint}>Bugüne dön</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -140,29 +159,31 @@ function MyMatchesCalendarBase({
         </Pressable>
       </View>
 
-      <View style={styles.weekdayRow}>
-        {WEEKDAYS.map((label) => (
-          <View key={label} style={styles.weekdayCell}>
-            <Text style={styles.weekdayLabel}>{label}</Text>
-          </View>
-        ))}
-      </View>
+      <Animated.View style={bodyAnimatedStyle}>
+        <View style={styles.weekdayRow}>
+          {WEEKDAYS.map((label) => (
+            <View key={label} style={styles.weekdayCell}>
+              <Text style={styles.weekdayLabel}>{label}</Text>
+            </View>
+          ))}
+        </View>
 
-      <Animated.View style={animatedGridStyle}>
-        {matrix.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.gridRow}>
-            {row.map((cell) => (
-              <DayCell
-                key={cell.dateKey}
-                cell={cell}
-                count={dotsByDay.get(cell.dateKey) ?? 0}
-                selected={cell.dateKey === selectedDateKey}
-                onSelect={onSelectDay}
-                reduceMotion={reduceMotion}
-              />
-            ))}
-          </View>
-        ))}
+        <Animated.View style={animatedGridStyle}>
+          {matrix.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.gridRow}>
+              {row.map((cell) => (
+                <DayCell
+                  key={cell.dateKey}
+                  cell={cell}
+                  count={dotsByDay.get(cell.dateKey) ?? 0}
+                  selected={cell.dateKey === selectedDateKey}
+                  onSelect={onSelectDay}
+                  reduceMotion={reduceMotion}
+                />
+              ))}
+            </View>
+          ))}
+        </Animated.View>
       </Animated.View>
     </View>
   );
@@ -311,12 +332,6 @@ const useCalendarStyles = makeStyles((t) =>
       ...typography.subtitle,
       color: t.colors.text,
       letterSpacing: letterSpacing.tight,
-    },
-    titleHint: {
-      ...typography.micro,
-      color: t.colors.textMuted,
-      letterSpacing: letterSpacing.normal,
-      marginTop: 2,
     },
     weekdayRow: {
       flexDirection: 'row',

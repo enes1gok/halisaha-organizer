@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '../components/EmptyState';
@@ -28,6 +28,7 @@ export function MyMatchesScreen() {
   const agendaRef = useRef<MyMatchesAgendaHandle>(null);
   const suppressPrimaryVisibleSyncRef = useRef(false);
   const skipNextAgendaScrollRef = useRef(false);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
 
   useEffect(() => {
     if (!data.selectedDateKey) return;
@@ -116,6 +117,10 @@ export function MyMatchesScreen() {
     );
   }
 
+  const handleToggleCalendar = useCallback(() => {
+    setCalendarExpanded((prev) => !prev);
+  }, []);
+
   const listHeader = (
     <View style={styles.calendarWrap}>
       <MyMatchesCalendar
@@ -125,7 +130,8 @@ export function MyMatchesScreen() {
         dotsByDay={data.dotsByDay}
         onChangeMonth={data.shiftMonthBy}
         onSelectDay={data.setSelectedDateKey}
-        onResetToToday={data.resetToToday}
+        expanded={calendarExpanded}
+        onToggle={handleToggleCalendar}
       />
     </View>
   );
