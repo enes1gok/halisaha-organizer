@@ -364,11 +364,10 @@ const useGroupsStyles = makeStyles((t) =>
       justifyContent: 'center',
       alignItems: 'center',
       paddingVertical: spacing.lg,
+      overflow: 'hidden',
     },
     avatarImage: {
-      width: 88,
-      height: '100%',
-      position: 'absolute',
+      ...StyleSheet.absoluteFillObject,
     },
     avatarText: {
       ...typography.title,

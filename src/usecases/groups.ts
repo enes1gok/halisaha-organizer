@@ -16,6 +16,7 @@ import {
   setGroupMemberRoleRemote,
 } from '../services/supabase/groups';
 import { getSupabaseClient } from '../lib/supabase';
+import { mapSupabaseError } from '../services/supabase/errors';
 import type { Group, GroupRole, GroupWeeklySeries } from '../types/domain';
 import type { CreateGroupResult } from '../store/types';
 import type { RemoteHydrateOpts } from '../types/remoteHydration';
@@ -197,7 +198,11 @@ export async function updateGroupPhotoUseCase(
   try {
     const publicUrl = await uploadGroupPhoto(groupId, localUri);
     const supabase = getSupabaseClient();
-    await supabase.rpc('update_group_photo', { p_group_id: groupId, p_photo_uri: publicUrl });
+    const { error: rpcError } = await supabase.rpc('update_group_photo', {
+      p_group_id: groupId,
+      p_photo_uri: publicUrl,
+    });
+    if (rpcError) throw mapSupabaseError(rpcError, 'updateGroupPhotoRemote');
     deps.updateGroupPhotoLocal(groupId, publicUrl);
   } catch (error) {
     rethrowUseCaseError('updateGroupPhoto', error, 'Grup fotoğrafı güncellenemedi.');
