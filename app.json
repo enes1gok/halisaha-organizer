@@ -16,6 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.enesgok.halisahamacorganizeet",
       "supportsTablet": true,
+      "deploymentTarget": "14.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
