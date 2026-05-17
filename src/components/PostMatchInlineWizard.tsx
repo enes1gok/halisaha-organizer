@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -25,6 +25,10 @@ import { useMatchesStore, usePlayersStore } from '../store';
 import { useUserFeedback } from '../utils/userFeedback';
 import { sortPeersByMatchContribution } from '../utils/matchPlayerContribution';
 
+export type PostMatchInlineWizardHandle = {
+  save: () => Promise<void>;
+};
+
 export type PostMatchInlineWizardProps = {
   match: Match;
   canManageMatch: boolean;
@@ -32,6 +36,8 @@ export type PostMatchInlineWizardProps = {
   onCompleted: () => void;
   /** Düzenleme modunda rating adımını gizler ve statlines kaydedince onCompleted çağırır. */
   hideRating?: boolean;
+  /** Her iki bölümü aynı anda açık gösterir; kayıt işlemi forwardRef üzerinden tetiklenir. */
+  editMode?: boolean;
 };
 
 type WizardStep = 'score' | 'statlines' | 'rating';
@@ -370,6 +376,9 @@ function StatLinesStepContent({
   submitting,
   currentUserId,
   onAddSelfReport,
+  currentScoreA,
+  currentScoreB,
+  scrollable = true,
 }: {
   match: Match;
   canManageMatch: boolean;
@@ -380,6 +389,9 @@ function StatLinesStepContent({
   submitting: boolean;
   currentUserId: string;
   onAddSelfReport: (kind: 'goal' | 'assist') => void;
+  currentScoreA?: number;
+  currentScoreB?: number;
+  scrollable?: boolean;
 }) {
   const styles = useStyles();
   const getPlayer = usePlayersStore((s) => s.getPlayer);
@@ -410,137 +422,138 @@ function StatLinesStepContent({
     if (p) unassignedPlayers.push(p);
   }
 
-  const goalsMatchScore = match.result
-    ? goalsTotalMatchesScore(match.result.scoreA, match.result.scoreB, goals)
-    : false;
+  const effectiveScoreA = currentScoreA ?? match.result?.scoreA ?? 0;
+  const effectiveScoreB = currentScoreB ?? match.result?.scoreB ?? 0;
+  const goalsMatchScore = goalsTotalMatchesScore(effectiveScoreA, effectiveScoreB, goals);
 
-  return (
-    <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={true}>
-      {canManageMatch ? (
-        <>
-          <Text style={styles.sectionTitle}>Gol ve Asist</Text>
-          <Text style={[styles.sectionTitle, { fontSize: 13, marginTop: spacing.xs }]}>
-            {TEAM_SIDE_LABELS.A}
-          </Text>
-          {teamAPlayers.length === 0 ? (
-            <Text style={[styles.waitingText, { fontSize: 13 }]}>Kadroda oyuncu yok.</Text>
-          ) : (
-            teamAPlayers.map((p) => (
-              <QuickSelectPlayerRow
-                key={p.id}
-                player={p}
-                segment="teamA"
-                goals={goals}
-                assists={assists}
-                bumpGoals={onBumpGoals}
-                bumpAssists={onBumpAssists}
-              />
-            ))
-          )}
-
-          <Text style={[styles.sectionTitle, { fontSize: 13 }]}>
-            {TEAM_SIDE_LABELS.B}
-          </Text>
-          {teamBPlayers.length === 0 ? (
-            <Text style={[styles.waitingText, { fontSize: 13 }]}>Kadroda oyuncu yok.</Text>
-          ) : (
-            teamBPlayers.map((p) => (
-              <QuickSelectPlayerRow
-                key={p.id}
-                player={p}
-                segment="teamB"
-                goals={goals}
-                assists={assists}
-                bumpGoals={onBumpGoals}
-                bumpAssists={onBumpAssists}
-              />
-            ))
-          )}
-
-          {unassignedPlayers.length > 0 && (
-            <>
-              <Text style={[styles.sectionTitle, { fontSize: 13 }]}>Takım atanmamış</Text>
-              {unassignedPlayers.map((p) => (
-                <QuickSelectPlayerRow
-                  key={p.id}
-                  player={p}
-                  segment="unassigned"
-                  goals={goals}
-                  assists={assists}
-                  bumpGoals={onBumpGoals}
-                  bumpAssists={onBumpAssists}
-                />
-              ))}
-            </>
-          )}
-
-          <View
-            style={[
-              styles.validationBox,
-              goalsMatchScore ? styles.validationBoxOk : styles.validationBoxErr,
-            ]}
-          >
-            <Text style={styles.validationTitle}>Doğrulama</Text>
-            <Text style={styles.validationCounts}>
-              Maç skoru: {match.result?.scoreA ?? 0} + {match.result?.scoreB ?? 0} ={' '}
-              {(match.result?.scoreA ?? 0) + (match.result?.scoreB ?? 0)} gol
-            </Text>
-            <Text style={styles.validationCounts}>
-              Gol etkinliği: {totalGoalsFromStatMap(goals)} gol
-            </Text>
-            {goalsMatchScore ? (
-              <Text style={styles.validationOk}>Skor ile gol dağılımı uyumlu.</Text>
-            ) : (
-              <Text style={styles.validationWarn}>
-                Gol dağılımı maç skoruyla uyumsuz.
-              </Text>
-            )}
-          </View>
-        </>
+  const inner = canManageMatch ? (
+    <>
+      <Text style={styles.sectionTitle}>Gol ve Asist</Text>
+      <Text style={[styles.sectionTitle, { fontSize: 13, marginTop: spacing.xs }]}>
+        {TEAM_SIDE_LABELS.A}
+      </Text>
+      {teamAPlayers.length === 0 ? (
+        <Text style={[styles.waitingText, { fontSize: 13 }]}>Kadroda oyuncu yok.</Text>
       ) : (
+        teamAPlayers.map((p) => (
+          <QuickSelectPlayerRow
+            key={p.id}
+            player={p}
+            segment="teamA"
+            goals={goals}
+            assists={assists}
+            bumpGoals={onBumpGoals}
+            bumpAssists={onBumpAssists}
+          />
+        ))
+      )}
+
+      <Text style={[styles.sectionTitle, { fontSize: 13 }]}>
+        {TEAM_SIDE_LABELS.B}
+      </Text>
+      {teamBPlayers.length === 0 ? (
+        <Text style={[styles.waitingText, { fontSize: 13 }]}>Kadroda oyuncu yok.</Text>
+      ) : (
+        teamBPlayers.map((p) => (
+          <QuickSelectPlayerRow
+            key={p.id}
+            player={p}
+            segment="teamB"
+            goals={goals}
+            assists={assists}
+            bumpGoals={onBumpGoals}
+            bumpAssists={onBumpAssists}
+          />
+        ))
+      )}
+
+      {unassignedPlayers.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Gol & Asist Durumu</Text>
-          {match.result && match.result.scorers.length > 0 ? (
-            match.result.scorers.map((l) => (
-              <Text key={`g-${l.playerId}`} style={[styles.waitingText, { fontSize: 13 }]}>
-                {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Gol ×{l.count}
-              </Text>
-            ))
-          ) : (
-            <Text style={[styles.waitingText, { fontSize: 13 }]}>Henüz gol kaydı yok.</Text>
-          )}
-
-          {match.result && match.result.assists.length > 0 ? (
-            match.result.assists.map((l) => (
-              <Text key={`a-${l.playerId}`} style={[styles.waitingText, { fontSize: 13 }]}>
-                {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Asist ×{l.count}
-              </Text>
-            ))
-          ) : (
-            <Text style={[styles.waitingText, { fontSize: 13 }]}>Henüz asist kaydı yok.</Text>
-          )}
-
-          <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Kendi İstatistiklerin</Text>
-          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-            <PillButton
-              title="Gol Attım"
-              variant="ghost"
-              onPress={() => onAddSelfReport('goal')}
-              style={{ flex: 1 }}
+          <Text style={[styles.sectionTitle, { fontSize: 13 }]}>Takım atanmamış</Text>
+          {unassignedPlayers.map((p) => (
+            <QuickSelectPlayerRow
+              key={p.id}
+              player={p}
+              segment="unassigned"
+              goals={goals}
+              assists={assists}
+              bumpGoals={onBumpGoals}
+              bumpAssists={onBumpAssists}
             />
-            <PillButton
-              title="Asist Yaptım"
-              variant="ghost"
-              onPress={() => onAddSelfReport('assist')}
-              style={{ flex: 1 }}
-            />
-          </View>
+          ))}
         </>
       )}
 
+      <View
+        style={[
+          styles.validationBox,
+          goalsMatchScore ? styles.validationBoxOk : styles.validationBoxErr,
+        ]}
+      >
+        <Text style={styles.validationTitle}>Doğrulama</Text>
+        <Text style={styles.validationCounts}>
+          Maç skoru: {effectiveScoreA} + {effectiveScoreB} ={' '}
+          {effectiveScoreA + effectiveScoreB} gol
+        </Text>
+        <Text style={styles.validationCounts}>
+          Gol etkinliği: {totalGoalsFromStatMap(goals)} gol
+        </Text>
+        {goalsMatchScore ? (
+          <Text style={styles.validationOk}>Skor ile gol dağılımı uyumlu.</Text>
+        ) : (
+          <Text style={styles.validationWarn}>
+            Gol dağılımı maç skoruyla uyumsuz.
+          </Text>
+        )}
+      </View>
       <View style={{ height: spacing.lg }} />
-    </ScrollView>
+    </>
+  ) : (
+    <>
+      <Text style={styles.sectionTitle}>Gol & Asist Durumu</Text>
+      {match.result && match.result.scorers.length > 0 ? (
+        match.result.scorers.map((l) => (
+          <Text key={`g-${l.playerId}`} style={[styles.waitingText, { fontSize: 13 }]}>
+            {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Gol ×{l.count}
+          </Text>
+        ))
+      ) : (
+        <Text style={[styles.waitingText, { fontSize: 13 }]}>Henüz gol kaydı yok.</Text>
+      )}
+
+      {match.result && match.result.assists.length > 0 ? (
+        match.result.assists.map((l) => (
+          <Text key={`a-${l.playerId}`} style={[styles.waitingText, { fontSize: 13 }]}>
+            {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Asist ×{l.count}
+          </Text>
+        ))
+      ) : (
+        <Text style={[styles.waitingText, { fontSize: 13 }]}>Henüz asist kaydı yok.</Text>
+      )}
+
+      <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Kendi İstatistiklerin</Text>
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+        <PillButton
+          title="Gol Attım"
+          variant="ghost"
+          onPress={() => onAddSelfReport('goal')}
+          style={{ flex: 1 }}
+        />
+        <PillButton
+          title="Asist Yaptım"
+          variant="ghost"
+          onPress={() => onAddSelfReport('assist')}
+          style={{ flex: 1 }}
+        />
+      </View>
+      <View style={{ height: spacing.lg }} />
+    </>
   );
+
+  if (!scrollable) {
+    return <View style={styles.stepContent}>{inner}</View>;
+  }
+  return <ScrollView style={styles.stepContent} showsVerticalScrollIndicator>{inner}</ScrollView>;
 }
 
 function RatingStepContent({
@@ -641,13 +654,17 @@ function RatingStepContent({
   );
 }
 
-export function PostMatchInlineWizard({
+export const PostMatchInlineWizard = React.forwardRef<
+  PostMatchInlineWizardHandle,
+  PostMatchInlineWizardProps
+>(function PostMatchInlineWizard({
   match,
   canManageMatch,
   currentUserId,
   onCompleted,
   hideRating,
-}: PostMatchInlineWizardProps) {
+  editMode,
+}, ref) {
   const styles = useStyles();
   const submitScore = useMatchesStore((s) => s.submitScore);
   const updateMatchResultOrganizer = useMatchesStore((s) => s.updateMatchResultOrganizer);
@@ -688,6 +705,35 @@ export function PostMatchInlineWizard({
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [motmId, setMotmId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleEditModeSave = useCallback(async () => {
+    setSubmitting(true);
+    try {
+      const result = {
+        scoreA,
+        scoreB,
+        scorers: toScoreLines(goals),
+        assists: toScoreLines(assists),
+        ownGoals: match.result?.ownGoals ?? [],
+      };
+      if (match.result) {
+        await updateMatchResultOrganizer(match.id, result);
+      } else {
+        await submitScore(match.id, result);
+      }
+      onCompleted();
+    } catch (e) {
+      showUserFacingError(e, {
+        uiOperation: 'PostMatchInlineWizard.editModeSave',
+        fallbackMessage: 'Sonuç kaydedilemedi.',
+        mapOperation: 'submitMatchResultRpc',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [scoreA, scoreB, goals, assists, match, updateMatchResultOrganizer, submitScore, onCompleted, showUserFacingError]);
+
+  useImperativeHandle(ref, () => ({ save: handleEditModeSave }), [handleEditModeSave]);
 
   const ratingWindowOpen = useMemo(() => {
     if (!match.ratingWindowEndsAt) return false;
@@ -815,6 +861,55 @@ export function PostMatchInlineWizard({
       });
     }
   };
+
+  if (editMode) {
+    const bumpGoals = (id: string, delta: number) => {
+      setGoals((prev) => {
+        const next = { ...prev };
+        const v = (next[id] ?? 0) + delta;
+        if (v <= 0) delete next[id];
+        else next[id] = v;
+        return next;
+      });
+    };
+    const bumpAssists = (id: string, delta: number) => {
+      setAssists((prev) => {
+        const next = { ...prev };
+        const v = (next[id] ?? 0) + delta;
+        if (v <= 0) delete next[id];
+        else next[id] = v;
+        return next;
+      });
+    };
+
+    return (
+      <View style={styles.container}>
+        <ScoreStepContent
+          match={match}
+          canManageMatch={canManageMatch}
+          scoreA={scoreA}
+          scoreB={scoreB}
+          onScoreAChange={setScoreA}
+          onScoreBChange={setScoreB}
+          leadingTally={leadingTally}
+        />
+        <StatLinesStepContent
+          match={match}
+          canManageMatch={canManageMatch}
+          goals={goals}
+          assists={assists}
+          onBumpGoals={bumpGoals}
+          onBumpAssists={bumpAssists}
+          submitting={submitting}
+          currentUserId={currentUserId}
+          onAddSelfReport={handleAddSelfReport}
+          currentScoreA={scoreA}
+          currentScoreB={scoreB}
+          scrollable={false}
+        />
+      </View>
+    );
+  }
 
   const scoreStepSummary = match.result
     ? `${match.result.scoreA} – ${match.result.scoreB}`
@@ -1105,4 +1200,4 @@ export function PostMatchInlineWizard({
       </View>}
     </View>
   );
-}
+});

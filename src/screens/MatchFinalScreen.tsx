@@ -12,7 +12,7 @@ import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
-import { PostMatchInlineWizard } from '../components/PostMatchInlineWizard';
+import { PostMatchInlineWizard, type PostMatchInlineWizardHandle } from '../components/PostMatchInlineWizard';
 import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { computeBadgesEarnedInMatch } from '../domain/badges/computeBadgesEarnedInMatch';
@@ -113,6 +113,9 @@ const useStyles = makeStyles((t) =>
       borderBottomColor: t.colors.border,
     },
     modalTitle: { ...typography.subtitle, color: t.colors.text },
+    modalCancelBtn: { ...typography.body, color: t.colors.textMuted },
+    modalSaveBtn: { ...typography.subtitle, color: t.colors.accent },
+    modalSaveBtnDisabled: { opacity: 0.4 },
   }),
 );
 
@@ -128,6 +131,8 @@ export function MatchFinalScreen() {
   const cardRef = useRef<View>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const wizardRef = useRef<PostMatchInlineWizardHandle>(null);
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
   const getPlayer = usePlayersStore((s) => s.getPlayer);
@@ -280,17 +285,40 @@ export function MatchFinalScreen() {
         >
           <SafeAreaView style={styles.modalOverlay}>
             <View style={styles.modalHeader}>
+              <Pressable
+                onPress={() => setIsEditing(false)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="İptal et"
+                testID="edit-result:cancel:press"
+              >
+                <Text style={styles.modalCancelBtn}>İptal Et</Text>
+              </Pressable>
               <Text style={styles.modalTitle}>Sonucu Düzenle</Text>
-              <Pressable onPress={() => setIsEditing(false)} hitSlop={8}>
-                <Ionicons name="close" size={24} color={colors.text} />
+              <Pressable
+                onPress={() => {
+                  setSaving(true);
+                  void wizardRef.current?.save().finally(() => setSaving(false));
+                }}
+                hitSlop={8}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityLabel="Kaydet"
+                testID="edit-result:save:press"
+              >
+                <Text style={[styles.modalSaveBtn, saving && styles.modalSaveBtnDisabled]}>
+                  {saving ? 'Kaydediliyor…' : 'Kaydet'}
+                </Text>
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
               <PostMatchInlineWizard
+                ref={wizardRef}
                 match={match}
                 canManageMatch={true}
                 currentUserId={userId}
                 hideRating={true}
+                editMode={true}
                 onCompleted={() => setIsEditing(false)}
               />
             </ScrollView>
