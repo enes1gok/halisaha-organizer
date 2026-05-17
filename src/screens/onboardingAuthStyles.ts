@@ -7,6 +7,8 @@ export const useOnboardingAuthStyles = makeStyles((t) =>
     flex: { flex: 1, backgroundColor: t.colors.background },
     screen: { flex: 1, backgroundColor: t.colors.background },
     content: {
+      flexGrow: 1,
+      justifyContent: 'center',
       paddingHorizontal: spacing.lg,
       gap: spacing.xl,
     },
