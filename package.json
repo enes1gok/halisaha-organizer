@@ -32,6 +32,7 @@
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
     "expo-background-task": "~1.0.10",
+    "expo-build-properties": "^55.0.14",
     "expo-clipboard": "~8.0.8",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.21",

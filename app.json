@@ -16,7 +16,6 @@
     "ios": {
       "bundleIdentifier": "com.enesgok.halisahamacorganizeet",
       "supportsTablet": true,
-      "deploymentTarget": "14.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -44,6 +43,14 @@
         "expo-image-picker",
         {
           "photosPermission": "Profil fotoğrafını seçmek için fotoğraflarınıza erişmemiz gerekiyor."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
         }
       ]
     ]
