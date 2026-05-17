@@ -1,7 +1,7 @@
 import type { Match, Player } from '../types/domain';
 
 export function countGoing(m: Match): number {
-  return m.attendees.filter((a) => a.status === 'going').length;
+  return m.attendees.filter((a) => a.status === 'going').length + (m.guestAttendees?.length ?? 0);
 }
 
 /** Takım listelerinde en az bir oyuncu atanmış mı (kadro taslağı var mı). */

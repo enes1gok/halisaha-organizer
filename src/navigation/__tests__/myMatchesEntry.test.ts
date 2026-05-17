@@ -86,9 +86,9 @@ describe('resolveMyMatchesEntryScreen', () => {
     ).toBe('MatchSummary');
   });
 
-  it('routes finished + result on lineup without ratingWindowEndsAt to MatchRatingFlow', () => {
+  it('routes finished + result on lineup without ratingWindowEndsAt to MatchSummary (no open window)', () => {
     expect(
       resolveMyMatchesEntryScreen(bm({ status: 'finished', result }), user, {}),
-    ).toBe('MatchRatingFlow');
+    ).toBe('MatchSummary');
   });
 });
