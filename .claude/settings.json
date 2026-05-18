@@ -11,7 +11,55 @@
       "Bash(npm run *)",
       "Bash(npm test *)",
       "Bash(grep -E \"\\\\.ts$|\\\\.tsx$\")",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "Bash(find . -name \"*.ts\" -o -name \"*.tsx\")",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git status)",
+      "Bash(ls *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; [ -f \"$file\" ] && grep -n 'console\\.log' \"$file\" 2>/dev/null && echo '⚠️  console.log tespit edildi — reportError veya logger ile değiştir' || true"
+          },
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; echo \"$file\" | grep -q 'src/services/supabase/' && ! grep -q 'isSupabaseConfigured' \"$file\" 2>/dev/null && echo '⚠️  Supabase dosyasında isSupabaseConfigured() guard eksik olabilir' || true"
+          },
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; echo \"$file\" | grep -qE '\\.(tsx|ts)$' && grep -nE \"'#[0-9A-Fa-f]{3,6}'\" \"$file\" 2>/dev/null && echo '⚠️  Hardcoded hex renk bulundu — src/theme/index.ts tokenlarını kullan' || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=\"$CLAUDE_TOOL_INPUT_COMMAND\"; echo \"$cmd\" | grep -qE 'git.*(reset --hard|push --force|push -f).*main' && echo 'UYARI: main branch üzerinde destructive git komutu!' || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude/sessions && echo \"Session: $(date '+%Y-%m-%d %H:%M') — $(git log --oneline -1 2>/dev/null)\" >> .claude/sessions/log.md"
+          }
+        ]
+      }
     ]
   }
 }

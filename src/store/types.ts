@@ -55,6 +55,8 @@ export type RemoteProfileRow = {
   position: Player['position'];
   preferred_foot: Player['preferredFoot'];
   iban: string | null;
+  /** 1–10 kullanıcı beyan yetenek seviyesi; NULL = belirtilmemiş. */
+  skill_level?: number | null;
   /** İstemci `photo_uri` önbellek bust için (Supabase `profiles.updated_at`). */
   updated_at?: string;
 };
@@ -86,7 +88,7 @@ export interface PlayersSlice {
   syncPlayerFromRemoteProfile: (row: RemoteProfileRow) => void;
   updatePlayerProfile: (
     playerId: string,
-    patch: Partial<Pick<Player, 'name' | 'photoUri' | 'position' | 'preferredFoot' | 'iban'>>,
+    patch: Partial<Pick<Player, 'name' | 'photoUri' | 'position' | 'preferredFoot' | 'iban' | 'skillLevel'>>,
   ) => void;
 }
 

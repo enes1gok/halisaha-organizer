@@ -7,6 +7,7 @@ export type ProfileEditBaseline = {
   position: Position;
   preferredFoot: PreferredFoot;
   ibanNormalized: string;
+  skillLevel: number | undefined;
 };
 
 /** Trimmed photo URL; empty input treated as undefined (matches saved profile shape). */
@@ -21,6 +22,7 @@ export function buildProfileEditBaseline(args: {
   position: Position;
   preferredFoot: PreferredFoot;
   ibanStored: string | undefined;
+  skillLevel: number | undefined;
 }): ProfileEditBaseline {
   return {
     name: (args.name ?? '').trim(),
@@ -28,6 +30,7 @@ export function buildProfileEditBaseline(args: {
     position: args.position,
     preferredFoot: args.preferredFoot,
     ibanNormalized: normalizeIban(args.ibanStored ?? ''),
+    skillLevel: args.skillLevel,
   };
 }
 
@@ -39,6 +42,7 @@ export function profileEditMatchesBaseline(
     position: Position;
     preferredFoot: PreferredFoot;
     ibanInput: string;
+    skillLevel: number | undefined;
   },
 ): boolean {
   const ibanNorm = normalizeIban(current.ibanInput);
@@ -48,12 +52,14 @@ export function profileEditMatchesBaseline(
     position: current.position,
     preferredFoot: current.preferredFoot,
     ibanStored: ibanNorm,
+    skillLevel: current.skillLevel,
   });
   return (
     cur.name === baseline.name &&
     cur.photoUri === baseline.photoUri &&
     cur.position === baseline.position &&
     cur.preferredFoot === baseline.preferredFoot &&
-    cur.ibanNormalized === baseline.ibanNormalized
+    cur.ibanNormalized === baseline.ibanNormalized &&
+    cur.skillLevel === baseline.skillLevel
   );
 }

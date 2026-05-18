@@ -28,6 +28,11 @@ export interface Player {
   iban?: string;
   position: Position;
   preferredFoot: PreferredFoot;
+  /**
+   * 1–10 kullanıcı beyan yetenek seviyesi. Lineup Dengele algoritmasında
+   * peer rating yokken fallback — skillLevel × 10 → 0–100 ölçeğine map.
+   */
+  skillLevel?: number;
   stats: PlayerStats;
 }
 

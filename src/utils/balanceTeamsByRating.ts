@@ -10,11 +10,20 @@ function clampRating100(v: number): number {
   return Math.max(0, Math.min(100, v));
 }
 
-/** Oyuncunun maç içi dengelemede kullanılan etkin reytingi (0–100). */
+/**
+ * Oyuncunun maç içi dengelemede kullanılan etkin reytingi (0–100).
+ *
+ * Öncelik zinciri:
+ *   1. Peer rating (ratingAverage100) — maç sonu oylama, en güvenilir
+ *   2. Yetenek seviyesi (skillLevel × 10) — kullanıcı beyan, peer rating yokken
+ *   3. DEFAULT_EFFECTIVE_RATING (50) — nötr
+ */
 export function effectiveRating(player: Player): number {
-  const raw = player.stats.ratingAverage100;
-  if (raw == null || Number.isNaN(raw)) return DEFAULT_EFFECTIVE_RATING;
-  return clampRating100(raw);
+  const peerRating = player.stats.ratingAverage100;
+  if (peerRating != null && !Number.isNaN(peerRating)) return clampRating100(peerRating);
+  const skillLevel = player.skillLevel;
+  if (skillLevel != null) return clampRating100(skillLevel * 10);
+  return DEFAULT_EFFECTIVE_RATING;
 }
 
 /** Yüksek reyting önce; eşitlikte `id` ile deterministik. */

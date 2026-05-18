@@ -63,6 +63,7 @@ export function upsertProfilesIntoPlayers(players: Player[], profiles: PublicPro
       position: pr.position,
       preferredFoot: pr.preferred_foot,
       iban: 'iban' in pr ? (pr.iban ?? undefined) : idx >= 0 ? next[idx]!.iban : undefined,
+      skillLevel: pr.skill_level != null ? pr.skill_level : undefined,
       stats: idx >= 0 ? next[idx]!.stats : emptyPlayerStats(),
     };
     if (idx >= 0) next[idx] = { ...next[idx]!, ...stub };

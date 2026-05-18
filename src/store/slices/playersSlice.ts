@@ -21,6 +21,7 @@ export const createPlayersSlice: StateCreator<AppState, [], [], PlayersSlice> = 
         position: row.position,
         preferredFoot: row.preferred_foot,
         iban: row.iban ?? undefined,
+        skillLevel: row.skill_level != null ? row.skill_level : undefined,
         stats: idx >= 0 ? players[idx]!.stats : emptyPlayerStats(),
       };
       if (idx >= 0) players[idx] = { ...players[idx]!, ...merged };

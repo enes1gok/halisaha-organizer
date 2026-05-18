@@ -11,7 +11,7 @@ export async function ensureMyProfile(): Promise<void> {
 }
 
 const PUBLIC_PROFILE_FULL_SELECT =
-  'id,display_name,photo_uri,position,preferred_foot,updated_at,weekly_match_streak_effective_weeks,weekly_match_streak_weeks,weekly_match_last_qualifying_week_start';
+  'id,display_name,photo_uri,position,preferred_foot,skill_level,updated_at,weekly_match_streak_effective_weeks,weekly_match_streak_weeks,weekly_match_last_qualifying_week_start';
 
 /** Matches `profiles_public` columns bundled in `match_graph_row` JSON (no streak fields). */
 const PUBLIC_PROFILE_GRAPH_SELECT = 'id,display_name,photo_uri,position,preferred_foot,updated_at';
@@ -78,6 +78,8 @@ export type ProfileUpdate = Partial<{
   position: PlayerPositionRow;
   preferred_foot: PreferredFootRow;
   iban: string | null;
+  /** 1–10; null = seviyeyi temizle. */
+  skill_level: number | null;
   notification_preferences: Record<string, unknown>;
 }>;
 

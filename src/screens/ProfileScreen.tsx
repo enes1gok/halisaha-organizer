@@ -70,6 +70,14 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const POSITIONS: Position[] = ['GK', 'DEF', 'MID', 'FWD'];
 const FEET: PreferredFoot[] = ['left', 'right', 'both'];
+const SKILL_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+
+function skillLevelLabel(level: number): string {
+  if (level <= 3) return 'Başlangıç';
+  if (level <= 6) return 'Orta';
+  if (level <= 8) return 'İyi';
+  return 'Pro';
+}
 type Nav = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
 function footLabel(f: PreferredFoot): string {
@@ -114,12 +122,13 @@ export function ProfileScreen() {
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const editBaselineRef = useRef<ProfileEditBaseline | null>(null);
-  const snapPoints = useMemo(() => ['62%'], []);
+  const snapPoints = useMemo(() => ['75%'], []);
 
   const [name, setName] = useState(player?.name ?? '');
   const [photoUri, setPhotoUri] = useState(player?.photoUri ?? '');
   const [position, setPosition] = useState<Position>(player?.position ?? 'MID');
   const [foot, setFoot] = useState<PreferredFoot>(player?.preferredFoot ?? 'both');
+  const [skillLevel, setSkillLevel] = useState<number | undefined>(player?.skillLevel);
   const [refreshing, setRefreshing] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [badgeTiles, setBadgeTiles] = useState<BadgeTileVm[]>([]);
@@ -214,6 +223,7 @@ export function ProfileScreen() {
     setPhotoUri(player.photoUri ?? '');
     setPosition(player.position);
     setFoot(player.preferredFoot);
+    setSkillLevel(player.skillLevel);
     syncFromStored(player.iban);
     editBaselineRef.current = buildProfileEditBaseline({
       name: player.name,
@@ -221,6 +231,7 @@ export function ProfileScreen() {
       position: player.position,
       preferredFoot: player.preferredFoot,
       ibanStored: player.iban,
+      skillLevel: player.skillLevel,
     });
     sheetRef.current?.present();
   };
@@ -269,6 +280,7 @@ export function ProfileScreen() {
         position,
         preferredFoot: foot,
         ibanInput: iban,
+        skillLevel,
       })
     ) {
       sheetRef.current?.dismiss();
@@ -291,6 +303,7 @@ export function ProfileScreen() {
       position,
       preferredFoot: foot,
       iban: ibanNorm || undefined,
+      skillLevel: skillLevel ?? undefined,
     });
     sheetRef.current?.dismiss();
     if (configured && session?.user?.id === player.id) {
@@ -301,6 +314,7 @@ export function ProfileScreen() {
           position,
           preferred_foot: foot,
           iban: ibanNorm || null,
+          skill_level: skillLevel ?? null,
         });
         syncPlayerFromRemoteProfile({
           id: saved.id,
@@ -309,6 +323,7 @@ export function ProfileScreen() {
           position: saved.position,
           preferred_foot: saved.preferred_foot,
           iban: saved.iban,
+          skill_level: saved.skill_level,
           updated_at: saved.updated_at,
         });
       } catch {
@@ -467,6 +482,28 @@ export function ProfileScreen() {
               </Pressable>
             ))}
           </View>
+          <Text style={styles.label}>
+            Yetenek seviyesi (isteğe bağlı)
+            {skillLevel != null ? ` — ${skillLevel}/10 · ${skillLevelLabel(skillLevel)}` : ''}
+          </Text>
+          <View style={styles.skillRow}>
+            {SKILL_LEVELS.map((lvl) => (
+              <Pressable
+                key={lvl}
+                onPress={() => setSkillLevel(lvl === skillLevel ? undefined : lvl)}
+                style={[styles.skillChip, skillLevel === lvl && styles.skillChipOn]}
+                testID={`profile:skill:${lvl}:press`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: skillLevel === lvl }}
+                accessibilityLabel={`Seviye ${lvl}, ${skillLevelLabel(lvl)}`}
+                hitSlop={4}
+              >
+                <Text style={[styles.skillChipTxt, skillLevel === lvl && styles.skillChipTxtOn]}>
+                  {lvl}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
           <Text style={styles.label}>IBAN'ım (isteğe bağlı)</Text>
           <BottomSheetTextInput
             value={iban}
@@ -570,6 +607,34 @@ const useStyles = makeStyles((t) =>
     optTxtOn: {
       color: t.colors.accent,
       fontFamily: 'Inter_600SemiBold',
+    },
+    skillRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+    },
+    skillChip: {
+      minWidth: 36,
+      minHeight: 36,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+      backgroundColor: t.colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    skillChipOn: {
+      borderColor: t.colors.accent,
+      backgroundColor: t.colors.accentMuted,
+    },
+    skillChipTxt: {
+      ...typography.body,
+      color: t.colors.textMuted,
+    },
+    skillChipTxtOn: {
+      color: t.colors.accent,
+      fontFamily: 'Inter_700Bold',
     },
     pickPhotoBtn: {
       minHeight: 44,

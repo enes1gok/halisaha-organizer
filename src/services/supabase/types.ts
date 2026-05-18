@@ -24,6 +24,8 @@ export interface ProfileRow {
   position: PlayerPositionRow;
   preferred_foot: PreferredFootRow;
   iban: string | null;
+  /** 1–10 kullanıcı beyan yetenek seviyesi; NULL = belirtilmemiş. */
+  skill_level: number | null;
   /** JSON preferences; use `normalizeNotificationPreferences` at UI boundary. */
   notification_preferences?: unknown;
   weekly_match_streak_weeks?: number;
@@ -38,6 +40,8 @@ export interface PublicProfileRow {
   photo_uri: string | null;
   position: PlayerPositionRow;
   preferred_foot: PreferredFootRow;
+  /** 1–10 kullanıcı beyan yetenek seviyesi; NULL = belirtilmemiş. */
+  skill_level?: number | null;
   /** Avatar/cache busting için; roster görünümlerinde istemci `photo_uri` ile birleştirir. */
   updated_at?: string;
   weekly_match_streak_weeks?: number;
