@@ -69,10 +69,38 @@ export function upsertProfilesIntoPlayers(players: Player[], profiles: PublicPro
   return next;
 }
 
-/** Uzak graftan gelen maça yerel kadro şablonu tercihini taşır (sunucuda alan yok). */
+/** Uzak graftan gelen maça yerel kadro şablonu tercihini ve stat_lines'ı taşır (sunucuda alan yok). */
 export function preserveLocalLineupMeta(prev: Match | undefined, incoming: Match): Match {
-  if (!prev?.lineupFormationId) return incoming;
-  return { ...incoming, lineupFormationId: prev.lineupFormationId };
+  const withFormation: Match =
+    prev?.lineupFormationId
+      ? { ...incoming, lineupFormationId: prev.lineupFormationId }
+      : incoming;
+
+  // list_visible_match_summaries_for_user (summary RPC) performans optimizasyonu olarak
+  // stat_lines'ı her zaman boş döndürür. Önceki kayıtta stat_lines doluysa, gelen boş
+  // veriyle üzerine yazmaktan kaçın — gerçek veri detail RPC'den geldiğinde güncellenir.
+  if (
+    prev?.result &&
+    withFormation.result &&
+    withFormation.result.scorers.length === 0 &&
+    withFormation.result.assists.length === 0 &&
+    (withFormation.result.ownGoals?.length ?? 0) === 0 &&
+    (prev.result.scorers.length > 0 ||
+      prev.result.assists.length > 0 ||
+      (prev.result.ownGoals?.length ?? 0) > 0)
+  ) {
+    return {
+      ...withFormation,
+      result: {
+        ...withFormation.result,
+        scorers: prev.result.scorers,
+        assists: prev.result.assists,
+        ownGoals: prev.result.ownGoals,
+      },
+    };
+  }
+
+  return withFormation;
 }
 
 export function mergeRemoteGraph(

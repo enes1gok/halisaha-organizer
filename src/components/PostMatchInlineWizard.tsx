@@ -772,8 +772,8 @@ export const PostMatchInlineWizard = React.forwardRef<
       const result = {
         scoreA,
         scoreB,
-        scorers: match.result?.scorers ?? [],
-        assists: match.result?.assists ?? [],
+        scorers: toScoreLines(goals),
+        assists: toScoreLines(assists),
         ownGoals: match.result?.ownGoals ?? [],
       };
       // İlk gönderimde submitScore (rating penceresi açılır),
@@ -804,7 +804,7 @@ export const PostMatchInlineWizard = React.forwardRef<
         scoreB: match.result.scoreB,
         scorers: toScoreLines(goals),
         assists: toScoreLines(assists),
-        ownGoals: [],
+        ownGoals: match.result.ownGoals ?? [],
       };
       await updateMatchResultOrganizer(match.id, result);
       if (hideRating) {
