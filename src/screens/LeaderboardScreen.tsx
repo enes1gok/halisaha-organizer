@@ -31,16 +31,23 @@ function Chip({
   active,
   label,
   onPress,
+  testID,
 }: {
   active: boolean;
   label: string;
   onPress: () => void;
+  testID?: string;
 }) {
   const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
       style={[styles.chip, active && styles.chipActive]}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={label}
+      hitSlop={6}
     >
       <Text style={[styles.chipTxt, active && styles.chipTxtActive]}>{label}</Text>
     </Pressable>
@@ -160,6 +167,7 @@ export function LeaderboardScreen() {
               active={metric === m}
               label={metricLabel(m)}
               onPress={() => setMetric(m)}
+              testID={`leaderboard:metric:${m}`}
             />
           ))}
         </View>
@@ -171,6 +179,7 @@ export function LeaderboardScreen() {
               active={tf === t}
               label={timeframeLabel(t)}
               onPress={() => setTf(t)}
+              testID={`leaderboard:timeframe:${t}`}
             />
           ))}
         </View>
@@ -222,7 +231,13 @@ export function LeaderboardScreen() {
           const p = players.find((x) => x.id === item.playerId);
           if (!p) return null;
           return (
-            <View style={styles.row}>
+            <View
+              style={styles.row}
+              testID={`leaderboard:row:${p.id}`}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`${item.rank}. sıra, ${p.name}, ${metricLabel(metric)} ${fmt(item.value)}`}
+            >
               <Text style={styles.rank}>{item.rank}</Text>
               <PlayerAvatar name={p.name} uri={p.photoUri} size={40} />
               <Text style={styles.name}>{p.name}</Text>
@@ -233,7 +248,13 @@ export function LeaderboardScreen() {
       />
 
       {showPinned && mine ? (
-        <View style={styles.pinned}>
+        <View
+          style={styles.pinned}
+          testID="leaderboard:pinned-self"
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={`Senin sıralaman: ${mine.rank}, ${metricLabel(metric)} ${fmt(mine.value)}`}
+        >
           <Text style={styles.pinnedLbl}>Sen</Text>
           <PlayerAvatar name={me?.name ?? ''} uri={me?.photoUri} size={36} />
           <Text style={styles.name}>{me?.name}</Text>

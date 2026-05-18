@@ -21,9 +21,9 @@ export const createPlayersSlice: StateCreator<AppState, [], [], PlayersSlice> = 
         position: row.position,
         preferredFoot: row.preferred_foot,
         iban: row.iban ?? undefined,
-        stats: idx >= 0 ? players[idx].stats : emptyPlayerStats(),
+        stats: idx >= 0 ? players[idx]!.stats : emptyPlayerStats(),
       };
-      if (idx >= 0) players[idx] = { ...players[idx], ...merged };
+      if (idx >= 0) players[idx] = { ...players[idx]!, ...merged };
       else players.unshift(merged);
       const nextPlayers = idx < 0 ? withSyncedStats(players, state.matches) : players;
       return { players: nextPlayers };

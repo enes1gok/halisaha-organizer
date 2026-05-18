@@ -184,7 +184,9 @@ export function describeDayForA11y(dateKey: string, count: number): string {
 function parseDateKey(key: string): Date | null {
   const parts = key.split('-');
   if (parts.length !== 3) return null;
-  const [y, m, d] = parts.map((p) => Number.parseInt(p, 10));
+  const nums = parts.map((p) => Number.parseInt(p, 10));
+  const [y, m, d] = nums;
+  if (y === undefined || m === undefined || d === undefined) return null;
   if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
   return new Date(y, m - 1, d);
 }

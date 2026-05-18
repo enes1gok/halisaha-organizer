@@ -22,7 +22,7 @@ describe('lineupFormations', () => {
   });
 
   it('groupFormationSlotsByRow covers all indices', () => {
-    const f = LINEUP_FORMATIONS[0];
+    const f = LINEUP_FORMATIONS[0]!;
     const rows = groupFormationSlotsByRow(f);
     const flat = rows.flat();
     expect(flat.length).toBe(f.slots.length);
@@ -38,7 +38,7 @@ describe('lineupFormations', () => {
 
   it('resolveSlotAnchor returns stored anchor for 4-2-3-1', () => {
     const f = getLineupFormationById('f22-4231')!;
-    const kl = f.slots[0];
+    const kl = f.slots[0]!;
     const a = resolveSlotAnchor(kl, f);
     expect(a.xNorm).toBe(0.5);
     expect(a.yNorm).toBe(0.07);
@@ -46,7 +46,7 @@ describe('lineupFormations', () => {
 
   it('resolveSlotAnchor row-col fallback for formations without anchor', () => {
     const f = getLineupFormationById('f14-231')!;
-    const s0 = f.slots[0];
+    const s0 = f.slots[0]!;
     expect(s0.anchor).toBeUndefined();
     const a = resolveSlotAnchor(s0, f);
     expect(a.yNorm).toBeCloseTo(0.125, 5);

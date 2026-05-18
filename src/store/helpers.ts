@@ -13,7 +13,8 @@ export function upsertAttendee(attendees: Attendee[], playerId: string, patch: P
   const idx = attendees.findIndex((a) => a.playerId === playerId);
   if (idx === -1) return [...attendees, { playerId, status: 'going', paid: false, ...patch }];
   const next = [...attendees];
-  next[idx] = { ...next[idx], ...patch };
+  // idx findIndex sonucu >= 0; next[idx] tanımlı.
+  next[idx] = { ...next[idx]!, ...patch };
   return next;
 }
 
@@ -26,9 +27,10 @@ export function mergeStatLines(
   if (delta === 0) return lines;
   if (idx === -1) return [...lines, { playerId, count: delta }];
   const copy = [...lines];
-  const next = copy[idx].count + delta;
+  const current = copy[idx]!;
+  const next = current.count + delta;
   if (next <= 0) copy.splice(idx, 1);
-  else copy[idx] = { ...copy[idx], count: next };
+  else copy[idx] = { ...current, count: next };
   return copy;
 }
 
@@ -60,10 +62,10 @@ export function upsertProfilesIntoPlayers(players: Player[], profiles: PublicPro
         ) ?? undefined,
       position: pr.position,
       preferredFoot: pr.preferred_foot,
-      iban: 'iban' in pr ? (pr.iban ?? undefined) : idx >= 0 ? next[idx].iban : undefined,
-      stats: idx >= 0 ? next[idx].stats : emptyPlayerStats(),
+      iban: 'iban' in pr ? (pr.iban ?? undefined) : idx >= 0 ? next[idx]!.iban : undefined,
+      stats: idx >= 0 ? next[idx]!.stats : emptyPlayerStats(),
     };
-    if (idx >= 0) next[idx] = { ...next[idx], ...stub };
+    if (idx >= 0) next[idx] = { ...next[idx]!, ...stub };
     else next.unshift(stub);
   }
   return next;

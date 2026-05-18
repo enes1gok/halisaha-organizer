@@ -24,13 +24,14 @@ export function ProfilePerformanceSparkline({ points }: Props) {
   const yFor = (p: number) => PAD + (1 - p) * innerH;
 
   if (points.length === 1) {
-    const cy = yFor(points[0]);
+    const single = points[0]!;
+    const cy = yFor(single);
     const cx = VB_W / 2;
     return (
       <View
         style={stylesWrap.wrap}
         accessibilityRole="image"
-        accessibilityLabel={`Son maç performans puanı ${points[0]}`}
+        accessibilityLabel={`Son maç performans puanı ${single}`}
       >
         <Svg width="100%" height={VB_H} viewBox={`0 0 ${VB_W} ${VB_H}`}>
           <Circle cx={cx} cy={cy} r={4} fill={colors.accent} />

@@ -17,27 +17,42 @@ type Props = {
   onPress: () => void;
 };
 
+const RSVP_LABEL: Record<RSVPStatus, string> = {
+  going: 'katılıyorsun',
+  maybe: 'belki',
+  notGoing: 'katılmıyorsun',
+};
+
 export function MatchCard({ match, goingCount, userRsvp, onPress }: Props) {
   const { colors } = useTheme();
   const styles = useStyles();
   const borderExtra = userRsvp ? rsvpStatusLeftBorder(userRsvp, colors) : undefined;
   const icon = userRsvp ? rsvpStatusIcon(userRsvp, colors) : null;
 
+  const venueLabel = match.venue?.trim() ? match.venue : 'Halısaha';
+  const dateLabel = formatMatchDateTime(match.startsAt);
+  const rsvpPart = userRsvp ? `, ${RSVP_LABEL[userRsvp]}` : '';
+  const a11yLabel = `${venueLabel}, ${dateLabel}, ${goingCount} bölü ${match.maxPlayers} oyuncu${rsvpPart}`;
+
   return (
     <PressableScale
       onPress={onPress}
       style={[styles.wrap, borderExtra]}
       android_ripple={{ color: colors.accentMuted }}
+      testID={`match:card:${match.id}`}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint="Maç detayını aç"
     >
       <View style={styles.row}>
         {icon ? (
-          <View style={styles.rsvpIconWrap}>
+          <View style={styles.rsvpIconWrap} importantForAccessibility="no" accessibilityElementsHidden>
             <Ionicons name={icon.name} size={18} color={icon.color} />
           </View>
         ) : null}
         <View style={styles.main}>
           <MatchHeroVenueTitle venue={match.venue} variant="list" />
-          <Text style={[typography.caption, styles.date]}>{formatMatchDateTime(match.startsAt)}</Text>
+          <Text style={[typography.caption, styles.date]}>{dateLabel}</Text>
         </View>
         <View style={styles.slot}>
           <Text style={[typography.subtitle, styles.slotTxt]}>

@@ -26,10 +26,11 @@ export function quickBandById(id: QuickRatingBandId): QuickRatingBand {
 /** En yakın bant kimliği (mesafe eşitse dizide önce gelen / daha yüksek skorlu bant seçilir). */
 export function nearestQuickBandId(score: number): QuickRatingBandId {
   const clamped = Math.min(100, Math.max(0, score));
-  let best = QUICK_RATING_BANDS[0];
+  // QUICK_RATING_BANDS asla boş değil — non-null assertion compile-time invariant.
+  let best = QUICK_RATING_BANDS[0]!;
   let bestDist = Math.abs(clamped - best.score);
   for (let i = 1; i < QUICK_RATING_BANDS.length; i++) {
-    const b = QUICK_RATING_BANDS[i];
+    const b = QUICK_RATING_BANDS[i]!;
     const d = Math.abs(clamped - b.score);
     if (d < bestDist) {
       best = b;

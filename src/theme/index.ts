@@ -26,6 +26,8 @@ export const darkColors = {
   textOnAccentMuted: 'rgba(10, 10, 10, 0.72)',
   danger: '#FF4D4D',
   admin: '#F59E0B',
+  /** Native `shadowColor` için sabit gölge rengi (her iki temada saf siyah). */
+  shadow: '#000000',
   position: {
     GK: '#EAB308',
     DEF: '#3B82F6',
@@ -43,6 +45,10 @@ export const darkColors = {
     slotRingGlow: 'rgba(0, 210, 106, 0.55)',
     slotRingHover: 'rgba(0, 210, 106, 0.90)',
     slotFill: 'rgba(0, 0, 0, 0.18)',
+    /** Dark tint pitch yarısı (A) üzerinde overlay metin/etiket — açık ton */
+    textOnDarkTint: 'rgba(255, 255, 255, 0.92)',
+    /** Light tint pitch yarısı (B) üzerinde overlay metin/etiket — koyu ton */
+    textOnLightTint: 'rgba(15, 36, 24, 0.85)',
   },
   /** Liderlik tablosu podyum — madalya vurgusu (koyu tema) */
   leaderboard: {
@@ -93,6 +99,8 @@ export const lightColors: ColorPalette = {
   textOnAccentMuted: 'rgba(255, 255, 255, 0.78)',
   danger: '#DC2626',
   admin: '#D97706',
+  /** Native `shadowColor` için sabit gölge rengi (her iki temada saf siyah). */
+  shadow: '#000000',
   position: {
     GK: '#B45309',
     DEF: '#1D4ED8',
@@ -110,6 +118,10 @@ export const lightColors: ColorPalette = {
     slotRingGlow: 'rgba(0, 130, 77, 0.45)',
     slotRingHover: 'rgba(0, 130, 77, 0.85)',
     slotFill: 'rgba(255, 255, 255, 0.55)',
+    /** Dark tint pitch yarısı (A) üzerinde overlay metin/etiket — koyu zeminde açık ton */
+    textOnDarkTint: 'rgba(255, 255, 255, 0.95)',
+    /** Light tint pitch yarısı (B) üzerinde overlay metin/etiket — açık zeminde koyu ton */
+    textOnLightTint: 'rgba(15, 36, 24, 0.88)',
   },
   /** Liderlik tablosu podyum — madalya vurgusu (açık tema) */
   leaderboard: {

@@ -4,6 +4,14 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { getSupabaseClient, isSupabaseConfigured } from '../../lib/supabase';
 import { createAuthRequiredError, mapSupabaseError } from './errors';
 
+/**
+ * 1 yıl. URL'de `?v=profiles.updated_at` (bkz. `appendPhotoUriCacheBuster`)
+ * cache invalidation sağlar; yeni upload sonrası version değişir → URL değişir →
+ * CDN cache miss. Bu sayede aggressive caching güvenli — değişmediği sürece
+ * istemci/CDN edge yeniden indirme yapmaz.
+ */
+const AVATAR_CACHE_MAX_AGE_SECONDS = '31536000';
+
 async function readImageAsUint8Array(uri: string): Promise<Uint8Array> {
   const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
   const binaryString = atob(base64);
@@ -37,6 +45,7 @@ export async function uploadProfileAvatar(localUri: string): Promise<string> {
   const { error } = await supabase.storage.from('avatars').upload(path, uint8Array, {
     upsert: true,
     contentType: 'image/jpeg',
+    cacheControl: AVATAR_CACHE_MAX_AGE_SECONDS,
   });
   if (error) throw mapSupabaseError(error, 'uploadProfileAvatar');
 
@@ -65,6 +74,7 @@ export async function uploadGroupPhoto(groupId: string, localUri: string): Promi
   const { error } = await supabase.storage.from('avatars').upload(path, uint8Array, {
     upsert: true,
     contentType: 'image/jpeg',
+    cacheControl: AVATAR_CACHE_MAX_AGE_SECONDS,
   });
   if (error) throw mapSupabaseError(error, 'uploadGroupPhoto');
 

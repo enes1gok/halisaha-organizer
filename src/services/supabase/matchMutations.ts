@@ -28,6 +28,23 @@ export async function updateMatchAttendeeRemote(
   }
 }
 
+/**
+ * Idempotent RSVP upsert — `set_match_attendee_rsvp` RPC'sini sarmalar.
+ * Concurrent çağrılarda kayıp yok; client-side heal pattern'ine ihtiyaç bırakmaz.
+ * Görünmeyen maçlar ERR_MATCH_NOT_FOUND atar (RLS-aware).
+ */
+export async function setMatchAttendeeRsvpRemote(
+  matchId: string,
+  status: RSVPStatus,
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc('set_match_attendee_rsvp', {
+    p_match_id: matchId,
+    p_status: rsvpToDb(status),
+  });
+  if (error) throw mapSupabaseError(error, 'setMatchAttendeeRsvpRemote');
+}
+
 export async function replaceMatchTeamPlayersRemote(
   matchId: string,
   teamAIds: string[],

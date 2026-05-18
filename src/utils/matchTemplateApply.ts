@@ -23,7 +23,7 @@ export type ParsedLocalTime = { hour: number; minute: number };
 export function parseMatchTemplateLocalTime(localTime: string): ParsedLocalTime | null {
   const t = localTime.trim();
   const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(t);
-  if (!m) return null;
+  if (!m || m[1] === undefined || m[2] === undefined) return null;
   const hour = parseInt(m[1], 10);
   const minute = parseInt(m[2], 10);
   if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;

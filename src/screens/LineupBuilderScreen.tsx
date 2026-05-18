@@ -271,6 +271,7 @@ function PoolDragGhost({
 }) {
   const styles = useLineupStyles();
   const { colors } = useTheme();
+  const shadowColor = colors.shadow;
 
   const ghostStyle = useAnimatedStyle(() => ({
     position: 'absolute',
@@ -279,7 +280,7 @@ function PoolDragGhost({
     zIndex: 999,
     elevation: 20,
     opacity: ghostOpacity.value,
-    shadowColor: '#000',
+    shadowColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -322,6 +323,8 @@ function SlotDragGhost({
   containerOriginY: SharedValue<number>;
 }) {
   const styles = useLineupStyles();
+  const { colors } = useTheme();
+  const shadowColor = colors.shadow;
 
   const ghostStyle = useAnimatedStyle(() => ({
     position: 'absolute',
@@ -330,7 +333,7 @@ function SlotDragGhost({
     zIndex: 999,
     elevation: 20,
     opacity: ghostOpacity.value,
-    shadowColor: '#000',
+    shadowColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 12,
@@ -1140,7 +1143,8 @@ export function LineupBuilderScreen() {
       horizontal={horizontal}
       teamTint={side === 'B' ? 'light' : 'dark'}
       renderSlotContent={(slot: LineupSlotDef, p: Player | undefined, slotTestId: string) => {
-        const roleTextColor = '#FFFFFF';
+        const roleTextColor =
+          side === 'B' ? colors.pitch.textOnLightTint : colors.pitch.textOnDarkTint;
         return p ? (
           <View style={styles.slotInner}>
             <DraggableCard
@@ -1479,7 +1483,7 @@ const useLineupStyles = makeStyles((t) =>
       backgroundColor: t.colors.surface,
       minHeight: 38,
       elevation: 1,
-      shadowColor: '#000',
+      shadowColor: t.colors.shadow,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.08,
       shadowRadius: 2,
@@ -1513,7 +1517,7 @@ const useLineupStyles = makeStyles((t) =>
       maxWidth: 320,
       gap: spacing.xs,
       elevation: 8,
-      shadowColor: '#000',
+      shadowColor: t.colors.shadow,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
@@ -1565,10 +1569,10 @@ const useLineupStyles = makeStyles((t) =>
       fontWeight: '600',
     },
     pitchTeamTitleLight: {
-      color: 'rgba(0,0,0,0.8)',
+      color: t.colors.pitch.textOnLightTint,
     },
     pitchTeamTitleDark: {
-      color: 'rgba(255,255,255,0.9)',
+      color: t.colors.pitch.textOnDarkTint,
     },
     pitchesContent: {
       flex: 1,
@@ -1642,7 +1646,7 @@ const useLineupStyles = makeStyles((t) =>
       borderWidth: 1,
       borderColor: t.colors.border,
       elevation: 2,
-      shadowColor: '#000',
+      shadowColor: t.colors.shadow,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.12,
       shadowRadius: 3,
@@ -1732,7 +1736,7 @@ const useLineupStyles = makeStyles((t) =>
       backgroundColor: t.colors.surface,
       maxHeight: 420,
       elevation: 2,
-      shadowColor: 'black',
+      shadowColor: t.colors.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 4,
@@ -1752,7 +1756,7 @@ const useLineupStyles = makeStyles((t) =>
       borderWidth: 1,
       borderColor: t.colors.border,
       backgroundColor: t.colors.background,
-      shadowColor: 'black',
+      shadowColor: t.colors.shadow,
     },
     cardName: {
       ...typography.body,

@@ -26,13 +26,13 @@ function ibanMod97(iban: string): boolean {
   const rearranged = iban.slice(4) + iban.slice(0, 4);
   let expanded = '';
   for (let i = 0; i < rearranged.length; i++) {
-    const c = rearranged[i];
+    const c = rearranged[i] ?? '';
     if (c >= '0' && c <= '9') expanded += c;
     else expanded += (c.charCodeAt(0) - 55).toString();
   }
   let remainder = 0;
   for (let i = 0; i < expanded.length; i++) {
-    remainder = (remainder * 10 + parseInt(expanded[i], 10)) % 97;
+    remainder = (remainder * 10 + parseInt(expanded[i] ?? '0', 10)) % 97;
   }
   return remainder === 1;
 }

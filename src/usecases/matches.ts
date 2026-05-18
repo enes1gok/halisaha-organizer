@@ -2,6 +2,7 @@ import { createJoinCode } from '../data/seed';
 import {
   insertSelfReportRemote,
   replaceMatchTeamsWithGuestsRemote,
+  setMatchAttendeeRsvpRemote,
   updateMatchAttendeeRemote,
   updateMatchDetailsRemote,
   updateMatchOrganizerFieldsRemote,
@@ -216,33 +217,21 @@ export async function setRsvpUseCase(
 ): Promise<void> {
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
     const uid = deps.getRemoteUserId();
-    const patch = () => updateMatchAttendeeRemote(matchId, playerId, { status });
+    // Server-side idempotent upsert (RPC). Kullanıcı kendi RSVP'sini değiştiriyorsa
+    // atomic INSERT/UPDATE — concurrent çağrılarda kayıp yok. Başkasının RSVP'sini
+    // değiştirmek (organizer) hâlâ direkt UPDATE'ten geçer (RLS izin verir).
+    if (uid && playerId === uid) {
+      await withOptimisticMatch({
+        applyOptimistic: () => deps.setLocalRsvp(matchId, playerId, status),
+        rpc: () => setMatchAttendeeRsvpRemote(matchId, status),
+        getSnapshot: deps.getMatchesSnapshot,
+        restoreSnapshot: deps.restoreMatchesSnapshot,
+      });
+      return;
+    }
     await withOptimisticMatch({
       applyOptimistic: () => deps.setLocalRsvp(matchId, playerId, status),
-      rpc: async () => {
-        try {
-          await patch();
-        } catch (e) {
-          if (e instanceof AppError && e.code === 'NOT_FOUND' && uid && playerId === uid) {
-            const m = deps.getLocalMatch(matchId);
-            if (__DEV__) {
-              console.warn('[setRsvpUseCase] attendee row missing; attempting join heal', {
-                matchId,
-                playerId,
-                attendeePlayerIds: m?.attendees?.map((a) => a.playerId),
-              });
-            }
-            if (m?.joinCode) {
-              const mid = await joinMatchByJoinCodeRpc(m.joinCode);
-              if (mid === matchId) {
-                await patch();
-                return;
-              }
-            }
-          }
-          throw e;
-        }
-      },
+      rpc: () => updateMatchAttendeeRemote(matchId, playerId, { status }),
       getSnapshot: deps.getMatchesSnapshot,
       restoreSnapshot: deps.restoreMatchesSnapshot,
     });

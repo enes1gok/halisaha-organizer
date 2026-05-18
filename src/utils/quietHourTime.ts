@@ -8,7 +8,7 @@ const HHMM = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 export function parseQuietHourToDate(hhmm: string, base: Date = new Date()): Date {
   const m = HHMM.exec(hhmm.trim());
   const d = new Date(base);
-  if (!m) return d;
+  if (!m || m[1] === undefined || m[2] === undefined) return d;
   d.setHours(parseInt(m[1], 10), parseInt(m[2], 10), 0, 0);
   return d;
 }

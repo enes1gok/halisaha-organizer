@@ -72,7 +72,7 @@ const useStyles = makeStyles((t) =>
       marginBottom: -14,
       borderWidth: 2,
       borderColor: 'rgba(255,255,255,0.35)',
-      shadowColor: '#000',
+      shadowColor: t.colors.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.25,
       shadowRadius: 4,
@@ -133,7 +133,7 @@ export function TacticalPreviewHero({ reduceMotion }: Props) {
               slotIndex={i}
               xNorm={anchor.xNorm}
               yNorm={anchor.yNorm}
-              color={chipColors[i % chipColors.length]}
+              color={chipColors[i % chipColors.length] ?? chipColors[0]!}
               drift={drift}
               reduceMotion={reduceMotion}
             />

@@ -32,12 +32,17 @@ function getGroupAvatarColor(groupId: string): string {
   for (let i = 0; i < groupId.length; i++) {
     hash = (hash * 31 + groupId.charCodeAt(i)) & 0xffffff;
   }
-  return groupAvatarColors[hash % groupAvatarColors.length];
+  // groupAvatarColors readonly tuple > 0 elemanlı — non-null assertion güvenli.
+  return groupAvatarColors[hash % groupAvatarColors.length]!;
 }
 
 function getGroupInitials(name: string): string {
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    const first = words[0]![0] ?? '';
+    const second = words[1]![0] ?? '';
+    return (first + second).toUpperCase();
+  }
   return name.slice(0, 2).toUpperCase();
 }
 
@@ -66,9 +71,10 @@ function GroupsListRow({ group, meta, onPress, accessibilityLabel }: GroupsListR
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
-      testID="groups:group:open"
+      testID={`groups:group:${group.id}:open`}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint="Grup detayını aç"
     >
       <View style={[styles.avatarSection, { backgroundColor: group.photoUri ? undefined : avatarColor }]}>
         {group.photoUri ? (

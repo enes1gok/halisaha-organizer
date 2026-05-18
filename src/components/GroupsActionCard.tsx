@@ -24,6 +24,10 @@ export function GroupsActionCard({ onJoinPress, onCreatePress }: Props) {
           onPress={onJoinPress}
           style={styles.cell}
           android_ripple={{ color: ripple }}
+          testID="groups:action:join"
+          accessibilityRole="button"
+          accessibilityLabel="Gruba katıl"
+          accessibilityHint="Davet kodu ile bir gruba katıl"
         >
           <Ionicons name="person-add-outline" size={22} color={colors.textOnAccent} />
           <Text style={styles.cellTitle}>Gruba Katıl</Text>
@@ -34,6 +38,10 @@ export function GroupsActionCard({ onJoinPress, onCreatePress }: Props) {
           onPress={onCreatePress}
           style={styles.cell}
           android_ripple={{ color: ripple }}
+          testID="groups:action:create"
+          accessibilityRole="button"
+          accessibilityLabel="Grup oluştur"
+          accessibilityHint="Yeni bir grup açar"
         >
           <Ionicons name="add-circle-outline" size={22} color={colors.textOnAccent} />
           <Text style={styles.cellTitle}>Grup Oluştur</Text>

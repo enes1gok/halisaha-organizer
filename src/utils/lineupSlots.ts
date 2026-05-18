@@ -3,7 +3,7 @@
 export function buildSlotsFromCompact(teamIds: string[], slotCount: number): (string | null)[] {
   const out: (string | null)[] = Array.from({ length: slotCount }, () => null);
   for (let i = 0; i < Math.min(teamIds.length, slotCount); i += 1) {
-    out[i] = teamIds[i];
+    out[i] = teamIds[i] ?? null;
   }
   return out;
 }

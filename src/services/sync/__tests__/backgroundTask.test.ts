@@ -44,7 +44,7 @@ const mockIsTaskRegisteredAsync = TaskManager.isTaskRegisteredAsync as jest.Mock
 >;
 const mockDefineTask = TaskManager.defineTask as jest.MockedFunction<typeof TaskManager.defineTask>;
 const mockRunRemoteCatchUp = runRemoteCatchUp as jest.MockedFunction<typeof runRemoteCatchUp>;
-const definedTaskExecutor = mockDefineTask.mock.calls[0][1];
+const definedTaskExecutor = mockDefineTask.mock.calls[0]![1]!;
 
 describe('background sync task', () => {
   beforeEach(() => {

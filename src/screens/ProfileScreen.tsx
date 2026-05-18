@@ -324,7 +324,16 @@ export function ProfileScreen() {
 
   const renderBackdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel="Kapat"
+        accessibilityHint="Profil düzenleme panelini kapatır"
+      />
     ),
     [],
   );

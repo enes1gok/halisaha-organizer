@@ -8,7 +8,9 @@ function initialsFromName(name: string): string {
   const p = name.trim().split(/\s+/).filter(Boolean);
   if (p.length === 0) return '?';
   if (p.length === 1) return p[0]!.slice(0, 2).toUpperCase();
-  return (p[0]![0] + p[p.length - 1]![0]).toUpperCase();
+  const first = p[0]![0] ?? '';
+  const last = p[p.length - 1]![0] ?? '';
+  return (first + last).toUpperCase();
 }
 
 type Props = {
@@ -40,7 +42,7 @@ export function PlayerAvatar({ name, uri, size = 40, showPaid }: Props) {
         <View
           style={[styles.paidDot, { backgroundColor: colors.accent, borderColor: colors.background }]}
         >
-          <Text style={styles.check}>✓</Text>
+          <Text style={[styles.check, { color: colors.textOnAccent }]}>✓</Text>
         </View>
       ) : null}
     </View>
@@ -70,7 +72,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   check: {
-    color: '#0A0A0A',
     fontSize: 10,
     fontWeight: '900',
   },

@@ -1,6 +1,11 @@
 /**
  * Supabase Storage public URL'leri sabit yol + upsert ile aynı kalır; HTTP önbelleği eski görseli tutabilir.
- * Sürüm anahtarı (genelde `profiles.updated_at`) ile `v=` eklenir. Veritabanında yalnızca sorgusuz URL saklanır.
+ * Sürüm anahtarı (genelde `profiles.updated_at`) ile `v=` eklenir — query string değiştiğinde CDN/expo-image
+ * için yeni URL → cache miss → fresh görsel. Veritabanında yalnızca sorgusuz URL saklanır.
+ *
+ * Storage tarafı tamamlayıcı kontrat: `avatarUpload.ts` upload sırasında uzun
+ * `cacheControl: '31536000'` (1 yıl) verir. Versiyon değişmedikçe CDN edge ve
+ * `expo-image` memory-disk cache rahatlıkla hit verir.
  */
 export function appendPhotoUriCacheBuster(
   uri: string | null | undefined,

@@ -127,8 +127,8 @@ describe('buildAgendaSections', () => {
   it('upcoming sections sorted ascending', () => {
     const sections = buildAgendaSections([past, todayA, todayB, future], 'upcoming', today);
     expect(sections.map((s) => s.dateKey)).toEqual(['2026-05-10', '2026-05-20']);
-    expect(sections[0].subtitle).toBe('2 maç');
-    expect(sections[0].data.map((m) => m.id)).toEqual(['ta', 'tb']);
+    expect(sections[0]!.subtitle).toBe('2 maç');
+    expect(sections[0]!.data.map((m) => m.id)).toEqual(['ta', 'tb']);
   });
 
   it('past sections sorted descending', () => {
@@ -153,7 +153,7 @@ describe('buildMonthMatrix', () => {
     expect(matrix).toHaveLength(6);
     matrix.forEach((row) => expect(row).toHaveLength(7));
     matrix.forEach((row) => row.forEach((cell) => expect(cell.date.getDay()).toBeDefined()));
-    expect(matrix[0][0].date.getDay()).toBe(1);
+    expect(matrix[0]![0]!.date.getDay()).toBe(1);
   });
 
   it('marks current month and today', () => {

@@ -35,7 +35,7 @@ const secureStorageAdapter = {
       chunks.push(value.slice(i, i + CHUNK_SIZE));
     }
     for (let i = 0; i < chunks.length; i++) {
-      await SecureStore.setItemAsync(`${key}__chunk${i}`, chunks[i]);
+      await SecureStore.setItemAsync(`${key}__chunk${i}`, chunks[i]!);
     }
     await SecureStore.setItemAsync(key + CHUNK_COUNT_SUFFIX, String(chunks.length));
     // Remove legacy non-chunked entry if it existed

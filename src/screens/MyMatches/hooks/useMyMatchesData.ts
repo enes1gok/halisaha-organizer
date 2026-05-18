@@ -154,7 +154,7 @@ export function useMyMatchesData(): UseMyMatchesData {
         const parts = key.split('-');
         if (parts.length === 3) {
           const [y, m] = parts.map((p) => Number.parseInt(p, 10));
-          if (Number.isFinite(y) && Number.isFinite(m)) {
+          if (y !== undefined && m !== undefined && Number.isFinite(y) && Number.isFinite(m)) {
             const target = startOfMonth(new Date(y, m - 1, 1));
             if (target.getTime() !== monthAnchor.getTime()) {
               setMonthAnchorRaw(target);

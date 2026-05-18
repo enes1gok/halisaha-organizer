@@ -46,6 +46,7 @@ export {
 export {
   insertSelfReportRemote,
   replaceMatchTeamPlayersRemote,
+  setMatchAttendeeRsvpRemote,
   updateMatchAttendeeRemote,
   updateMatchOrganizerFieldsRemote,
   updateSelfReportStatusRemote,
