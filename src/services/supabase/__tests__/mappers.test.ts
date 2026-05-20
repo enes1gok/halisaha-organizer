@@ -147,8 +147,8 @@ describe('rowsToMatch', () => {
   it('maps attendees paid and rsvp status', () => {
     const row = baseMatchRow();
     const attendees: MatchAttendeeRow[] = [
-      { match_id: row.id, player_id: 'p1', status: 'going', paid: true },
-      { match_id: row.id, player_id: 'p2', status: 'not_going', paid: false },
+      { match_id: row.id, player_id: 'p1', status: 'going', paid: true, waitlisted_at: null },
+      { match_id: row.id, player_id: 'p2', status: 'not_going', paid: false, waitlisted_at: null },
     ];
     const match = rowsToMatch(row, attendees, [], [], []);
     expect(match.attendees).toEqual([

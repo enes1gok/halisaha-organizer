@@ -126,6 +126,8 @@ export interface MatchesSlice {
   joinMatchByJoinCode: (code: string) => Promise<Match | null>;
 
   setRSVP: (matchId: string, playerId: string, status: RSVPStatus) => Promise<void>;
+  /** Dolu maçlara yedek olarak kaydol. Boş yer varsa no-op. */
+  joinWaitlist: (matchId: string) => Promise<void>;
   setPaid: (matchId: string, playerId: string, paid: boolean, actorId: string) => Promise<void>;
 
   setSelfReportEnabled: (matchId: string, enabled: boolean) => Promise<void>;

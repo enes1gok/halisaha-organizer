@@ -36,6 +36,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { sortAttendeesWithPlayers } from '../store/helpers';
 import { isRemoteMatchId } from '../utils/matchId';
+import { isMatchFull } from '../utils/matchRoster';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import { useUserFeedback } from '../utils/userFeedback';
 import { MatchScoreVoteCard } from '../components/MatchScoreVoteCard';
@@ -72,6 +73,7 @@ export function MatchDetailScreen() {
   const getPlayer = usePlayersStore((s) => s.getPlayer);
   const {
     setRSVP,
+    joinWaitlist,
     setPaid,
     setSelfReportEnabled,
     addSelfReport,
@@ -87,6 +89,7 @@ export function MatchDetailScreen() {
   } = useMatchesStore(
     useShallow((s) => ({
       setRSVP: s.setRSVP,
+      joinWaitlist: s.joinWaitlist,
       setPaid: s.setPaid,
       setSelfReportEnabled: s.setSelfReportEnabled,
       addSelfReport: s.addSelfReport,
@@ -282,7 +285,20 @@ export function MatchDetailScreen() {
     }
   }, [match, cancelMatch, cancelling, showApiErrorToast]);
 
+  const matchFull = useMemo(() => (match ? isMatchFull(match) : false), [match]);
+
   const openRsvp = () => {
+    if (!match) return;
+    if (matchFull && !currentUserRsvp) {
+      void joinWaitlist(match.id).catch((err) =>
+        showApiErrorToast(err, {
+          uiOperation: 'MatchDetail:joinWaitlist',
+          fallbackMessage: 'Yedek listeye eklenemedi.',
+          mapOperation: 'joinMatchWaitlistRemote',
+        }),
+      );
+      return;
+    }
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRsvpGoingKey((k) => k + 1);
     rsvpRef.current?.present();
@@ -430,6 +446,7 @@ export function MatchDetailScreen() {
         countdownLabel={countdown}
         effectiveStatus={effectiveStatus}
         currentUserRsvp={currentUserRsvp}
+        isMatchFull={matchFull}
         onPressRsvp={openRsvp}
       />
       <View style={matchDetailStyles.segmentWrap}>

@@ -39,6 +39,7 @@ export type ErrorTranslationKey =
   | 'errors.rpc.motmPlayerNotOnField'
   | 'errors.rpc.ratingWindowClosed'
   | 'errors.rpc.matchRosterFull'
+  | 'errors.rpc.matchRosterNotFull'
   | 'errors.rpc.scoreVoteNotAllowed'
   | 'errors.rpc.matchNotFinished'
   | 'errors.rpc.notAuthorized'

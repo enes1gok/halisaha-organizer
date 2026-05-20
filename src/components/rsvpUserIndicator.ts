@@ -32,13 +32,15 @@ export function formatRsvpStatusTr(status: RSVPStatus): string {
       return 'Belki';
     case 'notGoing':
       return 'Gelmiyorum';
+    case 'waitlisted':
+      return 'Yedek Listede';
   }
 }
 
 export function rsvpStatusIcon(
   status: RSVPStatus,
   colors: ThemeColors,
-): { name: IonGlyph; color: string } {
+): { name: IonGlyph; color: string } | null {
   switch (status) {
     case 'going':
       return { name: 'checkmark-circle', color: colors.accent };
@@ -46,5 +48,7 @@ export function rsvpStatusIcon(
       return { name: 'help-circle-outline', color: colors.position.GK };
     case 'notGoing':
       return { name: 'close-circle-outline', color: colors.danger };
+    case 'waitlisted':
+      return null;
   }
 }

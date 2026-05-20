@@ -42,6 +42,15 @@ export function rsvpToDb(status: RSVPStatus): RsvpStatusRow {
   return status;
 }
 
+export function mapAttendeeRow(row: MatchAttendeeRow): import('../../types/domain').Attendee {
+  return {
+    playerId: row.player_id,
+    status: rsvpFromDb(row.status),
+    paid: row.paid,
+    ...(row.waitlisted_at != null && { waitlistedAt: row.waitlisted_at }),
+  };
+}
+
 /** Normalizes numeric DB values (number or numeric string at runtime). */
 export function numOrUndef(n: number | string | null | undefined): number | undefined {
   if (n === null || n === undefined) return undefined;
@@ -139,11 +148,7 @@ export function rowsToMatch(
     if (hasAnySlotB) lineupSlotsB = buildSlots(teamBRows, guestBRows);
   }
 
-  const domainAttendees: Attendee[] = attendees.map((a) => ({
-    playerId: a.player_id,
-    status: rsvpFromDb(a.status),
-    paid: a.paid,
-  }));
+  const domainAttendees: Attendee[] = attendees.map(mapAttendeeRow);
 
   let result: ScoreResult | undefined;
   // TODO: surface partial-score as bug — finished + null score currently yields result undefined

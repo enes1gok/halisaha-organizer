@@ -2,7 +2,7 @@ export type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
 
 export type PreferredFoot = 'left' | 'right' | 'both';
 
-export type RSVPStatus = 'going' | 'maybe' | 'notGoing';
+export type RSVPStatus = 'going' | 'maybe' | 'notGoing' | 'waitlisted';
 
 export type MatchStatus = 'upcoming' | 'ongoing' | 'finished' | 'cancelled';
 export type GroupRole = 'owner' | 'admin' | 'member';
@@ -40,6 +40,8 @@ export interface Attendee {
   playerId: string;
   status: RSVPStatus;
   paid: boolean;
+  /** ISO timestamp; yalnızca status === 'waitlisted' olduğunda dolu. Sıralama için kullanılır. */
+  waitlistedAt?: string;
 }
 
 /** App yüklememiş oyuncu — organizatör tarafından isim/soyisim ile eklenir. */

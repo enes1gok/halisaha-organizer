@@ -45,6 +45,16 @@ export async function setMatchAttendeeRsvpRemote(
   if (error) throw mapSupabaseError(error, 'setMatchAttendeeRsvpRemote');
 }
 
+/**
+ * Dolu bir maça yedek olarak ekle — `join_match_waitlist` RPC'sini sarmalar.
+ * Maç doluysa ve kullanıcı görüntüleyebiliyorsa kaydı oluşturur/günceller.
+ */
+export async function joinMatchWaitlistRemote(matchId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc('join_match_waitlist', { p_match_id: matchId });
+  if (error) throw mapSupabaseError(error, 'joinMatchWaitlistRemote');
+}
+
 export async function replaceMatchTeamPlayersRemote(
   matchId: string,
   teamAIds: string[],

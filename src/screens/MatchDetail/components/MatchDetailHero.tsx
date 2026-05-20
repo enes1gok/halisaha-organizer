@@ -14,6 +14,7 @@ type Props = {
   countdownLabel: string;
   effectiveStatus: EffectiveStatus;
   currentUserRsvp: RSVPStatus | null;
+  isMatchFull: boolean;
   onPressRsvp: () => void;
 };
 
@@ -34,6 +35,7 @@ export function MatchDetailHero({
   countdownLabel,
   effectiveStatus,
   currentUserRsvp,
+  isMatchFull,
   onPressRsvp,
 }: Props) {
   const { colors } = useTheme();
@@ -46,6 +48,26 @@ export function MatchDetailHero({
   }, [effectiveStatus]);
 
   const rsvpInfo = React.useMemo(() => {
+    if (currentUserRsvp === 'waitlisted') {
+      return {
+        label: 'Yedek listeye eklendi',
+        icon: 'hourglass-outline',
+        bg: colors.surfaceSoft,
+        content: colors.textMuted,
+        border: colors.border,
+        disabled: true,
+      };
+    }
+    if (isMatchFull && !currentUserRsvp) {
+      return {
+        label: 'Yedek listeye ekle',
+        icon: 'time-outline',
+        bg: colors.surfaceSoft,
+        content: colors.text,
+        border: colors.border,
+        disabled: false,
+      };
+    }
     if (!currentUserRsvp) {
       return {
         label: 'Katıl',
@@ -53,6 +75,7 @@ export function MatchDetailHero({
         bg: colors.surfaceSoft,
         content: colors.text,
         border: colors.border,
+        disabled: false,
       };
     }
     if (currentUserRsvp === 'going') {
@@ -62,6 +85,7 @@ export function MatchDetailHero({
         bg: colors.accent,
         content: colors.textOnAccent,
         border: colors.accent,
+        disabled: false,
       };
     }
     if (currentUserRsvp === 'maybe') {
@@ -71,6 +95,7 @@ export function MatchDetailHero({
         bg: colors.text,
         content: colors.background,
         border: colors.text,
+        disabled: false,
       };
     }
     return {
@@ -79,8 +104,9 @@ export function MatchDetailHero({
       bg: colors.danger,
       content: colors.textOnAccent,
       border: colors.danger,
+      disabled: false,
     };
-  }, [currentUserRsvp, colors]);
+  }, [currentUserRsvp, isMatchFull, colors]);
 
   const isOngoing = effectiveStatus === 'ongoing';
 
@@ -100,8 +126,8 @@ export function MatchDetailHero({
               borderColor: rsvpInfo.border,
             },
           ]}
-          onPress={effectiveStatus === 'upcoming' ? onPressRsvp : undefined}
-          disabled={effectiveStatus !== 'upcoming'}
+          onPress={effectiveStatus === 'upcoming' && !rsvpInfo.disabled ? onPressRsvp : undefined}
+          disabled={effectiveStatus !== 'upcoming' || rsvpInfo.disabled}
         >
           <Ionicons name={rsvpInfo.icon as any} size={18} color={rsvpInfo.content} />
           <Text style={[styles.heroRsvpText, { color: rsvpInfo.content }]}>

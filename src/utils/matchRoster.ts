@@ -27,3 +27,8 @@ export function countGoalkeepersAmongGoing(
 export function rosterMissingSlots(m: Match, goingCount: number): number {
   return Math.max(0, m.maxPlayers - goingCount);
 }
+
+/** Maç kadrosu tamamen dolu mu (going + misafir sayısı ≥ maxPlayers). */
+export function isMatchFull(m: Match): boolean {
+  return countGoing(m) >= m.maxPlayers;
+}

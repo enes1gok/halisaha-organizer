@@ -21,6 +21,7 @@ const RSVP_LABEL: Record<RSVPStatus, string> = {
   going: 'katılıyorsun',
   maybe: 'belki',
   notGoing: 'katılmıyorsun',
+  waitlisted: 'yedek listede',
 };
 
 export function MatchCard({ match, goingCount, userRsvp, onPress }: Props) {

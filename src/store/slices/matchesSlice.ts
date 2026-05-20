@@ -22,6 +22,7 @@ import {
   fetchScoreVoteTallyUseCase,
   hydrateRemoteMatchesUseCase,
   joinMatchByJoinCodeUseCase,
+  joinWaitlistUseCase,
   loadMatchRatingSummaryUseCase,
   lockLineupUseCase,
   unlockLineupUseCase,
@@ -564,6 +565,8 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
 
   setRSVP: (matchId, playerId, status) =>
     setRsvpUseCase(buildMatchesUseCaseDeps(set, get), matchId, playerId, status),
+
+  joinWaitlist: (matchId) => joinWaitlistUseCase(buildMatchesUseCaseDeps(set, get), matchId),
 
   setPaid: (matchId, playerId, paid, actorId) =>
     setPaidUseCase(buildMatchesUseCaseDeps(set, get), matchId, playerId, paid, actorId),

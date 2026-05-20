@@ -4,7 +4,7 @@ export type PlayerPositionRow = 'GK' | 'DEF' | 'MID' | 'FWD';
 
 export type PreferredFootRow = 'left' | 'right' | 'both';
 
-export type RsvpStatusRow = 'going' | 'maybe' | 'not_going';
+export type RsvpStatusRow = 'going' | 'maybe' | 'not_going' | 'waitlisted';
 
 export type MatchStatusRow = 'upcoming' | 'ongoing' | 'finished' | 'cancelled';
 export type MatchPaymentMethodRow = 'note_only' | 'iban' | 'cash';
@@ -125,6 +125,7 @@ export interface MatchAttendeeRow {
   player_id: string;
   status: RsvpStatusRow;
   paid: boolean;
+  waitlisted_at: string | null;
 }
 
 export interface MatchTeamPlayerRow {

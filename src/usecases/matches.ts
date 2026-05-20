@@ -1,6 +1,7 @@
 import { createJoinCode } from '../data/seed';
 import {
   insertSelfReportRemote,
+  joinMatchWaitlistRemote,
   replaceMatchTeamsWithGuestsRemote,
   setMatchAttendeeRsvpRemote,
   updateMatchAttendeeRemote,
@@ -238,6 +239,18 @@ export async function setRsvpUseCase(
     return;
   }
   deps.setLocalRsvp(matchId, playerId, status);
+}
+
+export async function joinWaitlistUseCase(deps: MatchesDeps, matchId: string): Promise<void> {
+  const uid = deps.getRemoteUserId();
+  if (!uid || !isRemoteMatchId(matchId)) return;
+  try {
+    await joinMatchWaitlistRemote(matchId);
+    const graph = await fetchMatchGraph(matchId);
+    deps.mergeRemoteGraph(graph);
+  } catch (error) {
+    rethrowUseCaseError('joinWaitlist', error, 'Yedek listeye eklenemedi.');
+  }
 }
 
 export async function setPaidUseCase(
