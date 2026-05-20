@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(16);
 
 select tests.reset_session();
 select tests.create_user(tests.uuid_organizer());
@@ -124,6 +124,56 @@ select throws_ok(
   'P0001',
   'ERR_MATCH_NOT_FOUND',
   'bilinmeyen mac icin ERR_MATCH_NOT_FOUND'
+);
+
+-- 11-12) not_going status'u da geçerli enum değeridir
+select tests.authenticate_as(tests.uuid_participant());
+select lives_ok(
+  $$ select public.set_match_attendee_rsvp(
+       'b0000000-0000-4000-8000-000000000040'::uuid,
+       'not_going'
+     ) $$,
+  'not_going gecerli enum, hata vermez'
+);
+select is(
+  (select status::text from public.match_attendees
+   where match_id = 'b0000000-0000-4000-8000-000000000040'::uuid
+     and player_id = tests.uuid_participant()),
+  'not_going',
+  'participant status not_going oldu'
+);
+
+-- 13-14) not_going → going geri dönüşü mümkün (tüm geçişler serbest)
+select lives_ok(
+  $$ select public.set_match_attendee_rsvp(
+       'b0000000-0000-4000-8000-000000000040'::uuid,
+       'going'
+     ) $$,
+  'not_going dan going a geri donulebilir'
+);
+select is(
+  (select status::text from public.match_attendees
+   where match_id = 'b0000000-0000-4000-8000-000000000040'::uuid
+     and player_id = tests.uuid_participant()),
+  'going',
+  'participant status going e dondu'
+);
+
+-- 15-16) Organizer kendi RSVP'sini RPC ile değiştirebilir
+select tests.authenticate_as(tests.uuid_organizer());
+select lives_ok(
+  $$ select public.set_match_attendee_rsvp(
+       'b0000000-0000-4000-8000-000000000040'::uuid,
+       'maybe'
+     ) $$,
+  'organizer kendi RSVP statusunu degistirir'
+);
+select is(
+  (select status::text from public.match_attendees
+   where match_id = 'b0000000-0000-4000-8000-000000000040'::uuid
+     and player_id = tests.uuid_organizer()),
+  'maybe',
+  'organizer status maybe oldu'
 );
 
 select * from finish();

@@ -3,3 +3,5 @@ Session: 2026-05-19 01:04 — 47f6894 feat: add skill level feature to player pr
 Session: 2026-05-20 08:01 — 9385a56 chore: bump app version to 1.1.2 and update versionCode to 15 in app.json
 Session: 2026-05-20 22:05 — 9385a56 chore: bump app version to 1.1.2 and update versionCode to 15 in app.json
 Session: 2026-05-20 22:27 — 9385a56 chore: bump app version to 1.1.2 and update versionCode to 15 in app.json
+Session: 2026-05-20 22:45 — e9db652 feat: implement lineup slot indexing and formation persistence
+Session: 2026-05-20 23:03 — e9db652 feat: implement lineup slot indexing and formation persistence
