@@ -40,4 +40,6 @@ export type ErrorTranslationKey =
   | 'errors.rpc.ratingWindowClosed'
   | 'errors.rpc.matchRosterFull'
   | 'errors.rpc.scoreVoteNotAllowed'
-  | 'errors.rpc.matchNotFinished';
+  | 'errors.rpc.matchNotFinished'
+  | 'errors.rpc.notAuthorized'
+  | 'errors.rpc.lineupSlotLengthMismatch';

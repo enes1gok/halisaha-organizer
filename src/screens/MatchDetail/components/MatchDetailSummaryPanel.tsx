@@ -110,6 +110,23 @@ export function MatchDetailSummaryPanel({
         </View>
       ) : null}
 
+      {hasAssignedLineup(match) ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Kadro</Text>
+          {match.lineupLocked ? (
+            <Text style={styles.muted}>Yayınlanan kadroyu görüntüle.</Text>
+          ) : null}
+          <PillButton
+            title="Kadroyu Gör"
+            variant="secondary"
+            onPress={() => navigation.navigate('LineupBuilder', { matchId })}
+            style={styles.mt}
+            testID="match:lineup:view:press"
+            accessibilityLabel="Yayınlanan kadroyu görüntüle"
+          />
+        </View>
+      ) : null}
+
       {isOrganizer && match.status !== 'cancelled' && effectiveStatus === 'upcoming' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yönetim</Text>

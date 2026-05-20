@@ -181,6 +181,11 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.matchNotFinished',
     code: 'VALIDATION',
   },
+  ERR_NOT_AUTHORIZED: { key: 'errors.rpc.notAuthorized', code: 'FORBIDDEN' },
+  ERR_LINEUP_SLOT_LENGTH_MISMATCH: {
+    key: 'errors.rpc.lineupSlotLengthMismatch',
+    code: 'VALIDATION',
+  },
 };
 
 export function isAppError(error: unknown): error is AppError {

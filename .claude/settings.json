@@ -17,7 +17,11 @@
       "Bash(git log *)",
       "Bash(git diff *)",
       "Bash(git status)",
-      "Bash(ls *)"
+      "Bash(ls *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(awk '/match_graph_row_body/,/^\\\\$$/ {print NR\": \"$0}' /Users/enesgok/Documents/github/halisaha-organizer/supabase/migrations/20260709120000_lineup_slot_index_and_formation.sql)",
+      "Bash(git -C /Users/enesgok/Documents/github/halisaha-organizer log --oneline --all -- supabase/migrations/20260708120000_set_match_attendee_rsvp.sql)",
+      "Bash(git -C /Users/enesgok/Documents/github/halisaha-organizer show ab9afa0 --stat)"
     ]
   },
   "hooks": {

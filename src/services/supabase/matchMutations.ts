@@ -64,20 +64,36 @@ export async function replaceMatchTeamPlayersRemote(
   if (ins.error) throw mapSupabaseError(ins.error, 'replaceMatchTeamPlayersRemote.insert_new');
 }
 
+export interface ReplaceMatchTeamsWithGuestsParams {
+  matchId: string;
+  teamAPlayerIds: string[];
+  teamBPlayerIds: string[];
+  teamAGuestIds: string[];
+  teamBGuestIds: string[];
+  /** Slot indices aligned with teamA/B player id arrays (same length). null/omit = classic mode. */
+  teamASlotIdx?: number[] | null;
+  teamBSlotIdx?: number[] | null;
+  teamAGuestSlotIdx?: number[] | null;
+  teamBGuestSlotIdx?: number[] | null;
+  /** Lineup formation template id; pass null to clear, undefined to keep current value. */
+  lineupFormationId?: string | null;
+}
+
 export async function replaceMatchTeamsWithGuestsRemote(
-  matchId: string,
-  teamAPlayerIds: string[],
-  teamBPlayerIds: string[],
-  teamAGuestIds: string[],
-  teamBGuestIds: string[],
+  params: ReplaceMatchTeamsWithGuestsParams,
 ): Promise<void> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.rpc('set_match_teams_v2', {
-    p_match_id: matchId,
-    p_team_a_player_ids: teamAPlayerIds,
-    p_team_b_player_ids: teamBPlayerIds,
-    p_team_a_guest_ids: teamAGuestIds,
-    p_team_b_guest_ids: teamBGuestIds,
+  const { error } = await supabase.rpc('set_match_teams_v3', {
+    p_match_id: params.matchId,
+    p_team_a_player_ids: params.teamAPlayerIds,
+    p_team_b_player_ids: params.teamBPlayerIds,
+    p_team_a_slot_idx: params.teamASlotIdx ?? null,
+    p_team_b_slot_idx: params.teamBSlotIdx ?? null,
+    p_team_a_guest_ids: params.teamAGuestIds,
+    p_team_b_guest_ids: params.teamBGuestIds,
+    p_team_a_guest_slot_idx: params.teamAGuestSlotIdx ?? null,
+    p_team_b_guest_slot_idx: params.teamBGuestSlotIdx ?? null,
+    p_lineup_formation_id: params.lineupFormationId ?? null,
   });
   if (error) throw mapSupabaseError(error, 'replaceMatchTeamsWithGuestsRemote');
 }

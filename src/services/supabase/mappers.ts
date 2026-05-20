@@ -14,6 +14,7 @@ import type {
   SelfReportType,
   StatLine,
 } from '../../types/domain';
+import { getLineupFormationById } from '../../data/lineupFormations';
 import type {
   GroupMemberRow,
   GroupRow,
@@ -67,6 +68,27 @@ export function mapGuestAttendeeRow(g: MatchGuestAttendeeRow): GuestAttendee {
   };
 }
 
+/** Slot index — null sona, dolu slotlar slot_index sırasına, sonra player_id stabilizasyonu. */
+function sortByTeamSlotIndex<T extends { slot_index?: number | null; player_id?: string; guest_id?: string }>(
+  rows: readonly T[],
+): T[] {
+  return [...rows].sort((a, b) => {
+    const ai = a.slot_index;
+    const bi = b.slot_index;
+    if (ai == null && bi == null) {
+      const ak = (a.player_id ?? a.guest_id ?? '') as string;
+      const bk = (b.player_id ?? b.guest_id ?? '') as string;
+      return ak.localeCompare(bk);
+    }
+    if (ai == null) return 1;
+    if (bi == null) return -1;
+    if (ai !== bi) return ai - bi;
+    const ak = (a.player_id ?? a.guest_id ?? '') as string;
+    const bk = (b.player_id ?? b.guest_id ?? '') as string;
+    return ak.localeCompare(bk);
+  });
+}
+
 export function rowsToMatch(
   row: MatchRow,
   attendees: MatchAttendeeRow[],
@@ -76,12 +98,46 @@ export function rowsToMatch(
   guestAttendeeRows: MatchGuestAttendeeRow[] = [],
   guestTeamRows: MatchGuestTeamAssignmentRow[] = [],
 ): Match {
-  const registeredTeamAIds = teamPlayers.filter((t) => t.team === 'A').map((t) => t.player_id);
-  const registeredTeamBIds = teamPlayers.filter((t) => t.team === 'B').map((t) => t.player_id);
-  const guestTeamAIds = guestTeamRows.filter((g) => g.team === 'A').map((g) => g.guest_id);
-  const guestTeamBIds = guestTeamRows.filter((g) => g.team === 'B').map((g) => g.guest_id);
+  const teamARows = sortByTeamSlotIndex(teamPlayers.filter((t) => t.team === 'A'));
+  const teamBRows = sortByTeamSlotIndex(teamPlayers.filter((t) => t.team === 'B'));
+  const guestARows = sortByTeamSlotIndex(guestTeamRows.filter((g) => g.team === 'A'));
+  const guestBRows = sortByTeamSlotIndex(guestTeamRows.filter((g) => g.team === 'B'));
+
+  const registeredTeamAIds = teamARows.map((t) => t.player_id);
+  const registeredTeamBIds = teamBRows.map((t) => t.player_id);
+  const guestTeamAIds = guestARows.map((g) => g.guest_id);
+  const guestTeamBIds = guestBRows.map((g) => g.guest_id);
   const teamAIds = [...registeredTeamAIds, ...guestTeamAIds];
   const teamBIds = [...registeredTeamBIds, ...guestTeamBIds];
+
+  const lineupFormationId = row.lineup_formation_id ?? undefined;
+  const formation = lineupFormationId ? getLineupFormationById(lineupFormationId) : undefined;
+  let lineupSlotsA: (string | null)[] | undefined;
+  let lineupSlotsB: (string | null)[] | undefined;
+  if (formation) {
+    const slotCount = formation.playersPerTeam;
+    const buildSlots = (
+      regRows: readonly MatchTeamPlayerRow[],
+      gRows: readonly MatchGuestTeamAssignmentRow[],
+    ): (string | null)[] => {
+      const slots: (string | null)[] = Array.from({ length: slotCount }, () => null);
+      for (const r of regRows) {
+        if (r.slot_index == null) continue;
+        if (r.slot_index >= 0 && r.slot_index < slotCount) slots[r.slot_index] = r.player_id;
+      }
+      for (const r of gRows) {
+        if (r.slot_index == null) continue;
+        if (r.slot_index >= 0 && r.slot_index < slotCount) slots[r.slot_index] = r.guest_id;
+      }
+      return slots;
+    };
+    const hasAnySlotA =
+      teamARows.some((t) => t.slot_index != null) || guestARows.some((g) => g.slot_index != null);
+    const hasAnySlotB =
+      teamBRows.some((t) => t.slot_index != null) || guestBRows.some((g) => g.slot_index != null);
+    if (hasAnySlotA) lineupSlotsA = buildSlots(teamARows, guestARows);
+    if (hasAnySlotB) lineupSlotsB = buildSlots(teamBRows, guestBRows);
+  }
 
   const domainAttendees: Attendee[] = attendees.map((a) => ({
     playerId: a.player_id,
@@ -138,6 +194,9 @@ export function rowsToMatch(
     attendees: domainAttendees,
     teamAIds,
     teamBIds,
+    lineupFormationId,
+    lineupSlotsA,
+    lineupSlotsB,
     lineupLocked: row.lineup_locked,
     selfReportEnabled: row.self_report_enabled,
     status: row.status as MatchStatus,

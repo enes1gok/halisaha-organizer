@@ -346,14 +346,57 @@ export async function setMatchTeamsUseCase(
   if (deps.getRemoteUserId() && isRemoteMatchId(matchId)) {
     const match = deps.getLocalMatch(matchId);
     const guestIds = new Set((match?.guestAttendees ?? []).map((g) => g.id));
-    const registeredA = teamAIds.filter((id) => !guestIds.has(id));
-    const registeredB = teamBIds.filter((id) => !guestIds.has(id));
-    const guestA = teamAIds.filter((id) => guestIds.has(id));
-    const guestB = teamBIds.filter((id) => guestIds.has(id));
+    const splitWithSlots = (
+      ids: string[],
+      slots: (string | null)[] | null | undefined,
+    ): { registered: string[]; guests: string[]; regSlots: number[] | null; guestSlots: number[] | null } => {
+      // Slot-aware: compact id list comes from the slots array; ids[i] should be slots' i-th non-null entry.
+      // Recover slot index per id by scanning slots; fallback to null when slots not provided.
+      if (slots && slots.length > 0) {
+        const registered: string[] = [];
+        const guests: string[] = [];
+        const regSlots: number[] = [];
+        const guestSlots: number[] = [];
+        for (let i = 0; i < slots.length; i += 1) {
+          const id = slots[i];
+          if (!id) continue;
+          if (guestIds.has(id)) {
+            guests.push(id);
+            guestSlots.push(i);
+          } else {
+            registered.push(id);
+            regSlots.push(i);
+          }
+        }
+        return { registered, guests, regSlots, guestSlots };
+      }
+      return {
+        registered: ids.filter((id) => !guestIds.has(id)),
+        guests: ids.filter((id) => guestIds.has(id)),
+        regSlots: null,
+        guestSlots: null,
+      };
+    };
+
+    const splitA = splitWithSlots(teamAIds, lineupSlotsA);
+    const splitB = splitWithSlots(teamBIds, lineupSlotsB);
+
     await withOptimisticMatch({
       applyOptimistic: () =>
         deps.setLocalMatchTeams(matchId, teamAIds, teamBIds, lineupFormationId, lineupSlotsA, lineupSlotsB),
-      rpc: () => replaceMatchTeamsWithGuestsRemote(matchId, registeredA, registeredB, guestA, guestB),
+      rpc: () =>
+        replaceMatchTeamsWithGuestsRemote({
+          matchId,
+          teamAPlayerIds: splitA.registered,
+          teamBPlayerIds: splitB.registered,
+          teamAGuestIds: splitA.guests,
+          teamBGuestIds: splitB.guests,
+          teamASlotIdx: splitA.regSlots,
+          teamBSlotIdx: splitB.regSlots,
+          teamAGuestSlotIdx: splitA.guestSlots,
+          teamBGuestSlotIdx: splitB.guestSlots,
+          lineupFormationId: lineupFormationId ?? null,
+        }),
       getSnapshot: deps.getMatchesSnapshot,
       restoreSnapshot: deps.restoreMatchesSnapshot,
     });

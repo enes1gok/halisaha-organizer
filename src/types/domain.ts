@@ -153,11 +153,11 @@ export interface Match {
   attendees: Attendee[];
   teamAIds: string[];
   teamBIds: string[];
-  /** Kadro şablonu kimliği (`src/data/lineupFormations.ts`). Uzak DB ile senkronize edilmez; yenilemede yerelden korunur. */
+  /** Kadro şablonu kimliği (`src/data/lineupFormations.ts`). Uzak DB ile senkronizedir; `matches.lineup_formation_id`. */
   lineupFormationId?: string | null;
-  /** Yerel-only: formasyon modunda slot konumlarını korur (remote DB'ye gönderilmez). index=slot pozisyonu, null=boş slot. */
+  /** Formasyon modunda slot konumları; index=slot pozisyonu, null=boş slot. Uzak DB ile senkronizedir (`match_team_players.slot_index`). */
   lineupSlotsA?: (string | null)[];
-  /** Yerel-only: formasyon modunda slot konumlarını korur (remote DB'ye gönderilmez). index=slot pozisyonu, null=boş slot. */
+  /** Formasyon modunda slot konumları; index=slot pozisyonu, null=boş slot. Uzak DB ile senkronizedir (`match_team_players.slot_index`). */
   lineupSlotsB?: (string | null)[];
   lineupLocked: boolean;
   selfReportEnabled: boolean;

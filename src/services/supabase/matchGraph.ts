@@ -181,8 +181,10 @@ async function fetchMatchGraphLegacy(matchId: string): Promise<MatchGraphPayload
         .eq('match_id', matchId),
       supabase
         .from('match_team_players')
-        .select('match_id,player_id,team')
-        .eq('match_id', matchId),
+        .select('match_id,player_id,team,slot_index')
+        .eq('match_id', matchId)
+        .order('team', { ascending: true })
+        .order('slot_index', { ascending: true, nullsFirst: false }),
       supabase
         .from('match_stat_lines')
         .select('match_id,player_id,kind,count')

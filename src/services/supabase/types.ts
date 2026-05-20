@@ -65,6 +65,8 @@ export interface MatchRow {
   payment_method: MatchPaymentMethodRow;
   join_code: string;
   lineup_locked: boolean;
+  /** Taktik şablon kimliği; klasik modda null. */
+  lineup_formation_id?: string | null;
   self_report_enabled: boolean;
   status: MatchStatusRow;
   score_a: number | null;
@@ -129,6 +131,8 @@ export interface MatchTeamPlayerRow {
   match_id: string;
   player_id: string;
   team: TeamSideRow;
+  /** Taktik şablon slot indeksi (0-based); klasik modda veya henüz yerleştirilmemişse null. */
+  slot_index?: number | null;
 }
 
 export interface MatchStatLineRow {
@@ -160,6 +164,8 @@ export interface MatchGuestTeamAssignmentRow {
   match_id: string;
   guest_id: string;
   team: TeamSideRow;
+  /** Taktik şablon slot indeksi (0-based); klasik modda veya henüz yerleştirilmemişse null. */
+  slot_index?: number | null;
 }
 
 export interface StatLinePayload {

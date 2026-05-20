@@ -75,4 +75,8 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Skor oylaması bu aşamada yapılamaz.',
   'errors.rpc.matchNotFinished':
     'Bu işlem yalnızca bitmiş maçlarda yapılabilir.',
+  'errors.rpc.notAuthorized':
+    'Bu işlem için yetkiniz bulunmuyor.',
+  'errors.rpc.lineupSlotLengthMismatch':
+    'Kadro pozisyon bilgisi tutarsız. Lütfen tekrar deneyin.',
 };

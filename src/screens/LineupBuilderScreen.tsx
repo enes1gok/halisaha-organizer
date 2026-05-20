@@ -121,6 +121,7 @@ function DraggableCard({
   slotGhostX,
   slotGhostY,
   slotGhostOpacity,
+  disabled = false,
 }: {
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
@@ -133,6 +134,7 @@ function DraggableCard({
   slotGhostX?: SharedValue<number>;
   slotGhostY?: SharedValue<number>;
   slotGhostOpacity?: SharedValue<number>;
+  disabled?: boolean;
 }) {
   const styles = useLineupStyles();
   const tx = useSharedValue(0);
@@ -143,6 +145,7 @@ function DraggableCard({
   const { isLarge } = useFontScale();
 
   const pan = Gesture.Pan()
+    .enabled(!disabled)
     .activateAfterLongPress(LONG_PRESS_MS)
     .onStart((e) => {
       if (variant === 'slot' && slotGhostX && slotGhostY && slotGhostOpacity) {
@@ -361,6 +364,7 @@ function PlayerColumnItem({
   poolGhostY,
   poolGhostOpacity,
   testID,
+  disabled = false,
 }: {
   player: Player;
   onDragEnd: (id: string, x: number, y: number) => void;
@@ -371,6 +375,7 @@ function PlayerColumnItem({
   poolGhostX: SharedValue<number>;
   poolGhostY: SharedValue<number>;
   poolGhostOpacity: SharedValue<number>;
+  disabled?: boolean;
 }) {
   const styles = useLineupStyles();
   const { colors } = useTheme();
@@ -381,6 +386,7 @@ function PlayerColumnItem({
   const lastHoverY = useSharedValue(0);
 
   const pan = Gesture.Pan()
+    .enabled(!disabled)
     .activateAfterLongPress(LONG_PRESS_MS)
     .onStart((e) => {
       dragging.value = 1;
@@ -612,33 +618,32 @@ export function LineupBuilderScreen() {
     return () => clearTimeout(t);
   }, [match?.teamAIds, match?.teamBIds, measure]);
 
-  useEffect(() => {
-    if (!match) return;
-    if (match.lineupLocked) {
-      navigation.goBack();
-      return;
-    }
-    if (formationMode) return;
-    setTeamAIds(match.teamAIds.length ? match.teamAIds : []);
-    setTeamBIds(match.teamBIds.length ? match.teamBIds : []);
-  }, [match, navigation, formationMode]);
-
-  useEffect(() => {
-    if (!match) return;
+  const canManageMatch = useMemo(() => {
+    if (!match) return false;
     const isOrganizer = match.organizerId === userId;
     const myGroupMembership = groupMemberships.find(
       (m) => m.groupId === match.groupId && m.playerId === userId,
     );
     const isGroupManager =
       myGroupMembership?.role === 'owner' || myGroupMembership?.role === 'admin';
-    const canManageMatch = isOrganizer || (match.groupId != null && isGroupManager);
-    if (!canManageMatch) {
-      navigation.goBack();
-    }
-  }, [match, navigation, userId, groupMemberships]);
+    return isOrganizer || (match.groupId != null && isGroupManager);
+  }, [match, userId, groupMemberships]);
+
+  /**
+   * View-only: organizatör olmayanlar her zaman (görüntüleme), organizatörler
+   * sadece kadro kilitli olduğunda (önce "Kilidi kaldır" gerekir).
+   */
+  const isViewOnly = !canManageMatch || (match?.lineupLocked ?? false);
 
   useEffect(() => {
-    if (!match || match.lineupLocked || formationMode) return;
+    if (!match) return;
+    if (formationMode) return;
+    setTeamAIds(match.teamAIds.length ? match.teamAIds : []);
+    setTeamBIds(match.teamBIds.length ? match.teamBIds : []);
+  }, [match, formationMode]);
+
+  useEffect(() => {
+    if (!match || isViewOnly || formationMode) return;
     const synced = syncTeamsWithGoing(teamAIds, teamBIds, goingPlayers);
     if (arraysShallowEqual(synced.A, teamAIds) && arraysShallowEqual(synced.B, teamBIds)) {
       return;
@@ -652,7 +657,7 @@ export function LineupBuilderScreen() {
         mapOperation: 'replaceMatchTeamPlayersRemote',
       }),
     );
-  }, [match, goingPlayers, teamAIds, teamBIds, setMatchTeams, formationMode, showApiErrorToast]);
+  }, [match, isViewOnly, goingPlayers, teamAIds, teamBIds, setMatchTeams, formationMode, showApiErrorToast]);
 
   useEffect(() => {
     if (!match || !formationMode || formationsForCount.length === 0) return;
@@ -680,12 +685,12 @@ export function LineupBuilderScreen() {
   }, [match, formationMode, formationsForCount, formationRosterTotal]);
 
   useEffect(() => {
-    if (!match || !formationMode || !selectedFormation) return;
+    if (!match || isViewOnly || !formationMode || !selectedFormation) return;
     if (slotsA.length !== selectedFormation.playersPerTeam) return;
     const goingIds = new Set(goingPlayers.map((p) => p.id));
     setSlotsA((prev) => prev.map((id) => (id && goingIds.has(id) ? id : null)));
     setSlotsB((prev) => prev.map((id) => (id && goingIds.has(id) ? id : null)));
-  }, [goingPlayers, formationMode, match, selectedFormation, slotsA.length]);
+  }, [goingPlayers, isViewOnly, formationMode, match, selectedFormation, slotsA.length]);
 
   const lineupDimensionsReady =
     !!selectedFormation &&
@@ -693,7 +698,7 @@ export function LineupBuilderScreen() {
     slotsB.length === selectedFormation.playersPerTeam;
 
   useEffect(() => {
-    if (!match || match.lineupLocked || !formationMode || !lineupDimensionsReady) return;
+    if (!match || isViewOnly || !formationMode || !lineupDimensionsReady) return;
     const a = compactSlots(slotsA);
     const b = compactSlots(slotsB);
     // Fingerprint sparse dizileri kapsar; compact aynı kalsa bile slot değişimi algılanır.
@@ -709,6 +714,7 @@ export function LineupBuilderScreen() {
     );
   }, [
     match,
+    isViewOnly,
     formationMode,
     lineupDimensionsReady,
     slotsA,
@@ -719,6 +725,7 @@ export function LineupBuilderScreen() {
   ]);
 
   const handleDropClassic = (playerId: string, absX: number, absY: number) => {
+    if (isViewOnly) return;
     const insideZone = (r: DropRect | undefined) =>
       r &&
       absX >= r.x &&
@@ -749,6 +756,7 @@ export function LineupBuilderScreen() {
 
   const handleDropFormation = useCallback(
     (playerId: string, absX: number, absY: number) => {
+      if (isViewOnly) return;
       const zone = pickFormationZoneOrdered(formationZonesRef.current, absX, absY);
       if (!zone) return;
       const result = applyLineupFormationDrop(slotsA, slotsB, playerId, zone);
@@ -757,7 +765,7 @@ export function LineupBuilderScreen() {
       setSlotsB(result.slotsB);
       void lightImpact();
     },
-    [slotsA, slotsB],
+    [isViewOnly, slotsA, slotsB],
   );
 
   const onDragActivated = useCallback((playerId: string) => {
@@ -790,7 +798,7 @@ export function LineupBuilderScreen() {
   }, []);
 
   const onResetLineup = useCallback(() => {
-    if (!selectedFormation || !match) return;
+    if (isViewOnly || !selectedFormation || !match) return;
     const empty = Array.from<string | null>({ length: selectedFormation.playersPerTeam }).fill(null);
     setSlotsA(empty);
     setSlotsB(empty);
@@ -801,7 +809,7 @@ export function LineupBuilderScreen() {
         mapOperation: 'replaceMatchTeamPlayersRemote',
       }),
     );
-  }, [selectedFormation, match, resolvedFormationId, setMatchTeams, showApiErrorToast]);
+  }, [isViewOnly, selectedFormation, match, resolvedFormationId, setMatchTeams, showApiErrorToast]);
 
   const benchPlayerIds = useMemo(() => {
     if (!formationMode || !selectedFormation) return [];
@@ -830,9 +838,14 @@ export function LineupBuilderScreen() {
   ]);
 
   useLayoutEffect(() => {
+    const title = isViewOnly
+      ? 'Kadro'
+      : hasLineupContentForTitle
+        ? 'Kadroyu düzenle'
+        : 'Kadro Kur';
     navigation.setOptions({
-      title: hasLineupContentForTitle ? 'Kadroyu düzenle' : 'Kadro Kur',
-      headerRight: formationMode
+      title,
+      headerRight: formationMode && !isViewOnly
         ? () => (
             <Pressable
               onPress={onResetLineup}
@@ -846,10 +859,10 @@ export function LineupBuilderScreen() {
           )
         : undefined,
     });
-  }, [navigation, hasLineupContentForTitle, formationMode, onResetLineup, styles.resetBtn, styles.resetBtnText]);
+  }, [navigation, hasLineupContentForTitle, formationMode, isViewOnly, onResetLineup, styles.resetBtn, styles.resetBtnText]);
 
   const onBalance = () => {
-    if (!match) return;
+    if (isViewOnly || !match) return;
     if (formationMode && selectedFormation) {
       const { slotsA: na, slotsB: nb } = balanceFormationSlotsByRating(
         goingPlayers,
@@ -862,6 +875,8 @@ export function LineupBuilderScreen() {
         compactSlots(na),
         compactSlots(nb),
         resolvedFormationId ?? undefined,
+        na,
+        nb,
       )
         .then(() => {
           showToast({
@@ -901,6 +916,7 @@ export function LineupBuilderScreen() {
   };
 
   const onPickFormation = (id: string) => {
+    if (isViewOnly) return;
     // Aynı formasyon tekrar seçildiyse hiçbir şey yapma
     if (id === resolvedFormationId) return;
     const f = getLineupFormationById(id);
@@ -916,10 +932,11 @@ export function LineupBuilderScreen() {
     setFormationId(id);
     // Slot index↔pozisyon eşleşmesi formasyona özgü — aynı boyut farklı yapı demek.
     // Formasyon her değişiminde slotları sıfırla; oyuncular havuza döner.
-    setSlotsA(Array.from({ length: f.playersPerTeam }, () => null));
-    setSlotsB(Array.from({ length: f.playersPerTeam }, () => null));
+    const empty: (string | null)[] = Array.from({ length: f.playersPerTeam }, () => null);
+    setSlotsA(empty);
+    setSlotsB(empty);
     if (match) {
-      void setMatchTeams(match.id, [], [], id).catch((err) =>
+      void setMatchTeams(match.id, [], [], id, empty, empty).catch((err) =>
         showApiErrorToast(err, {
           uiOperation: 'LineupBuilder:pickFormation',
           fallbackMessage: 'Kadro kaydedilemedi.',
@@ -934,7 +951,7 @@ export function LineupBuilderScreen() {
   };
 
   const saveAndExit = useCallback(async () => {
-    if (!match) return;
+    if (isViewOnly || !match) return;
     if (formationMode && selectedFormation) {
       if (!lineupDimensionsReady) {
         showToast({
@@ -963,6 +980,8 @@ export function LineupBuilderScreen() {
           compactSlots(slotsA),
           compactSlots(slotsB),
           resolvedFormationId ?? undefined,
+          slotsA,
+          slotsB,
         );
       } catch (err) {
         showApiErrorToast(err, {
@@ -986,6 +1005,7 @@ export function LineupBuilderScreen() {
     }
     navigation.goBack();
   }, [
+    isViewOnly,
     match,
     formationMode,
     selectedFormation,
@@ -1005,7 +1025,7 @@ export function LineupBuilderScreen() {
   ]);
 
   const publishLineup = useCallback(async () => {
-    if (!match) return;
+    if (isViewOnly || !match) return;
     if (formationMode && selectedFormation) {
       if (!lineupDimensionsReady) {
         return;
@@ -1029,6 +1049,8 @@ export function LineupBuilderScreen() {
           compactSlots(slotsA),
           compactSlots(slotsB),
           resolvedFormationId ?? undefined,
+          slotsA,
+          slotsB,
         );
       } catch (err) {
         showApiErrorToast(err, {
@@ -1063,6 +1085,7 @@ export function LineupBuilderScreen() {
     }
     navigation.goBack();
   }, [
+    isViewOnly,
     match,
     formationMode,
     selectedFormation,
@@ -1113,6 +1136,7 @@ export function LineupBuilderScreen() {
               isGuest={guestIds.has(id)}
               onDragEnd={onDrop}
               testID={`lineup:player-card:${id}`}
+              disabled={isViewOnly}
             />
           );
         })}
@@ -1158,6 +1182,7 @@ export function LineupBuilderScreen() {
               slotGhostY={slotGhostY}
               slotGhostOpacity={slotGhostOpacity}
               testID={slotTestId}
+              disabled={isViewOnly}
             />
           </View>
         ) : (
@@ -1191,19 +1216,32 @@ export function LineupBuilderScreen() {
 
           {/* Compact header strip */}
           <View style={styles.formationHeader}>
-            <Pressable
-              onPress={() => setDropdownOpen(true)}
-              style={styles.formationDropdownBtn}
-              testID="lineup:formation:dropdown"
-              accessibilityRole="button"
-              accessibilityLabel={`Dizilim: ${selectedFormation.label}. Değiştirmek için dokun.`}
-            >
-              <Ionicons name="apps-outline" size={15} color={colors.accent} />
-              <Text style={styles.formationDropdownLabel}>Dizilim</Text>
-              <View style={styles.formationDropdownDivider} />
-              <Text style={styles.formationDropdownBtnText}>{selectedFormation.label}</Text>
-              <Ionicons name="chevron-down" size={13} color={colors.accent} />
-            </Pressable>
+            {isViewOnly ? (
+              <View
+                style={styles.formationDropdownBtn}
+                accessibilityRole="text"
+                accessibilityLabel={`Dizilim: ${selectedFormation.label}`}
+              >
+                <Ionicons name="apps-outline" size={15} color={colors.accent} />
+                <Text style={styles.formationDropdownLabel}>Dizilim</Text>
+                <View style={styles.formationDropdownDivider} />
+                <Text style={styles.formationDropdownBtnText}>{selectedFormation.label}</Text>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => setDropdownOpen(true)}
+                style={styles.formationDropdownBtn}
+                testID="lineup:formation:dropdown"
+                accessibilityRole="button"
+                accessibilityLabel={`Dizilim: ${selectedFormation.label}. Değiştirmek için dokun.`}
+              >
+                <Ionicons name="apps-outline" size={15} color={colors.accent} />
+                <Text style={styles.formationDropdownLabel}>Dizilim</Text>
+                <View style={styles.formationDropdownDivider} />
+                <Text style={styles.formationDropdownBtnText}>{selectedFormation.label}</Text>
+                <Ionicons name="chevron-down" size={13} color={colors.accent} />
+              </Pressable>
+            )}
           </View>
 
           {/* Pitches area — stacked vertically, horizontal (landscape) mode, no scroll */}
@@ -1226,33 +1264,35 @@ export function LineupBuilderScreen() {
             </View>
           </View>
 
-          {/* Action bar: ghost actions row + full-width primary CTA */}
-          <View style={[styles.actionsBar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
-            <View style={styles.actionsSecondaryRow}>
+          {/* Action bar: ghost actions row + full-width primary CTA (sadece düzenleme modunda) */}
+          {!isViewOnly ? (
+            <View style={[styles.actionsBar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+              <View style={styles.actionsSecondaryRow}>
+                <PillButton
+                  title="Dengele"
+                  variant="ghost"
+                  onPress={onBalance}
+                  testID="lineup:balance:press"
+                  accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
+                  style={styles.actionBtnSecondary}
+                />
+                <PillButton
+                  title="Yayınla"
+                  variant="ghost"
+                  onPress={() => setConfirmOpen(true)}
+                  testID="lineup:publish:open"
+                  accessibilityLabel="Kadroyu yayınla ve kilitle."
+                  style={styles.actionBtnSecondary}
+                />
+              </View>
               <PillButton
-                title="Dengele"
-                variant="ghost"
-                onPress={onBalance}
-                testID="lineup:balance:press"
-                accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
-                style={styles.actionBtnSecondary}
-              />
-              <PillButton
-                title="Yayınla"
-                variant="ghost"
-                onPress={() => setConfirmOpen(true)}
-                testID="lineup:publish:open"
-                accessibilityLabel="Kadroyu yayınla ve kilitle."
-                style={styles.actionBtnSecondary}
+                title="Kaydet ve çık"
+                onPress={() => void saveAndExit()}
+                testID="lineup:save:press"
+                style={styles.actionBtnPrimary}
               />
             </View>
-            <PillButton
-              title="Kaydet ve çık"
-              onPress={() => void saveAndExit()}
-              testID="lineup:save:press"
-              style={styles.actionBtnPrimary}
-            />
-          </View>
+          ) : null}
 
         </View>
 
@@ -1286,6 +1326,7 @@ export function LineupBuilderScreen() {
                   poolGhostY={poolGhostY}
                   poolGhostOpacity={poolGhostOpacity}
                   testID={`lineup:player-card:${id}`}
+                  disabled={isViewOnly}
                 />
               );
             })}
@@ -1372,8 +1413,9 @@ export function LineupBuilderScreen() {
   return (
     <View style={styles.screen}>
       <Text style={styles.hint} accessibilityRole="text">
-        Maç kadro boyutu (max) 14, 16 veya 22 değil; taktik şablon kapalı. Listeleri kaydırın; takımlar
-        arası için basılı tutup sürükleyin.
+        {isViewOnly
+          ? 'Yayınlanan kadro görüntüleniyor.'
+          : 'Maç kadro boyutu (max) 14, 16 veya 22 değil; taktik şablon kapalı. Listeleri kaydırın; takımlar arası için basılı tutup sürükleyin.'}
       </Text>
 
       <View style={styles.row}>
@@ -1381,26 +1423,28 @@ export function LineupBuilderScreen() {
         {renderClassicCol(teamAIds, zoneA, TEAM_SIDE_LABELS.A, 'a', handleDropClassic)}
       </View>
 
-      <View style={styles.actions}>
-        <PillButton
-          title="Akıllı Denge"
-          variant="ghost"
-          onPress={onBalance}
-          testID="lineup:balance:press"
-          accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
-        />
-        <PillButton
-          title="Kaydet ve çık"
-          onPress={() => void saveAndExit()}
-          testID="lineup:save:press"
-        />
-        <PillButton
-          title="Kadroyu yayınla"
-          variant="ghost"
-          onPress={() => setConfirmOpen(true)}
-          testID="lineup:publish:open"
-        />
-      </View>
+      {!isViewOnly ? (
+        <View style={styles.actions}>
+          <PillButton
+            title="Akıllı Denge"
+            variant="ghost"
+            onPress={onBalance}
+            testID="lineup:balance:press"
+            accessibilityLabel="Akıllı Denge. Takımları oyuncu reyting ortalamalarına göre dengeler."
+          />
+          <PillButton
+            title="Kaydet ve çık"
+            onPress={() => void saveAndExit()}
+            testID="lineup:save:press"
+          />
+          <PillButton
+            title="Kadroyu yayınla"
+            variant="ghost"
+            onPress={() => setConfirmOpen(true)}
+            testID="lineup:publish:open"
+          />
+        </View>
+      ) : null}
 
       <ConfirmationModal
         visible={confirmOpen}
