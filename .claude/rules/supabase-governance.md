@@ -19,6 +19,45 @@ Apply this rule whenever a task touches Supabase auth, database, RLS policies, m
 - **Idempotent SQL mindset:** Prefer statements that are safe to re-run (`IF EXISTS`, `IF NOT EXISTS`) when appropriate.
 - **Descriptive migration names:** Use migration names that explain intent (feature or bugfix), not generic timestamps alone.
 
+## Migration deployment (Claude'un sorumluluğu)
+
+`supabase/migrations/` altında herhangi bir dosya yazıldıktan veya değiştirildikten sonra Claude aşağıdaki adımları **otomatik olarak** çalıştırır — kullanıcıdan bu adımları yapmasını asla istemez.
+
+> **Çoklu migration:** Aynı task içinde birden fazla migration dosyası yazılıyorsa `db reset` ve `db push` her dosya sonrasında değil, **tüm dosyalar yazıldıktan sonra tek seferde** çalıştırılır.
+
+### Zorunlu adımlar
+
+1. **Lokal stack kontrolü.**
+   `npx supabase status` çalıştır. Stack çalışmıyorsa 2. adımı atla, direkt 3. adıma geç (bunu response'da belirt).
+
+2. **Lokal uygulama** *(yalnızca stack çalışıyorsa).*
+   `npx supabase db reset` çalıştır. Tüm migration'lar (yeni dahil) lokal stack'e uygulanır.
+   - Başarısız olursa: **dur**, hata çıktısını olduğu gibi raporla, remote push'a geçme. SQL'i düzelt, tekrar dene.
+
+3. **Remote push.**
+   `npx supabase db push` çalıştır.
+   - Başarısız olursa: tam hata çıktısını raporla; suppress etme, summarize etme. Proje link edilmemişse `npx supabase link` hatırlatmasını yap.
+
+4. **Doğrulama.**
+   `npx supabase migration list --linked` çalıştır. Yeni migration'ın "applied" listesinde göründüğünü doğrula ve sonucu response'da raporla.
+
+### Kesin yasaklar
+
+- Kullanıcıya "siz `db push` çalıştırmalısınız" veya herhangi bir varyasyonunu **asla** söyleme.
+- Push'u "sadece fonksiyon eklendi" / "sadece index" diye atlama — tüm DDL mutlaka uygulanmalı.
+- `db push` hatasını gizleme veya özetleme; tam CLI çıktısı gösterilmeli.
+- `db reset` başarısız olduğunda remote'a push yapma.
+
+### Hata tablosu
+
+| Hata | Claude'un yapacağı |
+|------|-------------------|
+| Stack çalışmıyor | `db reset` atla, `db push` yap, lokal adımın atlandığını belirt |
+| `db reset` SQL hatası | Migration SQL'ini düzelt, `db reset` tekrar çalıştır, sonra push |
+| `db push` — proje link yok | Tam çıktıyı raporla + `npx supabase link` hatırlatması yap |
+| `db push` — remote SQL hatası | Tam çıktıyı raporla; otomatik workaround deneme |
+| `migration list --linked` migration'ı göstermiyor | "Remote state uncertain" uyarısı ver, tam listeyi raporla |
+
 ## Operational checklist
 
 - **Pre-merge checks:** Run advisor/performance/security checks before shipping database-affecting changes.
