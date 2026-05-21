@@ -2,6 +2,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Pressable,
   ScrollView,
@@ -18,6 +19,7 @@ import type { GroupsStackParamList, HomeStackParamList } from '../navigation/typ
 import { checkHasSubmittedRatings, fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
+import { formatMatchDateTime } from '../utils/dates';
 import { useRatingWindow } from '../hooks/useRatingWindow';
 import { QUICK_RATING_BANDS, nearestQuickBandId } from '../utils/matchPeerRatingQuickBands';
 import { getMatchContribution, sortPeersByMatchContribution } from '../utils/matchPlayerContribution';
@@ -100,6 +102,14 @@ const useStyles = makeStyles((t) =>
     bandLblOn: { color: t.colors.accent },
     sectionTitle: { ...typography.subtitle, color: t.colors.text },
     mt: { marginTop: spacing.sm },
+    fetchErrorBanner: {
+      backgroundColor: t.colors.accentMuted,
+      borderRadius: radius.sm,
+      padding: spacing.sm,
+    },
+    fetchErrorText: { ...typography.caption, color: t.colors.text },
+    motmHint: { ...typography.caption, color: t.colors.textMuted, textAlign: 'center' },
+    loadingScoreRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   }),
 );
 
@@ -131,6 +141,7 @@ export function MatchRatingFlowScreen() {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [motmId, setMotmId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const cardAnim = useRef(new Animated.Value(1)).current;
@@ -185,7 +196,7 @@ export function MatchRatingFlowScreen() {
         setScores(next);
         setMotmId(motmPickPlayerId ?? null);
       } catch {
-        /* sessizce geç — varsayılan skorlar kullanılır */
+        setFetchError(true);
       } finally {
         if (!cancel) setLoaded(true);
       }
@@ -273,15 +284,32 @@ export function MatchRatingFlowScreen() {
             style={styles.mt}
           />
         ) : null}
+        <PillButton
+          title="Geri dön"
+          variant="ghost"
+          onPress={() => navigation.goBack()}
+          style={styles.mt}
+        />
       </View>
     );
   }
 
   // Maç henüz başlamamışsa (starts_at gelecekte)
   if (!ratingWindow.isOpen && !ratingWindow.isClosed) {
+    const startsLabel = match.startsAt ? formatMatchDateTime(match.startsAt) : null;
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyMsg}>Derecelendirme maç başladığında aktifleşir.</Text>
+        <Text style={styles.emptyMsg}>
+          {startsLabel
+            ? `Derecelendirme ${startsLabel} tarihinde başladığında aktifleşir.`
+            : 'Derecelendirme maç başladığında aktifleşir.'}
+        </Text>
+        <PillButton
+          title="Geri dön"
+          variant="ghost"
+          onPress={() => navigation.goBack()}
+          style={styles.mt}
+        />
       </View>
     );
   }
@@ -317,6 +345,14 @@ export function MatchRatingFlowScreen() {
         Oylar anonimdir — kim kime puan verdi görünmez.
       </Text>
 
+      {fetchError ? (
+        <View style={styles.fetchErrorBanner}>
+          <Text style={styles.fetchErrorText}>
+            Taslak puanlar yüklenemedi — varsayılan değerler kullanılıyor.
+          </Text>
+        </View>
+      ) : null}
+
       {step === 'rating' && currentPeer ? (
         <>
           <Animated.View style={[styles.card, { opacity: cardAnim }]}>
@@ -333,21 +369,25 @@ export function MatchRatingFlowScreen() {
                     <Text style={styles.contrib}>{parts.join(' · ')}</Text>
                   ) : null;
                 })()}
-                <Text style={styles.scoreLbl}>
-                  {loaded ? (scores[currentPeer.id] ?? DEFAULT_SCORE) : '—'} puan
-                </Text>
+                <View style={styles.loadingScoreRow}>
+                  {loaded ? (
+                    <Text style={styles.scoreLbl}>{scores[currentPeer.id] ?? DEFAULT_SCORE} puan</Text>
+                  ) : (
+                    <ActivityIndicator size="small" />
+                  )}
+                </View>
               </View>
             </View>
 
-            <View style={styles.bandsRow}>
+            <View style={[styles.bandsRow, !loaded && { opacity: 0.4 }]}>
               {QUICK_RATING_BANDS.map((band) => {
                 const cur = scores[currentPeer.id] ?? DEFAULT_SCORE;
-                const on = nearestQuickBandId(cur) === band.id;
+                const on = loaded && nearestQuickBandId(cur) === band.id;
                 return (
                   <Pressable
                     key={band.id}
                     style={[styles.bandChip, on && styles.bandChipOn]}
-                    onPress={() => selectBand(currentPeer.id, band.score)}
+                    onPress={() => loaded && selectBand(currentPeer.id, band.score)}
                     accessibilityRole="button"
                     accessibilityLabel={`${currentPeer.p.name} için ${band.label}`}
                     accessibilityState={{ selected: on }}
@@ -379,6 +419,9 @@ export function MatchRatingFlowScreen() {
             selectedId={motmId}
             onSelect={setMotmId}
           />
+          {!motmId ? (
+            <Text style={styles.motmHint}>Devam etmek için maçın adamını seçin</Text>
+          ) : null}
           <PillButton
             title={saving ? 'Kaydediliyor…' : 'Puanları gönder'}
             onPress={() => void onSubmit()}

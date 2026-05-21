@@ -273,15 +273,34 @@ export function CreateMatchTabScreen() {
     navigation.navigate('HomeTab' as never);
   }, [navigation]);
 
+  const resetForm = useCallback(() => {
+    setVenue('');
+    setMaxPlayers(14);
+    setMaxPlayersInputText('14');
+    setPrice('');
+    setPaymentMethod(null);
+    setIbanAccountName('');
+    setPaymentNote('');
+    syncFromStored('');
+    setOverrideIban(!hasValidProfileIban);
+    setTemplateSaveExpanded(false);
+    setTemplateDraftName('');
+    setSelectedGroupId(null);
+  }, [hasValidProfileIban, syncFromStored]);
+
   const handleSheetDismiss = useCallback(() => {
     setGroupPickerOpen(false);
-    goHome();
     const pending = pendingMatchToastRef.current;
     pendingMatchToastRef.current = null;
+    if (!pending) {
+      // Maç oluşturulmadan kapatıldı — formu sıfırla
+      resetForm();
+    }
+    goHome();
     if (pending) {
       setTimeout(() => showToast(pending), 400);
     }
-  }, [goHome, showToast]);
+  }, [goHome, showToast, resetForm]);
 
 
 

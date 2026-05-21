@@ -4,7 +4,7 @@ import DateTimePicker, {
 import Slider from '@react-native-community/slider';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -93,9 +93,10 @@ export function EditMatchScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const isDirty = useRef(false);
 
   // Pre-populate from match
-  React.useEffect(() => {
+  useEffect(() => {
     if (!match) return;
     setVenue(match.venue);
     setMaxPlayers(match.maxPlayers);
@@ -109,7 +110,25 @@ export function EditMatchScreen() {
       const norm = normalizeIban(match.iban ?? '');
       setIban(norm);
     }
-  }, [match]);
+    // Pre-populate tamamlandı; şimdi dirty tracking başlatılabilir
+    isDirty.current = false;
+  }, [match?.id]);
+
+  // Geri gidilirken kaydedilmemiş değişiklik varsa uyar
+  useEffect(() => {
+    return navigation.addListener('beforeRemove', (e) => {
+      if (!isDirty.current || submitting) return;
+      e.preventDefault();
+      Alert.alert(
+        'Kaydedilmemiş değişiklikler',
+        'Değişiklikleriniz kaydedilmedi. Çıkmak istiyor musunuz?',
+        [
+          { text: 'Kalmaya devam et', style: 'cancel' },
+          { text: 'Çık', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+        ],
+      );
+    });
+  }, [navigation, submitting]);
 
   if (!match) {
     return (
@@ -119,11 +138,14 @@ export function EditMatchScreen() {
     );
   }
 
+  const markDirty = () => { isDirty.current = true; };
+
   const onDateChange = (_: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
     if (date) {
+      markDirty();
       const combined = new Date(date);
       combined.setHours(startsAt.getHours(), startsAt.getMinutes(), 0, 0);
       setStartsAt(combined);
@@ -135,6 +157,7 @@ export function EditMatchScreen() {
       setShowTimePicker(false);
     }
     if (date) {
+      markDirty();
       const combined = new Date(startsAt);
       combined.setHours(date.getHours(), date.getMinutes(), 0, 0);
       setStartsAt(combined);
@@ -142,6 +165,7 @@ export function EditMatchScreen() {
   };
 
   const handleMaxPlayersChange = (text: string) => {
+    markDirty();
     const sanitized = sanitizeMaxPlayersDigits(text);
     setMaxPlayersInputText(sanitized);
     if (sanitized) {
@@ -152,6 +176,7 @@ export function EditMatchScreen() {
   };
 
   const handleMaxPlayersSlider = (value: number) => {
+    markDirty();
     const clamped = clampEvenMatchMaxPlayers(value);
     setMaxPlayers(clamped);
     setMaxPlayersInputText(String(clamped));
@@ -200,6 +225,7 @@ export function EditMatchScreen() {
         ibanAccountName: paymentMethod === 'iban' ? ibanAccountName.trim() : undefined,
         paymentNote: paymentMethod === 'note_only' ? paymentNote.trim() : undefined,
       });
+      isDirty.current = false;
       showToast({ title: 'Maç güncellendi' });
       navigation.goBack();
     } catch (error) {
@@ -348,7 +374,7 @@ export function EditMatchScreen() {
           placeholder="Maç yeri"
           placeholderTextColor={colors.textMuted}
           value={venue}
-          onChangeText={setVenue}
+          onChangeText={(v) => { markDirty(); setVenue(v); }}
         />
       </View>
 
@@ -479,6 +505,7 @@ export function EditMatchScreen() {
               ]}
               onPress={() => {
                 selectionTick();
+                markDirty();
                 setPaymentMethod(method);
               }}
             >
@@ -532,14 +559,14 @@ export function EditMatchScreen() {
             placeholder="Hesap Adı"
             placeholderTextColor={colors.textMuted}
             value={ibanAccountName}
-            onChangeText={setIbanAccountName}
+            onChangeText={(v) => { markDirty(); setIbanAccountName(v); }}
           />
           <TextInput
             style={styles.textInput}
             placeholder="Ödeme Ücreti (TL)"
             placeholderTextColor={colors.textMuted}
             value={price}
-            onChangeText={setPrice}
+            onChangeText={(v) => { markDirty(); setPrice(v); }}
             keyboardType="decimal-pad"
           />
         </View>
@@ -553,7 +580,7 @@ export function EditMatchScreen() {
             placeholder="Ödeme Ücreti (TL)"
             placeholderTextColor={colors.textMuted}
             value={price}
-            onChangeText={setPrice}
+            onChangeText={(v) => { markDirty(); setPrice(v); }}
             keyboardType="decimal-pad"
           />
         </View>
@@ -567,7 +594,7 @@ export function EditMatchScreen() {
             placeholder="Ödeme açıklaması"
             placeholderTextColor={colors.textMuted}
             value={paymentNote}
-            onChangeText={setPaymentNote}
+            onChangeText={(v) => { markDirty(); setPaymentNote(v); }}
             maxLength={120}
             multiline
           />

@@ -109,7 +109,18 @@ export function MatchDetailScreen() {
   const [ratingHints, setRatingHints] = useState({ peer: false, motm: false });
   const [hasSubmittedRatings, setHasSubmittedRatings] = useState(false);
   const [isClosingRating, setIsClosingRating] = useState(false);
-  const [tab, setTab] = useState<MatchDetailTab>('summary');
+  const lastTabRef = useRef<MatchDetailTab>('summary');
+  const [tab, setTabRaw] = useState<MatchDetailTab>('summary');
+  const setTab = useCallback((t: MatchDetailTab) => {
+    lastTabRef.current = t;
+    setTabRaw(t);
+  }, []);
+  // Ekrandan çıkıp dönünce (ör. LineupBuilder → geri) son tab seçimini geri yükle
+  useFocusEffect(
+    useCallback(() => {
+      setTabRaw(lastTabRef.current);
+    }, []),
+  );
   const [paidConfirm, setPaidConfirm] = useState<{
     playerId: string;
     playerName: string;
@@ -234,9 +245,10 @@ export function MatchDetailScreen() {
       const now = Date.now();
       if (now - lastRemoteDetailRefreshMs.current < REMOTE_DETAIL_REFRESH_MS) return undefined;
       lastRemoteDetailRefreshMs.current = now;
-      void refreshRemoteMatch(matchId).catch(() => {
-        /* odak yenilemesi — kullanıcıya toast yok; pull-to-refresh ile tekrar denenebilir */
-      });
+      setRefreshing(true);
+      void refreshRemoteMatch(matchId)
+        .catch(() => { /* sessiz — pull-to-refresh ile tekrar denenebilir */ })
+        .finally(() => setRefreshing(false));
       return undefined;
     }, [matchId, refreshRemoteMatch]),
   );
@@ -296,6 +308,7 @@ export function MatchDetailScreen() {
     try {
       await cancelMatch(match.id);
       setCancelConfirmVisible(false);
+      navigation.goBack();
     } catch (err) {
       showApiErrorToast(err, {
         uiOperation: 'MatchDetail:cancelMatch',
@@ -305,7 +318,7 @@ export function MatchDetailScreen() {
     } finally {
       setCancelling(false);
     }
-  }, [match, cancelMatch, cancelling, showApiErrorToast]);
+  }, [match, cancelMatch, cancelling, showApiErrorToast, navigation]);
 
   const matchFull = useMemo(() => (match ? isMatchFull(match) : false), [match]);
 

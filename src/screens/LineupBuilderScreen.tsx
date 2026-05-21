@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   LayoutAnimation,
   LayoutChangeEvent,
   Modal,
@@ -914,11 +915,7 @@ export function LineupBuilderScreen() {
     requestAnimationFrame(measure);
   };
 
-  const onPickFormation = (id: string) => {
-    if (isViewOnly) return;
-    // Aynı formasyon tekrar seçildiyse hiçbir şey yapma
-    if (id === resolvedFormationId) return;
-    const f = getLineupFormationById(id);
+  const applyFormationChange = (id: string, f: ReturnType<typeof getLineupFormationById>) => {
     if (!f) return;
     if (!reduceMotion) {
       LayoutAnimation.configureNext({
@@ -942,6 +939,28 @@ export function LineupBuilderScreen() {
           mapOperation: 'replaceMatchTeamPlayersRemote',
         }),
       );
+    }
+  };
+
+  const onPickFormation = (id: string) => {
+    if (isViewOnly) return;
+    // Aynı formasyon tekrar seçildiyse hiçbir şey yapma
+    if (id === resolvedFormationId) return;
+    const f = getLineupFormationById(id);
+    if (!f) return;
+    // Slotlarda atanmış oyuncu varsa, değişiklik bunları sileceğinden onay al
+    const hasSlotsAssigned = slotsA.some(Boolean) || slotsB.some(Boolean);
+    if (hasSlotsAssigned) {
+      Alert.alert(
+        'Formasyon değiştirilsin mi?',
+        'Tüm slot yerleştirmeleri sıfırlanacak. Oyuncular havuza geri dönecek.',
+        [
+          { text: 'İptal', style: 'cancel' },
+          { text: 'Değiştir', style: 'destructive', onPress: () => applyFormationChange(id, f) },
+        ],
+      );
+    } else {
+      applyFormationChange(id, f);
     }
   };
 
@@ -1243,6 +1262,17 @@ export function LineupBuilderScreen() {
             )}
           </View>
 
+          {/* View-only banner — açıklama göster, kullanıcı neden düzenleyemediğini anlasın */}
+          {isViewOnly ? (
+            <View style={styles.viewOnlyBanner}>
+              <Text style={styles.viewOnlyBannerText}>
+                {canManageMatch
+                  ? 'Kadro kilitli — değişiklik için önce kilidi kaldırın.'
+                  : 'Kadroyu yalnızca organizatör düzenleyebilir.'}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Pitches area — stacked vertically, horizontal (landscape) mode, no scroll */}
           <View style={styles.pitchesArea}>
             <View style={styles.pitchesContent}>
@@ -1496,6 +1526,20 @@ const useLineupStyles = makeStyles((t) =>
       ...typography.caption,
       color: t.colors.textMuted,
       lineHeight: 18,
+    },
+    viewOnlyBanner: {
+      marginHorizontal: spacing.md,
+      marginTop: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      backgroundColor: t.colors.surface,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: t.colors.border,
+    },
+    viewOnlyBannerText: {
+      ...typography.caption,
+      color: t.colors.textMuted,
     },
     hintWarn: {
       ...typography.caption,

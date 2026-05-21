@@ -212,6 +212,13 @@ const useStyles = makeStyles((t) =>
       paddingBottom: spacing.md,
       paddingTop: spacing.sm,
     },
+    motmHint: {
+      ...typography.caption,
+      color: t.colors.textMuted,
+      textAlign: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.xs,
+    },
     ratingSection: {
       marginBottom: spacing.lg,
     },
@@ -1207,6 +1214,9 @@ export const PostMatchInlineWizard = React.forwardRef<
                 onMotmSelect={setMotmId}
                 submitting={submitting}
               />
+              {peersCount > 0 && !motmId ? (
+                <Text style={styles.motmHint}>Devam etmek için maçın adamını seçin</Text>
+              ) : null}
               <View style={styles.stepFooter}>
                 <PillButton
                   title="Geç"

@@ -21,9 +21,12 @@ export function JoinMatchScreen() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const MIN_CODE_LENGTH = 4;
+  const isCodeValid = code.trim().length >= MIN_CODE_LENGTH;
+
   const onSubmit = useCallback(async () => {
     const trimmed = code.trim();
-    if (!trimmed) {
+    if (!trimmed || trimmed.length < MIN_CODE_LENGTH) {
       showValidationToast('Eksik bilgi', 'Katılım kodunu girin.');
       return;
     }
@@ -78,7 +81,7 @@ export function JoinMatchScreen() {
         returnKeyType="go"
         onSubmitEditing={onSubmit}
       />
-      <PillButton title="Katıl" onPress={onSubmit} loading={busy} disabled={busy} />
+      <PillButton title="Katıl" onPress={onSubmit} loading={busy} disabled={busy || !isCodeValid} />
       <View style={styles.spacer} />
     </KeyboardAvoidingView>
   );
