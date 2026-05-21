@@ -337,17 +337,15 @@ export function MatchFinalScreen() {
                 </Text>
               </Pressable>
             </View>
-            <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
-              <PostMatchInlineWizard
-                ref={wizardRef}
-                match={match}
-                canManageMatch={true}
-                currentUserId={userId}
-                hideRating={true}
-                editMode={true}
-                onCompleted={() => setIsEditing(false)}
-              />
-            </ScrollView>
+            <PostMatchInlineWizard
+              ref={wizardRef}
+              match={match}
+              canManageMatch={true}
+              currentUserId={userId}
+              hideRating={true}
+              editMode={true}
+              onCompleted={() => setIsEditing(false)}
+            />
           </SafeAreaView>
         </Modal>
       )}

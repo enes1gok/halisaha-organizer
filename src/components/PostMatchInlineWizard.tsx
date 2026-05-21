@@ -44,6 +44,7 @@ export type PostMatchInlineWizardProps = {
 type WizardStep = 'score' | 'statlines' | 'rating';
 
 const EMPTY_TALLIES: import('../types/domain').MatchScoreVoteTally[] = [];
+const EMPTY_GOAL_ENTRIES: import('../types/domain').MatchGoalEntry[] = [];
 
 const useStyles = makeStyles((t) =>
   StyleSheet.create({
@@ -277,6 +278,7 @@ function ScoreStepContent({
   onScoreAChange,
   onScoreBChange,
   leadingTally,
+  compact,
 }: {
   match: Match;
   canManageMatch: boolean;
@@ -285,6 +287,7 @@ function ScoreStepContent({
   onScoreAChange: (v: number) => void;
   onScoreBChange: (v: number) => void;
   leadingTally?: MatchScoreVoteTally;
+  compact?: boolean;
 }) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -318,8 +321,8 @@ function ScoreStepContent({
           </Text>
         </Pressable>
       )}
-      <View style={styles.scoreBlock}>
-        <View style={[styles.teamCard, styles.teamCardBlack]}>
+      <View style={[styles.scoreBlock, compact && { marginBottom: spacing.xs }]}>
+        <View style={[styles.teamCard, styles.teamCardBlack, compact && { padding: spacing.sm }]}>
           <Text style={[styles.teamLabel, styles.teamLabelBlack]}>
             {TEAM_SIDE_LABELS.A}
           </Text>
@@ -327,21 +330,21 @@ function ScoreStepContent({
           <View style={styles.scoreCtrl}>
             <Pressable
               onPress={() => onScoreAChange(Math.max(0, scoreA - 1))}
-              style={[styles.scoreBtn, styles.scoreBtnBlack]}
+              style={[styles.scoreBtn, styles.scoreBtnBlack, compact && { width: 36, height: 36, borderRadius: 18 }]}
             >
-              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtBlack]}>−</Text>
+              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtBlack, compact && { fontSize: 18 }]}>−</Text>
             </Pressable>
-            <Text style={[styles.scoreTxt, styles.scoreTxtBlack]}>{scoreA}</Text>
+            <Text style={[styles.scoreTxt, styles.scoreTxtBlack, compact && { fontSize: 32, minWidth: 40 }]}>{scoreA}</Text>
             <Pressable
               onPress={() => onScoreAChange(scoreA + 1)}
-              style={[styles.scoreBtn, styles.scoreBtnBlack]}
+              style={[styles.scoreBtn, styles.scoreBtnBlack, compact && { width: 36, height: 36, borderRadius: 18 }]}
             >
-              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtBlack]}>+</Text>
+              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtBlack, compact && { fontSize: 18 }]}>+</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={[styles.teamCard, styles.teamCardWhite]}>
+        <View style={[styles.teamCard, styles.teamCardWhite, compact && { padding: spacing.sm }]}>
           <Text style={[styles.teamLabel, styles.teamLabelWhite]}>
             {TEAM_SIDE_LABELS.B}
           </Text>
@@ -349,16 +352,16 @@ function ScoreStepContent({
           <View style={styles.scoreCtrl}>
             <Pressable
               onPress={() => onScoreBChange(Math.max(0, scoreB - 1))}
-              style={[styles.scoreBtn, styles.scoreBtnWhite]}
+              style={[styles.scoreBtn, styles.scoreBtnWhite, compact && { width: 36, height: 36, borderRadius: 18 }]}
             >
-              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtWhite]}>−</Text>
+              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtWhite, compact && { fontSize: 18 }]}>−</Text>
             </Pressable>
-            <Text style={[styles.scoreTxt, styles.scoreTxtWhite]}>{scoreB}</Text>
+            <Text style={[styles.scoreTxt, styles.scoreTxtWhite, compact && { fontSize: 32, minWidth: 40 }]}>{scoreB}</Text>
             <Pressable
               onPress={() => onScoreBChange(scoreB + 1)}
-              style={[styles.scoreBtn, styles.scoreBtnWhite]}
+              style={[styles.scoreBtn, styles.scoreBtnWhite, compact && { width: 36, height: 36, borderRadius: 18 }]}
             >
-              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtWhite]}>+</Text>
+              <Text style={[styles.scoreBtnTxt, styles.scoreBtnTxtWhite, compact && { fontSize: 18 }]}>+</Text>
             </Pressable>
           </View>
         </View>
@@ -569,7 +572,7 @@ function StatLinesStepContent({
   if (!scrollable) {
     return <View style={styles.stepContent}>{inner}</View>;
   }
-  return <ScrollView style={styles.stepContent} showsVerticalScrollIndicator>{inner}</ScrollView>;
+  return <ScrollView style={[styles.stepContent, { flex: 1 }]} showsVerticalScrollIndicator>{inner}</ScrollView>;
 }
 
 function RatingStepContent({
@@ -691,7 +694,7 @@ export const PostMatchInlineWizard = React.forwardRef<
   const fetchGoalEntries = useMatchesStore((s) => s.fetchGoalEntries);
   const saveGoalEntry = useMatchesStore((s) => s.saveGoalEntry);
   const goalEntries = useMatchesStore(
-    (s) => s.goalEntriesByMatchId[match.id] ?? [],
+    (s) => s.goalEntriesByMatchId[match.id] ?? EMPTY_GOAL_ENTRIES,
   );
   const fetchScoreVoteTally = useMatchesStore((s) => s.fetchScoreVoteTally);
   const scoreVoteTallies = useMatchesStore(
@@ -767,17 +770,18 @@ export const PostMatchInlineWizard = React.forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match.id, canManageMatch]);
 
+  const matchResult = match.result;
   useEffect(() => {
     setStep(getInitialStep(match, hideRating));
-    setScoreA(match.result?.scoreA ?? 0);
-    setScoreB(match.result?.scoreB ?? 0);
+    setScoreA(matchResult?.scoreA ?? 0);
+    setScoreB(matchResult?.scoreB ?? 0);
     const g: Record<string, number> = {};
     const a: Record<string, number> = {};
-    if (match.result) {
-      match.result.scorers.forEach((l) => {
+    if (matchResult) {
+      matchResult.scorers.forEach((l) => {
         g[l.playerId] = l.count;
       });
-      match.result.assists.forEach((l) => {
+      matchResult.assists.forEach((l) => {
         a[l.playerId] = l.count;
       });
     }
@@ -785,7 +789,8 @@ export const PostMatchInlineWizard = React.forwardRef<
     setAssists(a);
     setRatings({});
     setMotmId(null);
-  }, [match]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [match.id, matchResult]);
 
   const handleSubmitScore = async () => {
     setSubmitting(true);
@@ -907,7 +912,7 @@ export const PostMatchInlineWizard = React.forwardRef<
     };
 
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { flex: 1 }]}>
         <ScoreStepContent
           match={match}
           canManageMatch={canManageMatch}
@@ -916,6 +921,7 @@ export const PostMatchInlineWizard = React.forwardRef<
           onScoreAChange={setScoreA}
           onScoreBChange={setScoreB}
           leadingTally={leadingTally}
+          compact
         />
         <StatLinesStepContent
           match={match}
@@ -930,7 +936,7 @@ export const PostMatchInlineWizard = React.forwardRef<
           goalEntries={goalEntries}
           currentScoreA={scoreA}
           currentScoreB={scoreB}
-          scrollable={false}
+          scrollable={true}
         />
       </View>
     );

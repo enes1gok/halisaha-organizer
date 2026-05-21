@@ -10,6 +10,7 @@ import { PillButton } from '../components/PillButton';
 import { MatchCardSkeleton, SettingsSectionSkeleton, SkeletonList, SkeletonText } from '../components/skeleton';
 import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
+import { resolveMyMatchesEntryScreen } from '../navigation/myMatchesEntry';
 import type { GroupsStackParamList } from '../navigation/types';
 import { useAuthStore, useGroupsStore, useMatchesStore } from '../store';
 import { spacing, typography } from '../theme';
@@ -72,6 +73,7 @@ export function GroupDetailScreen() {
   const groups = useGroupsStore((s) => s.groups);
   const memberships = useGroupsStore((s) => s.groupMemberships);
   const matches = useMatchesStore((s) => s.matches);
+  const ratingsSubmittedByMatchId = useMatchesStore((s) => s.matchRatingsSubmissionByMatchId);
   const { configured, loading } = useSupabaseAuth();
 
   useLayoutEffect(() => {
@@ -183,7 +185,12 @@ export function GroupDetailScreen() {
               userRsvp={
                 item.attendees.find((att) => att.playerId === userId)?.status ?? null
               }
-              onPress={() => navigation.navigate('MatchDetail', { matchId: item.id })}
+              onPress={() => {
+                const dest = resolveMyMatchesEntryScreen(item, userId ?? '', ratingsSubmittedByMatchId);
+                if (dest === 'MatchSummary') navigation.navigate('MatchSummary', { matchId: item.id });
+                else if (dest === 'MatchRatingFlow') navigation.navigate('MatchRatingFlow', { matchId: item.id });
+                else navigation.navigate('MatchDetail', { matchId: item.id });
+              }}
             />
           </MatchCardListRow>
         )}

@@ -121,8 +121,10 @@ select throws_ok(
   'ERR_NOT_AUTHORIZED'
 );
 
--- 7. Anonymous cannot invoke RPC
-select tests.authenticate_anon();
+-- 7. Unauthenticated call (null uid via empty JWT) raises ERR_AUTH_REQUIRED.
+-- Uses reset_session() so the postgres role can invoke throws_ok; the function
+-- body still sees auth.uid() = null because JWT claims are cleared.
+select tests.reset_session();
 select throws_ok(
   $$
     select public.set_match_teams_v3(
@@ -134,7 +136,9 @@ select throws_ok(
       array[]::uuid[],
       array[]::uuid[]
     )
-  $$
+  $$,
+  'P0001',
+  'ERR_AUTH_REQUIRED'
 );
 
 -- 8. Subsequent v3 call replaces previous slot_index assignments cleanly
