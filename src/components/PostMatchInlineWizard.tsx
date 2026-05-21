@@ -13,6 +13,7 @@ import { PlayerAvatar } from './PlayerAvatar';
 import { MotmSelectorSection } from './MotmSelectorSection';
 import { QuickSelectPlayerRow, toScoreLines } from './PostMatchScoreForm';
 import {
+  goalsTotalFillsScore,
   goalsTotalMatchesScore,
   totalGoalsFromStatMap,
 } from '../utils/postMatchScoreValidation';
@@ -262,7 +263,7 @@ function getInitialStep(match: Match, hideRating?: boolean): WizardStep {
   const goalsMap = Object.fromEntries(
     match.result.scorers.map((s) => [s.playerId, s.count])
   );
-  if (goalsTotalMatchesScore(match.result.scoreA, match.result.scoreB, goalsMap)) {
+  if (goalsTotalFillsScore(match.result.scoreA, match.result.scoreB, goalsMap)) {
     return 'rating';
   }
   return 'statlines';
@@ -375,7 +376,8 @@ function StatLinesStepContent({
   onBumpAssists,
   submitting,
   currentUserId,
-  onAddSelfReport,
+  onSaveOwnEntry,
+  goalEntries,
   currentScoreA,
   currentScoreB,
   scrollable = true,
@@ -388,7 +390,8 @@ function StatLinesStepContent({
   onBumpAssists: (id: string, delta: number) => void;
   submitting: boolean;
   currentUserId: string;
-  onAddSelfReport: (kind: 'goal' | 'assist') => void;
+  onSaveOwnEntry: () => void;
+  goalEntries: import('../types/domain').MatchGoalEntry[];
   currentScoreA?: number;
   currentScoreB?: number;
   scrollable?: boolean;
@@ -424,7 +427,10 @@ function StatLinesStepContent({
 
   const effectiveScoreA = currentScoreA ?? match.result?.scoreA ?? 0;
   const effectiveScoreB = currentScoreB ?? match.result?.scoreB ?? 0;
-  const goalsMatchScore = goalsTotalMatchesScore(effectiveScoreA, effectiveScoreB, goals);
+  const totalGoals = totalGoalsFromStatMap(goals);
+  const totalScore = effectiveScoreA + effectiveScoreB;
+  const goalsExceedScore = totalGoals > totalScore;
+  const goalsFillScore = goalsTotalFillsScore(effectiveScoreA, effectiveScoreB, goals);
 
   const inner = canManageMatch ? (
     <>
@@ -487,22 +493,26 @@ function StatLinesStepContent({
       <View
         style={[
           styles.validationBox,
-          goalsMatchScore ? styles.validationBoxOk : styles.validationBoxErr,
+          goalsExceedScore ? styles.validationBoxErr : styles.validationBoxOk,
         ]}
       >
         <Text style={styles.validationTitle}>Doğrulama</Text>
         <Text style={styles.validationCounts}>
           Maç skoru: {effectiveScoreA} + {effectiveScoreB} ={' '}
-          {effectiveScoreA + effectiveScoreB} gol
+          {totalScore} gol
         </Text>
         <Text style={styles.validationCounts}>
-          Gol etkinliği: {totalGoalsFromStatMap(goals)} gol
+          Gol etkinliği: {totalGoals} gol
         </Text>
-        {goalsMatchScore ? (
-          <Text style={styles.validationOk}>Skor ile gol dağılımı uyumlu.</Text>
-        ) : (
+        {goalsExceedScore ? (
           <Text style={styles.validationWarn}>
-            Gol dağılımı maç skoruyla uyumsuz.
+            Gol sayısı skoru aşıyor.
+          </Text>
+        ) : goalsFillScore ? (
+          <Text style={styles.validationOk}>Tüm goller atfedildi.</Text>
+        ) : (
+          <Text style={styles.validationOk}>
+            Uyumlu ({totalScore - totalGoals} gol atfedilmemiş).
           </Text>
         )}
       </View>
@@ -510,42 +520,48 @@ function StatLinesStepContent({
     </>
   ) : (
     <>
-      <Text style={styles.sectionTitle}>Gol & Asist Durumu</Text>
-      {match.result && match.result.scorers.length > 0 ? (
-        match.result.scorers.map((l) => (
-          <Text key={`g-${l.playerId}`} style={[styles.waitingText, { fontSize: 13 }]}>
-            {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Gol ×{l.count}
-          </Text>
-        ))
-      ) : (
-        <Text style={[styles.waitingText, { fontSize: 13 }]}>Henüz gol kaydı yok.</Text>
+      <Text style={styles.sectionTitle}>Kendi Gollerini Gir</Text>
+
+      {/* Kendi satırı — düzenlenebilir */}
+      <QuickSelectPlayerRow
+        key={currentUserId}
+        player={getPlayer(currentUserId) ?? { id: currentUserId, name: 'Sen', position: 'MID', preferredFoot: 'right', stats: { matchesPlayed: 0, goals: 0, assists: 0, wins: 0, losses: 0, draws: 0 } }}
+        segment="teamA"
+        goals={goals}
+        assists={assists}
+        bumpGoals={onBumpGoals}
+        bumpAssists={onBumpAssists}
+      />
+      <PillButton
+        title={submitting ? 'Kaydediliyor…' : 'Kaydet'}
+        onPress={onSaveOwnEntry}
+        disabled={submitting}
+        style={{ marginTop: spacing.sm }}
+      />
+
+      {/* Diğer oyuncuların kayıtlı girişleri — sadece görüntüle */}
+      {goalEntries.filter((e) => e.playerId !== currentUserId && (e.goals > 0 || e.assists > 0)).length > 0 && (
+        <>
+          <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Diğer Girişler</Text>
+          {goalEntries
+            .filter((e) => e.playerId !== currentUserId && (e.goals > 0 || e.assists > 0))
+            .map((e) => (
+              <View
+                key={e.playerId}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}
+              >
+                <PlayerAvatar name={getPlayer(e.playerId)?.name ?? '?'} uri={getPlayer(e.playerId)?.photoUri} size={28} />
+                <Text style={[styles.waitingText, { flex: 1, fontSize: 13 }]}>
+                  {getPlayer(e.playerId)?.name ?? 'Oyuncu'}
+                  {e.goals > 0 ? `  ⚽ ×${e.goals}` : ''}
+                  {e.assists > 0 ? `  🅰 ×${e.assists}` : ''}
+                </Text>
+                <Text style={[styles.validationOk, { fontSize: 11 }]}>Kaydedildi</Text>
+              </View>
+            ))}
+        </>
       )}
 
-      {match.result && match.result.assists.length > 0 ? (
-        match.result.assists.map((l) => (
-          <Text key={`a-${l.playerId}`} style={[styles.waitingText, { fontSize: 13 }]}>
-            {getPlayer(l.playerId)?.name ?? 'Oyuncu'} — Asist ×{l.count}
-          </Text>
-        ))
-      ) : (
-        <Text style={[styles.waitingText, { fontSize: 13 }]}>Henüz asist kaydı yok.</Text>
-      )}
-
-      <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Kendi İstatistiklerin</Text>
-      <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
-        <PillButton
-          title="Gol Attım"
-          variant="ghost"
-          onPress={() => onAddSelfReport('goal')}
-          style={{ flex: 1 }}
-        />
-        <PillButton
-          title="Asist Yaptım"
-          variant="ghost"
-          onPress={() => onAddSelfReport('assist')}
-          style={{ flex: 1 }}
-        />
-      </View>
       <View style={{ height: spacing.lg }} />
     </>
   );
@@ -672,7 +688,11 @@ export const PostMatchInlineWizard = React.forwardRef<
   const hasSubmittedRatings = useMatchesStore(
     (s) => !!s.matchRatingsSubmissionByMatchId[match.id],
   );
-  const addSelfReport = useMatchesStore((s) => s.addSelfReport);
+  const fetchGoalEntries = useMatchesStore((s) => s.fetchGoalEntries);
+  const saveGoalEntry = useMatchesStore((s) => s.saveGoalEntry);
+  const goalEntries = useMatchesStore(
+    (s) => s.goalEntriesByMatchId[match.id] ?? [],
+  );
   const fetchScoreVoteTally = useMatchesStore((s) => s.fetchScoreVoteTally);
   const scoreVoteTallies = useMatchesStore(
     (s) => s.scoreVoteTalliesByMatchId[match.id] ?? EMPTY_TALLIES,
@@ -742,7 +762,8 @@ export const PostMatchInlineWizard = React.forwardRef<
 
   useEffect(() => {
     if (canManageMatch) void fetchScoreVoteTally(match.id);
-    // fetchScoreVoteTally Zustand aksiyonu — stabil referans, deps'e gerek yok
+    void fetchGoalEntries(match.id);
+    // Zustand aksiyonları stabil referans — deps'e gerek yok
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [match.id, canManageMatch]);
 
@@ -851,14 +872,17 @@ export const PostMatchInlineWizard = React.forwardRef<
     }
   };
 
-  const handleAddSelfReport = async (kind: 'goal' | 'assist') => {
+  const handleSaveOwnEntry = async () => {
+    setSubmitting(true);
     try {
-      await addSelfReport(match.id, currentUserId, kind);
+      await saveGoalEntry(match.id, goals[currentUserId] ?? 0, assists[currentUserId] ?? 0);
     } catch (e) {
       showUserFacingError(e, {
-        uiOperation: 'PostMatchInlineWizard.addSelfReport',
-        fallbackMessage: 'Bildirim gönderilemedi.',
+        uiOperation: 'PostMatchInlineWizard.saveGoalEntry',
+        fallbackMessage: 'Gol girişi kaydedilemedi.',
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -902,7 +926,8 @@ export const PostMatchInlineWizard = React.forwardRef<
           onBumpAssists={bumpAssists}
           submitting={submitting}
           currentUserId={currentUserId}
-          onAddSelfReport={handleAddSelfReport}
+          onSaveOwnEntry={handleSaveOwnEntry}
+          goalEntries={goalEntries}
           currentScoreA={scoreA}
           currentScoreB={scoreB}
           scrollable={false}
@@ -1004,7 +1029,7 @@ export const PostMatchInlineWizard = React.forwardRef<
         style={[
           styles.stepCard,
           step === 'statlines' && styles.stepCardActive,
-          step === 'statlines' && match.result && goalsTotalMatchesScore(match.result.scoreA, match.result.scoreB, goals)
+          step === 'statlines' && match.result && goalsTotalFillsScore(match.result.scoreA, match.result.scoreB, goals)
             ? styles.stepCardCompleted
             : undefined,
           step !== 'statlines' && !match.result
@@ -1025,7 +1050,7 @@ export const PostMatchInlineWizard = React.forwardRef<
               step === 'statlines' && styles.stepIconCircleActive,
               step === 'statlines' &&
               match.result &&
-              goalsTotalMatchesScore(match.result.scoreA, match.result.scoreB, goals)
+              goalsTotalFillsScore(match.result.scoreA, match.result.scoreB, goals)
                 ? styles.stepIconCircleCompleted
                 : undefined,
               step !== 'statlines' && !match.result
@@ -1035,7 +1060,7 @@ export const PostMatchInlineWizard = React.forwardRef<
           >
             {step === 'statlines' &&
             match.result &&
-            goalsTotalMatchesScore(
+            goalsTotalFillsScore(
               match.result.scoreA,
               match.result.scoreB,
               goals
@@ -1084,7 +1109,8 @@ export const PostMatchInlineWizard = React.forwardRef<
               }}
               submitting={submitting}
               currentUserId={currentUserId}
-              onAddSelfReport={handleAddSelfReport}
+              onSaveOwnEntry={handleSaveOwnEntry}
+              goalEntries={goalEntries}
             />
             {canManageMatch ? (
               <View style={styles.stepFooter}>
@@ -1094,11 +1120,7 @@ export const PostMatchInlineWizard = React.forwardRef<
                   disabled={
                     submitting ||
                     !match.result ||
-                    !goalsTotalMatchesScore(
-                      match.result.scoreA,
-                      match.result.scoreB,
-                      goals
-                    )
+                    totalGoalsFromStatMap(goals) > match.result.scoreA + match.result.scoreB
                   }
                   style={{ flex: 1 }}
                 />

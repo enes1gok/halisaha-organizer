@@ -19,6 +19,7 @@ import {
   addSelfReportUseCase,
   cancelMatchUseCase,
   createMatchUseCase,
+  fetchGoalEntriesUseCase,
   fetchScoreVoteTallyUseCase,
   hydrateRemoteMatchesUseCase,
   joinMatchByJoinCodeUseCase,
@@ -30,6 +31,7 @@ import {
   refreshRemoteMatchUseCase,
   removeGuestAttendeeUseCase,
   respondSelfReportUseCase,
+  saveGoalEntryUseCase,
   setGuestPaidUseCase,
   setMatchStatusUseCase,
   setMatchTeamsUseCase,
@@ -451,6 +453,8 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
 
   matchRatingsSubmissionByMatchId: {},
 
+  goalEntriesByMatchId: {},
+
   scoreVoteTalliesByMatchId: {},
 
   matchIdsPendingListEntrance: [],
@@ -501,6 +505,19 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
         m.id === matchId ? { ...m, ratingClosedAt: new Date().toISOString() } : m,
       ),
     }));
+  },
+
+  fetchGoalEntries: async (matchId) => {
+    if (!get().remoteUserId || !isRemoteMatchId(matchId)) return;
+    const entries = await fetchGoalEntriesUseCase(matchId);
+    set((s) => ({
+      goalEntriesByMatchId: { ...s.goalEntriesByMatchId, [matchId]: entries },
+    }));
+  },
+
+  saveGoalEntry: async (matchId, goals, assists) => {
+    await saveGoalEntryUseCase(matchId, goals, assists);
+    await get().fetchGoalEntries(matchId);
   },
 
   fetchScoreVoteTally: async (matchId) => {

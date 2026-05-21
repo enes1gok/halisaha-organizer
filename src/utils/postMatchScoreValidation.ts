@@ -15,7 +15,16 @@ export function goalsTotalMatchesScore(
   scoreB: number,
   goalsMap: Record<string, number>,
 ): boolean {
-  return scoreA + scoreB === totalGoalsFromStatMap(goalsMap);
+  return totalGoalsFromStatMap(goalsMap) <= scoreA + scoreB;
+}
+
+/** True when every goal in the score has been attributed to a player. */
+export function goalsTotalFillsScore(
+  scoreA: number,
+  scoreB: number,
+  goalsMap: Record<string, number>,
+): boolean {
+  return totalGoalsFromStatMap(goalsMap) === scoreA + scoreB;
 }
 
 /**

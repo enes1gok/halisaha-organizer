@@ -83,4 +83,5 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Kadro pozisyon bilgisi tutarsız. Lütfen tekrar deneyin.',
   'errors.rpc.matchNotStarted':
     'Derecelendirme maç başladıktan sonra yapılabilir.',
+  'errors.rpc.invalidGoalCount': 'Gol veya asist sayısı geçersiz.',
 };

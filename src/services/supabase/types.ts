@@ -186,3 +186,11 @@ export interface PlayerLeaderboardStatsRow {
 }
 
 export type LeaderboardMetricFilter = 'goals' | 'assists' | 'matches' | 'winRate' | null;
+
+export interface MatchGoalEntryRow {
+  match_id: string;
+  player_id: string;
+  goals: number;
+  assists: number;
+  updated_at: string;
+}

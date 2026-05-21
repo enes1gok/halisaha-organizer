@@ -3,6 +3,7 @@ import type {
   MatchRatingPublicSummaryDb,
   PeerRatingInput,
 } from '../services/supabase/matchRatings';
+import type { MatchGoalEntry } from '../types/domain';
 import type {
   Group,
   GroupMembership,
@@ -153,6 +154,13 @@ export interface MatchesSlice {
   setMatchStatus: (matchId: string, status: MatchStatus) => Promise<void>;
   /** Organizer cancels an upcoming match; backend trigger pushes 'match_cancelled' to going attendees. */
   cancelMatch: (matchId: string) => Promise<void>;
+
+  /** Persist dışı: oyuncu başına ön gol girişleri (matchId → MatchGoalEntry[]). */
+  goalEntriesByMatchId: Record<string, MatchGoalEntry[]>;
+  /** Belirtilen maç için gol girişlerini Supabase'den yükler. */
+  fetchGoalEntries: (matchId: string) => Promise<void>;
+  /** Oturumdaki kullanıcının gol/asistini kaydeder. */
+  saveGoalEntry: (matchId: string, goals: number, assists: number) => Promise<void>;
 
   /** Persist dışı: post-maç skor önerileri tally (matchId → tally listesi, ağırlığa göre sıralı). */
   scoreVoteTalliesByMatchId: Record<string, MatchScoreVoteTally[] | undefined>;

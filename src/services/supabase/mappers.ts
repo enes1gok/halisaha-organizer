@@ -5,6 +5,7 @@ import type {
   GroupWeeklySeries,
   GuestAttendee,
   Match,
+  MatchGoalEntry,
   MatchStatus,
   Position,
   RSVPStatus,
@@ -20,6 +21,7 @@ import type {
   GroupRow,
   GroupWeeklySeriesRow,
   MatchAttendeeRow,
+  MatchGoalEntryRow,
   MatchGuestAttendeeRow,
   MatchGuestTeamAssignmentRow,
   MatchRow,
@@ -270,6 +272,15 @@ export function mapLeaderboardRow(row: PlayerLeaderboardStatsRow): PlayerLeaderb
     wins: Number(row.wins),
     losses: Number(row.losses),
     draws: Number(row.draws),
+  };
+}
+
+export function rowToMatchGoalEntry(row: MatchGoalEntryRow): MatchGoalEntry {
+  return {
+    matchId: row.match_id,
+    playerId: row.player_id,
+    goals: row.goals,
+    assists: row.assists,
   };
 }
 

@@ -44,4 +44,5 @@ export type ErrorTranslationKey =
   | 'errors.rpc.matchNotFinished'
   | 'errors.rpc.notAuthorized'
   | 'errors.rpc.lineupSlotLengthMismatch'
-  | 'errors.rpc.matchNotStarted';
+  | 'errors.rpc.matchNotStarted'
+  | 'errors.rpc.invalidGoalCount';

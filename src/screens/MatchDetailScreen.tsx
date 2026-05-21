@@ -28,7 +28,7 @@ import type { RSVPStatus } from '../types/domain';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
 import { useCountdown } from '../hooks/useCountdown';
 import { useEffectiveMatchStatus } from '../hooks/useEffectiveMatchStatus';
-import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
+import { checkHasSubmittedRatings, fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList } from '../navigation/types';
@@ -107,6 +107,7 @@ export function MatchDetailScreen() {
   );
 
   const [ratingHints, setRatingHints] = useState({ peer: false, motm: false });
+  const [hasSubmittedRatings, setHasSubmittedRatings] = useState(false);
   const [isClosingRating, setIsClosingRating] = useState(false);
   const [tab, setTab] = useState<MatchDetailTab>('summary');
   const [paidConfirm, setPaidConfirm] = useState<{

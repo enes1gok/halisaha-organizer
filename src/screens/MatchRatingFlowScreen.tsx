@@ -15,7 +15,7 @@ import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
 import type { GroupsStackParamList, HomeStackParamList } from '../navigation/types';
-import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
+import { checkHasSubmittedRatings, fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import { useRatingWindow } from '../hooks/useRatingWindow';
@@ -151,13 +151,30 @@ export function MatchRatingFlowScreen() {
   }, [match, getPlayer, userId]);
 
   useEffect(() => {
-    if (!match || !peers.length) {
+    if (!match) {
       setLoaded(true);
       return;
     }
     let cancel = false;
     (async () => {
       try {
+        // App restart sonrası store sıfırlanmış olsa da sunucu kaydı kontrol edilir
+        const submitted = await checkHasSubmittedRatings(match.id);
+        if (cancel) return;
+        if (submitted) {
+          if (match.status === 'finished') {
+            navigation.replace('MatchSummary', { matchId: match.id });
+          } else {
+            navigation.goBack();
+          }
+          return;
+        }
+
+        if (!peers.length) {
+          setLoaded(true);
+          return;
+        }
+
         const { peerRatings, motmPickPlayerId } = await fetchMyMatchRatingDraftsForMatch(match.id);
         if (cancel) return;
         const next: Record<string, number> = {};

@@ -174,6 +174,14 @@ export interface Match {
   ratingClosedAt?: string;
 }
 
+/** Per-player pre-submission goal/assist entry before organizer finalizes. */
+export interface MatchGoalEntry {
+  matchId: string;
+  playerId: string;
+  goals: number;
+  assists: number;
+}
+
 export interface Group {
   id: string;
   name: string;

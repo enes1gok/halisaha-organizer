@@ -18,8 +18,10 @@ import { fetchMatchGraph, fetchMyMatchesGraphPage, MATCH_PAGE_SIZE } from '../se
 import { scoreResultToRpcPayload } from '../services/supabase/mappers';
 import {
   closeMatchRatingRemote,
+  fetchMatchGoalEntries,
   fetchMatchRatingPublicSummary,
   submitMatchRatingsBundleRemote,
+  upsertMatchGoalEntry,
   type PeerRatingInput,
 } from '../services/supabase/matchRatings';
 import {
@@ -33,7 +35,7 @@ import {
   updateMatchResultOrganizerRpc,
 } from '../services/supabase/matches';
 import type { MatchGraphPayload } from '../services/supabase/matchGraph';
-import type { GuestAttendee, Match, MatchScoreVoteTally, MatchStatus, Player, Position, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
+import type { GuestAttendee, Match, MatchGoalEntry, MatchScoreVoteTally, MatchStatus, Player, Position, RSVPStatus, ScoreResult, SelfReportType } from '../types/domain';
 import { isRemoteMatchId } from '../utils/matchId';
 import { canRespondToSelfReportRequest } from '../utils/selfReportPeerReview';
 import type { CreateMatchInput, EditMatchInput } from '../store/types';
@@ -663,5 +665,28 @@ export async function submitMatchScoreVoteUseCase(
       error,
       'Skor oyunuz kaydedilemedi. Tekrar deneyin.',
     );
+  }
+}
+
+export async function fetchGoalEntriesUseCase(matchId: string): Promise<MatchGoalEntry[]> {
+  if (!isRemoteMatchId(matchId)) return [];
+  try {
+    return await fetchMatchGoalEntries(matchId);
+  } catch (error) {
+    rethrowUseCaseError('fetchGoalEntries', error, 'Gol girişleri yüklenemedi.');
+    return [];
+  }
+}
+
+export async function saveGoalEntryUseCase(
+  matchId: string,
+  goals: number,
+  assists: number,
+): Promise<void> {
+  if (!isRemoteMatchId(matchId)) return;
+  try {
+    await upsertMatchGoalEntry(matchId, goals, assists);
+  } catch (error) {
+    rethrowUseCaseError('saveGoalEntry', error, 'Gol girişi kaydedilemedi. Tekrar deneyin.');
   }
 }

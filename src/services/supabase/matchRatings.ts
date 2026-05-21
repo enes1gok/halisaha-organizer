@@ -1,5 +1,8 @@
 import { isSupabaseConfigured, getSupabaseClient } from '../../lib/supabase';
 import { createAuthRequiredError, mapSupabaseError } from './errors';
+import type { MatchGoalEntry } from '../../types/domain';
+import { rowToMatchGoalEntry } from './mappers';
+import type { MatchGoalEntryRow } from './types';
 
 export interface MatchRatingPlayerSummaryDb {
   player_id: string;
@@ -113,6 +116,48 @@ export async function fetchMyMotmPickForMatch(matchId: string): Promise<string |
   if (error) throw mapSupabaseError(error, 'fetchMyMotmPickForMatch');
   const row = data as { pick_player_id: string } | null;
   return row?.pick_player_id ?? null;
+}
+
+export async function checkHasSubmittedRatings(matchId: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('match_rating_submissions')
+    .select('match_id')
+    .eq('match_id', matchId)
+    .maybeSingle();
+  if (error) return false;
+  return data !== null;
+}
+
+export async function fetchMatchGoalEntries(matchId: string): Promise<MatchGoalEntry[]> {
+  if (!isSupabaseConfigured()) throw createAuthRequiredError('fetchMatchGoalEntries');
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc('get_match_goal_entries', {
+    p_match_id: matchId,
+  });
+  if (error) throw mapSupabaseError(error, 'fetchMatchGoalEntries', { requestPayload: { matchId } });
+  const rows = (Array.isArray(data) ? data : []) as MatchGoalEntryRow[];
+  return rows.map(rowToMatchGoalEntry);
+}
+
+export async function upsertMatchGoalEntry(
+  matchId: string,
+  goals: number,
+  assists: number,
+): Promise<void> {
+  if (!isSupabaseConfigured()) throw createAuthRequiredError('upsertMatchGoalEntry');
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc('upsert_match_goal_entry', {
+    p_match_id: matchId,
+    p_goals: goals,
+    p_assists: assists,
+  });
+  if (error) {
+    throw mapSupabaseError(error, 'upsertMatchGoalEntry', {
+      requestPayload: { matchId, goals, assists },
+    });
+  }
 }
 
 export type MatchRatingDrafts = {
