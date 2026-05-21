@@ -12,11 +12,14 @@ describe('matchPeerRatingQuickBands', () => {
   });
 
   it('nearestQuickBandId picks closest band center', () => {
+    expect(nearestQuickBandId(100)).toBe('great');
     expect(nearestQuickBandId(90)).toBe('great');
     expect(nearestQuickBandId(75)).toBe('good');
     expect(nearestQuickBandId(73)).toBe('good');
+    expect(nearestQuickBandId(50)).toBe('mid');
     expect(nearestQuickBandId(60)).toBe('mid');
-    expect(nearestQuickBandId(45)).toBe('weak');
+    expect(nearestQuickBandId(45)).toBe('mid');
+    expect(nearestQuickBandId(25)).toBe('weak');
   });
 
   it('clamps to 0–100 before matching', () => {
@@ -25,7 +28,7 @@ describe('matchPeerRatingQuickBands', () => {
   });
 
   it('quickBandById returns band metadata', () => {
-    expect(quickBandById('great').score).toBe(90);
+    expect(quickBandById('great').score).toBe(100);
     expect(quickBandById('weak').label).toBe('Zayıf');
   });
 });

@@ -8,10 +8,10 @@ export interface QuickRatingBand {
 
 /** Ön tanımlı hızlı derecelendirme bantları → sunucuya gönderilen 0–100 tam sayı. */
 export const QUICK_RATING_BANDS: readonly QuickRatingBand[] = [
-  { id: 'great', label: 'Harika', score: 90 },
+  { id: 'great', label: 'Harika', score: 100 },
   { id: 'good', label: 'İyi', score: 75 },
-  { id: 'mid', label: 'Orta', score: 60 },
-  { id: 'weak', label: 'Zayıf', score: 45 },
+  { id: 'mid', label: 'Orta', score: 50 },
+  { id: 'weak', label: 'Zayıf', score: 25 },
 ] as const;
 
 const bandById = Object.fromEntries(QUICK_RATING_BANDS.map((b) => [b.id, b])) as Record<
