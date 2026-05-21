@@ -102,6 +102,8 @@ export interface MatchesSlice {
   loadMatchRatingSummary: (matchId: string) => Promise<void>;
   /** Kadro uygun kullanıcı: puanlar + MOTM. */
   submitMatchRatings: (matchId: string, scores: PeerRatingInput[], motmPickId: string) => Promise<void>;
+  /** Sadece organizatör: derecelendirme penceresini manuel kapatır. */
+  closeMatchRating: (matchId: string) => Promise<void>;
 
   /** Maç Ratings gönderildi (persist dışı; Maçlarım özeti yönlendirmesi için). */
   matchRatingsSubmissionByMatchId: Record<string, true>;

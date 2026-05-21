@@ -168,8 +168,10 @@ export interface Match {
   selfReports: SelfReportRequest[];
   /** App yüklememiş misafir oyuncular. teamAIds/teamBIds içinde UUID olarak taşınır. */
   guestAttendees?: GuestAttendee[];
-  /** ISO timestamp: puanlama penceresinin kapanış zamanı. submit_match_result tarafından doldurulur. */
+  /** ISO timestamp: eski maçlarda submit_match_result tarafından doldurulan pencere kapanış zamanı. */
   ratingWindowEndsAt?: string;
+  /** ISO timestamp: organizatör derecelendirmeyi kapattığında dolar; null = hâlâ açık. */
+  ratingClosedAt?: string;
 }
 
 export interface Group {

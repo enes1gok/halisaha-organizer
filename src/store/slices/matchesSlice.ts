@@ -23,6 +23,7 @@ import {
   hydrateRemoteMatchesUseCase,
   joinMatchByJoinCodeUseCase,
   joinWaitlistUseCase,
+  closeMatchRatingUseCase,
   loadMatchRatingSummaryUseCase,
   lockLineupUseCase,
   unlockLineupUseCase,
@@ -490,6 +491,15 @@ export const createMatchesSlice: StateCreator<AppState, [], [], MatchesSlice> = 
     await get().loadMatchRatingSummary(matchId);
     set((s) => ({
       matchRatingsSubmissionByMatchId: { ...s.matchRatingsSubmissionByMatchId, [matchId]: true },
+    }));
+  },
+
+  closeMatchRating: async (matchId: string) => {
+    await closeMatchRatingUseCase(matchId);
+    set((s) => ({
+      matches: s.matches.map((m) =>
+        m.id === matchId ? { ...m, ratingClosedAt: new Date().toISOString() } : m,
+      ),
     }));
   },
 

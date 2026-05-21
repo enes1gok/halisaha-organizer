@@ -120,7 +120,11 @@ export function MatchRatingFlowScreen() {
     })),
   );
 
-  const ratingWindow = useRatingWindow(match?.ratingWindowEndsAt);
+  const ratingWindow = useRatingWindow({
+    startsAt: match?.startsAt,
+    ratingClosedAt: match?.ratingClosedAt,
+    ratingWindowEndsAt: match?.ratingWindowEndsAt,
+  });
 
   const [step, setStep] = useState<FlowStep>('rating');
   const [cardIndex, setCardIndex] = useState(0);
@@ -233,10 +237,10 @@ export function MatchRatingFlowScreen() {
     );
   }
 
-  if (match.status !== 'finished') {
+  if (match.status === 'cancelled') {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyMsg}>Puanlama yalnızca bitmiş maçlarda yapılabilir.</Text>
+        <Text style={styles.emptyMsg}>Bu maç iptal edildi.</Text>
       </View>
     );
   }
@@ -244,12 +248,23 @@ export function MatchRatingFlowScreen() {
   if (ratingWindow.isClosed) {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyMsg}>Puanlama penceresi kapandı.</Text>
-        <PillButton
-          title="Sonuçlara git"
-          onPress={() => navigation.navigate('MatchSummary', { matchId: match.id })}
-          style={styles.mt}
-        />
+        <Text style={styles.emptyMsg}>Oyuncu derecelendirmesi tamamlandı.</Text>
+        {match.status === 'finished' ? (
+          <PillButton
+            title="Sonuçlara git"
+            onPress={() => navigation.navigate('MatchSummary', { matchId: match.id })}
+            style={styles.mt}
+          />
+        ) : null}
+      </View>
+    );
+  }
+
+  // Maç henüz başlamamışsa (starts_at gelecekte)
+  if (!ratingWindow.isOpen && !ratingWindow.isClosed) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.emptyMsg}>Derecelendirme maç başladığında aktifleşir.</Text>
       </View>
     );
   }

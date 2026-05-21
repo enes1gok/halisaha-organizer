@@ -43,4 +43,5 @@ export type ErrorTranslationKey =
   | 'errors.rpc.scoreVoteNotAllowed'
   | 'errors.rpc.matchNotFinished'
   | 'errors.rpc.notAuthorized'
-  | 'errors.rpc.lineupSlotLengthMismatch';
+  | 'errors.rpc.lineupSlotLengthMismatch'
+  | 'errors.rpc.matchNotStarted';

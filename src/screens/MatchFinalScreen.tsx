@@ -155,7 +155,11 @@ export function MatchFinalScreen() {
     }
   }, [match?.id, match?.status, loadSummary]);
 
-  const ratingWindow = useRatingWindow(match?.ratingWindowEndsAt ?? ratingSummary?.rating_window_ends_at);
+  const ratingWindow = useRatingWindow({
+    startsAt: match?.startsAt,
+    ratingClosedAt: match?.ratingClosedAt ?? ratingSummary?.rating_closed_at,
+    ratingWindowEndsAt: match?.ratingWindowEndsAt ?? ratingSummary?.rating_window_ends_at,
+  });
 
   const isOrganizer = match?.organizerId === userId;
   const myGroupMembership = match

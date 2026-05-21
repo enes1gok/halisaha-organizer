@@ -186,6 +186,10 @@ const ERR_REGISTRY: Record<
     key: 'errors.rpc.lineupSlotLengthMismatch',
     code: 'VALIDATION',
   },
+  ERR_MATCH_NOT_STARTED: {
+    key: 'errors.rpc.matchNotStarted',
+    code: 'VALIDATION',
+  },
 };
 
 export function isAppError(error: unknown): error is AppError {

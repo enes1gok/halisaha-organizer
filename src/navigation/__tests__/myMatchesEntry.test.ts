@@ -4,10 +4,13 @@ import type { Match, ScoreResult } from '../../types/domain';
 const remoteId = 'a0000001-0000-4000-8000-000000000011';
 const user = 'u0000002-0000-4000-8000-000000000022';
 
+const pastTime = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2h ago
+const futureTime = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1h from now
+
 function bm(partial: Partial<Match>): Match {
   const base: Match = {
     id: remoteId,
-    startsAt: new Date().toISOString(),
+    startsAt: pastTime,
     venue: 'Saha',
     organizerId: 'org',
     maxPlayers: 14,
@@ -32,18 +35,56 @@ describe('resolveMyMatchesEntryScreen', () => {
     expect(resolveMyMatchesEntryScreen(m, user, {})).toBe('MatchDetail');
   });
 
-  it('routes upcoming remote to MatchDetail', () => {
-    expect(resolveMyMatchesEntryScreen(bm({ status: 'upcoming' }), user, {})).toBe('MatchDetail');
-  });
-
-  it('routes ongoing remote to MatchDetail', () => {
-    expect(resolveMyMatchesEntryScreen(bm({ status: 'ongoing' }), user, {})).toBe('MatchDetail');
-  });
-
-  it('routes finished without result to MatchDetail (score entered inline now)', () => {
+  it('routes upcoming remote (not started) to MatchDetail', () => {
     expect(
-      resolveMyMatchesEntryScreen(bm({ status: 'finished', result: undefined }), user, {}),
+      resolveMyMatchesEntryScreen(bm({ status: 'upcoming', startsAt: futureTime }), user, {}),
     ).toBe('MatchDetail');
+  });
+
+  it('routes cancelled remote to MatchDetail', () => {
+    expect(resolveMyMatchesEntryScreen(bm({ status: 'cancelled' }), user, {})).toBe('MatchDetail');
+  });
+
+  // ── Ongoing (match started) ───────────────────────────────────────────────
+
+  it('routes ongoing on lineup with open rating window to MatchRatingFlow', () => {
+    expect(resolveMyMatchesEntryScreen(bm({ status: 'ongoing' }), user, {})).toBe(
+      'MatchRatingFlow',
+    );
+  });
+
+  it('routes ongoing on lineup with already submitted rating to MatchDetail', () => {
+    expect(
+      resolveMyMatchesEntryScreen(bm({ status: 'ongoing' }), user, { [remoteId]: true }),
+    ).toBe('MatchDetail');
+  });
+
+  it('routes ongoing with rating closed by organizer to MatchDetail', () => {
+    expect(
+      resolveMyMatchesEntryScreen(
+        bm({ status: 'ongoing', ratingClosedAt: new Date(Date.now() - 5000).toISOString() }),
+        user,
+        {},
+      ),
+    ).toBe('MatchDetail');
+  });
+
+  it('routes ongoing off lineup to MatchDetail', () => {
+    expect(
+      resolveMyMatchesEntryScreen(bm({ status: 'ongoing', teamAIds: [], teamBIds: [] }), user, {}),
+    ).toBe('MatchDetail');
+  });
+
+  // ── Finished ─────────────────────────────────────────────────────────────
+
+  it('routes finished without result off lineup to MatchSummary', () => {
+    expect(
+      resolveMyMatchesEntryScreen(
+        bm({ status: 'finished', result: undefined, teamAIds: [], teamBIds: [] }),
+        user,
+        {},
+      ),
+    ).toBe('MatchSummary');
   });
 
   it('routes finished + result off lineup to MatchSummary', () => {
@@ -64,18 +105,23 @@ describe('resolveMyMatchesEntryScreen', () => {
     ).toBe('MatchSummary');
   });
 
-  it('routes finished + result on lineup without submission and open window to MatchRatingFlow', () => {
-    const endsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  it('routes finished + result on lineup with open rating window (no ratingClosedAt) to MatchRatingFlow', () => {
+    expect(
+      resolveMyMatchesEntryScreen(bm({ status: 'finished', result }), user, {}),
+    ).toBe('MatchRatingFlow');
+  });
+
+  it('routes finished + result on lineup with open ratingWindowEndsAt (old flow) to MatchRatingFlow', () => {
     expect(
       resolveMyMatchesEntryScreen(
-        bm({ status: 'finished', result, ratingWindowEndsAt: endsAt }),
+        bm({ status: 'finished', result, ratingWindowEndsAt: futureTime }),
         user,
         {},
       ),
     ).toBe('MatchRatingFlow');
   });
 
-  it('routes finished + result on lineup with closed window to MatchSummary', () => {
+  it('routes finished + result on lineup with expired ratingWindowEndsAt (old flow) to MatchSummary', () => {
     const endsAt = new Date(Date.now() - 60 * 1000).toISOString();
     expect(
       resolveMyMatchesEntryScreen(
@@ -86,9 +132,17 @@ describe('resolveMyMatchesEntryScreen', () => {
     ).toBe('MatchSummary');
   });
 
-  it('routes finished + result on lineup without ratingWindowEndsAt to MatchSummary (no open window)', () => {
+  it('routes finished + result on lineup with rating closed by organizer to MatchSummary', () => {
     expect(
-      resolveMyMatchesEntryScreen(bm({ status: 'finished', result }), user, {}),
+      resolveMyMatchesEntryScreen(
+        bm({
+          status: 'finished',
+          result,
+          ratingClosedAt: new Date(Date.now() - 5000).toISOString(),
+        }),
+        user,
+        {},
+      ),
     ).toBe('MatchSummary');
   });
 });

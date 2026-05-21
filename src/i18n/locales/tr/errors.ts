@@ -81,4 +81,6 @@ export const trErrors: Record<ErrorTranslationKey, string> = {
     'Bu işlem için yetkiniz bulunmuyor.',
   'errors.rpc.lineupSlotLengthMismatch':
     'Kadro pozisyon bilgisi tutarsız. Lütfen tekrar deneyin.',
+  'errors.rpc.matchNotStarted':
+    'Derecelendirme maç başladıktan sonra yapılabilir.',
 };

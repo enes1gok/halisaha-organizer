@@ -208,6 +208,7 @@ export function rowsToMatch(
     result,
     selfReports: domainSelf,
     ratingWindowEndsAt: row.rating_window_ends_at ?? undefined,
+    ratingClosedAt: row.rating_closed_at ?? undefined,
     guestAttendees: guestAttendeeRows.map(mapGuestAttendeeRow),
   };
 }

@@ -1,5 +1,5 @@
-import { getSupabaseClient } from '../../lib/supabase';
-import { mapSupabaseError } from './errors';
+import { isSupabaseConfigured, getSupabaseClient } from '../../lib/supabase';
+import { createAuthRequiredError, mapSupabaseError } from './errors';
 
 export interface MatchRatingPlayerSummaryDb {
   player_id: string;
@@ -18,8 +18,10 @@ export interface MatchMotmRankDb {
 export interface MatchRatingPublicSummaryDb {
   players: MatchRatingPlayerSummaryDb[];
   motm: MatchMotmRankDb[];
-  /** ISO string: puanlama penceresinin kapanış zamanı (null = eski maç, pencere yok). */
+  /** ISO string: eski maçlarda otomatik kapanış zamanı (null = yeni maç ya da henüz set edilmedi). */
   rating_window_ends_at?: string | null;
+  /** ISO string: organizatör manuel kapattığında dolar (null = açık). */
+  rating_closed_at?: string | null;
   /** true: pencere kapandı, sonuçlar herkes tarafından görülebilir. */
   rating_window_closed?: boolean;
 }
@@ -27,6 +29,13 @@ export interface MatchRatingPublicSummaryDb {
 export interface PeerRatingInput {
   ratee_id: string;
   score: number;
+}
+
+export async function closeMatchRatingRemote(matchId: string): Promise<void> {
+  if (!isSupabaseConfigured()) throw createAuthRequiredError('closeMatchRating');
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc('close_match_rating', { p_match_id: matchId });
+  if (error) throw mapSupabaseError(error, 'closeMatchRating', { requestPayload: { matchId } });
 }
 
 /** Tamamlanmış maç için soy ağacından (kadro ∪ katılımcı) çıkarım; oy verme için sadece kadro kullanılır sunucuda. */
@@ -44,6 +53,7 @@ export async function fetchMatchRatingPublicSummary(
     players: Array.isArray(raw.players) ? raw.players : [],
     motm: Array.isArray(raw.motm) ? raw.motm : [],
     rating_window_ends_at: raw.rating_window_ends_at ?? null,
+    rating_closed_at: raw.rating_closed_at ?? null,
     rating_window_closed: raw.rating_window_closed ?? false,
   };
 }

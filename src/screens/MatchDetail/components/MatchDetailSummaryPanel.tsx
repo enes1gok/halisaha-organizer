@@ -38,6 +38,8 @@ type Props = {
   showInlineWizard: boolean;
   onWizardCompleted: () => void;
   currentUserId: string;
+  onCloseRating?: () => void;
+  isClosingRating?: boolean;
 };
 
 export function MatchDetailSummaryPanel({
@@ -62,6 +64,8 @@ export function MatchDetailSummaryPanel({
   showInlineWizard,
   onWizardCompleted,
   currentUserId,
+  onCloseRating,
+  isClosingRating,
 }: Props) {
   const matchId = match.id;
   const { colors } = useTheme();
@@ -189,22 +193,66 @@ export function MatchDetailSummaryPanel({
         </View>
       ) : null}
 
-      {showFinishedRatingsChrome ? (
+      {(effectiveStatus === 'ongoing' || effectiveStatus === 'finished') &&
+      match.status !== 'cancelled' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Derecelendirme</Text>
-          <Text style={styles.muted}>
-            Kadrodaki oyuncuların ortalama oyları listede gösterilir; bireysel oylar anonimdir. En çok seçilen maçın adamı
-            vurgulanır.
-          </Text>
+
+          {showFinishedRatingsChrome ? (
+            <Text style={styles.muted}>
+              Kadrodaki oyuncuların ortalama oyları listede gösterilir; bireysel oylar anonimdir. En
+              çok seçilen maçın adamı vurgulanır.
+            </Text>
+          ) : null}
+
+          {/* Organizatör derecelendirme yönetim butonu */}
+          {canManageMatch ? (
+            match.ratingClosedAt ? (
+              <PillButton
+                title="Oyuncu derecelendirme bitmiştir"
+                variant="secondary"
+                disabled
+                style={styles.mt}
+                testID="match:rating-closed:organizer-indicator"
+                accessibilityLabel="Oyuncu derecelendirme tamamlandı"
+              />
+            ) : (
+              <PillButton
+                title="Oyuncu derecelendirmeyi bitir"
+                variant="danger"
+                onPress={onCloseRating}
+                loading={isClosingRating}
+                style={styles.mt}
+                testID="match:close-rating:press"
+                accessibilityLabel="Oyuncu derecelendirmeyi kapat"
+              />
+            )
+          ) : null}
+
+          {/* Oyuncu derecelendirme butonu */}
           {userOnMatchLineup ? (
-            <PillButton
-              title={
-                ratingHints.peer || ratingHints.motm ? 'Derecelendirmeyi düzenle' : 'Oyuncuları derecelendir'
-              }
-              onPress={() => navigation.navigate('MatchRatingFlow', { matchId })}
-              testID="match:ratings:cta:press"
-              style={styles.mt}
-            />
+            match.ratingClosedAt ? (
+              <PillButton
+                title="Oyuncu derecelendirme bitmiştir"
+                variant="secondary"
+                disabled
+                style={styles.mt}
+                testID="match:rating-closed:player-view"
+                accessibilityLabel="Oyuncu derecelendirme kapatıldı"
+              />
+            ) : (
+              <PillButton
+                title={
+                  ratingHints.peer || ratingHints.motm
+                    ? 'Derecelendirmeyi düzenle'
+                    : 'Oyuncuları derecelendir'
+                }
+                onPress={() => navigation.navigate('MatchRatingFlow', { matchId })}
+                testID="match:ratings:cta:press"
+                style={styles.mt}
+                accessibilityLabel="Oyuncuları derecelendir"
+              />
+            )
           ) : null}
         </View>
       ) : null}

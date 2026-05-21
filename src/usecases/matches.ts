@@ -17,6 +17,7 @@ import {
 import { fetchMatchGraph, fetchMyMatchesGraphPage, MATCH_PAGE_SIZE } from '../services/supabase/matchGraph';
 import { scoreResultToRpcPayload } from '../services/supabase/mappers';
 import {
+  closeMatchRatingRemote,
   fetchMatchRatingPublicSummary,
   submitMatchRatingsBundleRemote,
   type PeerRatingInput,
@@ -615,6 +616,19 @@ export async function submitMatchRatingsUseCase(
       'submitMatchRatings',
       error,
       'Derecelendirme kaydedilemedi. Kontrol edip tekrar deneyin.',
+    );
+  }
+}
+
+export async function closeMatchRatingUseCase(matchId: string): Promise<void> {
+  if (!isRemoteMatchId(matchId)) return;
+  try {
+    await closeMatchRatingRemote(matchId);
+  } catch (error) {
+    rethrowUseCaseError(
+      'closeMatchRating',
+      error,
+      'Derecelendirme kapatılamadı. Lütfen tekrar deneyin.',
     );
   }
 }

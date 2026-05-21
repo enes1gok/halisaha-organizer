@@ -5,6 +5,10 @@ export type MyMatchesEntryScreen = 'MatchRatingFlow' | 'MatchSummary' | 'MatchDe
 
 /**
  * Remote maçlar için Maçlarım satır hedef ekranı. Yerel (seed/demo) maçlar her zaman detaydadır.
+ *
+ * Yeni akış: derecelendirme penceresi maç başladığında (starts_at <= now) açılır,
+ * organizatör manuel kapatana kadar (rating_closed_at) açık kalır.
+ * Eski akış: rating_window_ends_at tabanlı auto-close (geriye uyumluluk).
  */
 export function resolveMyMatchesEntryScreen(
   match: Match,
@@ -15,25 +19,27 @@ export function resolveMyMatchesEntryScreen(
     return 'MatchDetail';
   }
 
+  if (match.status === 'cancelled') {
+    return 'MatchDetail';
+  }
+
   const onLineup = match.teamAIds.includes(userId) || match.teamBIds.includes(userId);
+  const alreadySubmitted = !!ratingsSubmittedByMatchId[match.id];
+  const matchHasStarted = !!match.startsAt && Date.now() >= new Date(match.startsAt).getTime();
 
-  if (match.status !== 'finished') {
-    return 'MatchDetail';
+  // Derecelendirme kapalı mı? Organizatör kapattıysa (yeni) veya eski auto-close dolduysa.
+  const ratingClosed =
+    !!match.ratingClosedAt ||
+    (!!match.ratingWindowEndsAt && Date.now() > new Date(match.ratingWindowEndsAt).getTime());
+
+  // Maç başladı, kullanıcı kadrodaysa ve pencere açıksa → derecelendirme akışına yönlendir
+  if (matchHasStarted && onLineup && !alreadySubmitted && !ratingClosed) {
+    return 'MatchRatingFlow';
   }
 
-  if (!match.result) {
-    // Skor girilmemiş — organizatör MatchDetail'da skor girebilir
-    return 'MatchDetail';
-  }
-
-  if (!onLineup || ratingsSubmittedByMatchId[match.id]) {
+  if (match.status === 'finished') {
     return 'MatchSummary';
   }
 
-  // Pencere yoksa (eski maç) veya süresi dolduysa → final ekrana git
-  if (!match.ratingWindowEndsAt || new Date(match.ratingWindowEndsAt).getTime() < Date.now()) {
-    return 'MatchSummary';
-  }
-
-  return 'MatchRatingFlow';
+  return 'MatchDetail';
 }

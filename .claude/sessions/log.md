@@ -10,3 +10,6 @@ Session: 2026-05-20 23:41 — 8fa6365 feat: implement waitlist feature for full 
 Session: 2026-05-20 23:52 — 8fa6365 feat: implement waitlist feature for full matches
 Session: 2026-05-21 00:03 — 8fa6365 feat: implement waitlist feature for full matches
 Session: 2026-05-21 00:08 — 8fa6365 feat: implement waitlist feature for full matches
+Session: 2026-05-21 08:47 — ae28d6a refactor: remove MyMatches feature and update navigation
+Session: 2026-05-21 08:57 — 0bfd966 feat: add migration deployment guidelines for Supabase
+Session: 2026-05-21 09:00 — 0bfd966 feat: add migration deployment guidelines for Supabase

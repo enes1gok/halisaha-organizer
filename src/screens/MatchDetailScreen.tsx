@@ -79,6 +79,7 @@ export function MatchDetailScreen() {
     respondSelfReport,
     refreshRemoteMatch,
     loadMatchRatingSummary,
+    closeMatchRating,
     unlockLineup,
     cancelMatch,
     removeGuestAttendee,
@@ -95,6 +96,7 @@ export function MatchDetailScreen() {
       respondSelfReport: s.respondSelfReport,
       refreshRemoteMatch: s.refreshRemoteMatch,
       loadMatchRatingSummary: s.loadMatchRatingSummary,
+      closeMatchRating: s.closeMatchRating,
       unlockLineup: s.unlockLineup,
       cancelMatch: s.cancelMatch,
       removeGuestAttendee: s.removeGuestAttendee,
@@ -105,6 +107,7 @@ export function MatchDetailScreen() {
   );
 
   const [ratingHints, setRatingHints] = useState({ peer: false, motm: false });
+  const [isClosingRating, setIsClosingRating] = useState(false);
   const [tab, setTab] = useState<MatchDetailTab>('summary');
   const [paidConfirm, setPaidConfirm] = useState<{
     playerId: string;
@@ -422,6 +425,32 @@ export function MatchDetailScreen() {
       (userOnMatchLineup || canManageMatch)
   );
 
+  const handleCloseRating = useCallback(() => {
+    if (!match) return;
+    Alert.alert(
+      'Derecelendirmeyi Bitir',
+      'Oyuncu derecelendirmesi kapatılacak. Bu işlem geri alınamaz.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Bitir',
+          style: 'destructive',
+          onPress: () => {
+            setIsClosingRating(true);
+            void closeMatchRating(match.id)
+              .catch((err) =>
+                showApiErrorToast(err, {
+                  uiOperation: 'MatchDetail:closeMatchRating',
+                  fallbackMessage: 'Derecelendirme kapatılamadı.',
+                }),
+              )
+              .finally(() => setIsClosingRating(false));
+          },
+        },
+      ],
+    );
+  }, [match, closeMatchRating, showApiErrorToast]);
+
   const handleWizardCompleted = useCallback(() => {
     navigation.navigate('MatchSummary', { matchId });
   }, [navigation, matchId]);
@@ -513,6 +542,8 @@ export function MatchDetailScreen() {
             showInlineWizard={showInlineWizard}
             onWizardCompleted={handleWizardCompleted}
             currentUserId={userId ?? ''}
+            onCloseRating={handleCloseRating}
+            isClosingRating={isClosingRating}
           />
         ) : null}
 
