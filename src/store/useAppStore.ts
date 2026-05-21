@@ -23,6 +23,7 @@ type PersistedShape = {
   themePreference: ThemePreference;
   matchTemplates: MatchTemplate[];
   remoteUserId: string | null;
+  matchRatingsSubmissionByMatchId: Record<string, true>;
 };
 
 const VALID_PREFERENCES: ReadonlyArray<ThemePreference> = ['system', 'light', 'dark'];
@@ -77,6 +78,7 @@ export const useAppStore = create<AppState>()(
         themePreference: s.themePreference,
         matchTemplates: s.matchTemplates,
         remoteUserId: s.remoteUserId,
+        matchRatingsSubmissionByMatchId: s.matchRatingsSubmissionByMatchId,
       }),
       migrate: (persisted: unknown, version: number): PersistedShape => {
         if (version < 4) {
@@ -91,6 +93,7 @@ export const useAppStore = create<AppState>()(
             themePreference: coerceThemePreference(safe.themePreference),
             matchTemplates: coerceMatchTemplates(safe.matchTemplates),
             remoteUserId: safe.remoteUserId ?? null,
+            matchRatingsSubmissionByMatchId: {},
           };
         }
 
@@ -103,6 +106,8 @@ export const useAppStore = create<AppState>()(
           themePreference: coerceThemePreference(safe.themePreference),
           matchTemplates: coerceMatchTemplates(safe.matchTemplates),
           remoteUserId: safe.remoteUserId ?? null,
+          matchRatingsSubmissionByMatchId:
+            (safe.matchRatingsSubmissionByMatchId as Record<string, true> | undefined) ?? {},
         };
       },
       onRehydrateStorage: () => (state, error) => {

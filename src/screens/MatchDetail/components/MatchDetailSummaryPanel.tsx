@@ -40,6 +40,7 @@ type Props = {
   currentUserId: string;
   onCloseRating?: () => void;
   isClosingRating?: boolean;
+  hasSubmittedRatings: boolean;
 };
 
 export function MatchDetailSummaryPanel({
@@ -66,6 +67,7 @@ export function MatchDetailSummaryPanel({
   currentUserId,
   onCloseRating,
   isClosingRating,
+  hasSubmittedRatings,
 }: Props) {
   const matchId = match.id;
   const { colors } = useTheme();
@@ -230,7 +232,7 @@ export function MatchDetailSummaryPanel({
           ) : null}
 
           {/* Oyuncu derecelendirme butonu */}
-          {userOnMatchLineup ? (
+          {userOnMatchLineup && !hasSubmittedRatings ? (
             match.ratingClosedAt ? (
               <PillButton
                 title="Oyuncu derecelendirme bitmiştir"

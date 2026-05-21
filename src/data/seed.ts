@@ -35,8 +35,9 @@ export function buildSeedState(now: Date = new Date()): {
  * - v4: `themePreference` (PreferencesSlice) eklendi; eksik olduğunda `'system'` ile doldurulur.
  * - v5: `matchTemplates` (yerel maç şablonları) eklendi.
  * - v6: `Match.ratingWindowEndsAt` eklendi (optional, eski maçlarda undefined).
+ * - v7: `matchRatingsSubmissionByMatchId` persist edildi (rating flash fix).
  */
-export const STORE_VERSION = 6;
+export const STORE_VERSION = 7;
 
 /** Generate join code for new matches (seed uses fixed codes) */
 export { createJoinCode };

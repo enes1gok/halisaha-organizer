@@ -211,6 +211,25 @@ export function MatchDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!match || !isRemoteMatchId(match.id) || !userOnMatchLineup) return undefined;
+      const matchHasStarted = new Date(match.startsAt).getTime() <= Date.now();
+      if (!matchHasStarted) return undefined;
+
+      let cancelled = false;
+      void (async () => {
+        try {
+          const submitted = await checkHasSubmittedRatings(match.id);
+          if (!cancelled) setHasSubmittedRatings(submitted);
+        } catch {
+          /* silent — fail-open, buton gösterilmeye devam eder */
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [match?.id, match?.startsAt, userOnMatchLineup]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
       if (!isRemoteMatchId(matchId)) return undefined;
       const now = Date.now();
       if (now - lastRemoteDetailRefreshMs.current < REMOTE_DETAIL_REFRESH_MS) return undefined;
@@ -504,6 +523,7 @@ export function MatchDetailScreen() {
             userOnMatchLineup={userOnMatchLineup}
             showFinishedRatingsChrome={showFinishedRatingsChrome}
             ratingHints={ratingHints}
+            hasSubmittedRatings={hasSubmittedRatings}
             actionablePending={actionablePending}
             getPlayer={getPlayer}
             onRespondSelfReport={(reportId, approved) =>

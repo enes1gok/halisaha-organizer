@@ -105,20 +105,22 @@ describe('resolveMyMatchesEntryScreen', () => {
     ).toBe('MatchSummary');
   });
 
-  it('routes finished + result on lineup with open rating window (no ratingClosedAt) to MatchRatingFlow', () => {
+  it('routes finished + result on lineup with open rating window (no ratingClosedAt) to MatchSummary', () => {
+    // finished maçlar rehydration race condition'ını önlemek için MatchRatingFlow'a değil
+    // MatchSummary'ye yönlendirilir; rating CTA MatchDetail üzerinden erişilebilir.
     expect(
       resolveMyMatchesEntryScreen(bm({ status: 'finished', result }), user, {}),
-    ).toBe('MatchRatingFlow');
+    ).toBe('MatchSummary');
   });
 
-  it('routes finished + result on lineup with open ratingWindowEndsAt (old flow) to MatchRatingFlow', () => {
+  it('routes finished + result on lineup with open ratingWindowEndsAt (old flow) to MatchSummary', () => {
     expect(
       resolveMyMatchesEntryScreen(
         bm({ status: 'finished', result, ratingWindowEndsAt: futureTime }),
         user,
         {},
       ),
-    ).toBe('MatchRatingFlow');
+    ).toBe('MatchSummary');
   });
 
   it('routes finished + result on lineup with expired ratingWindowEndsAt (old flow) to MatchSummary', () => {

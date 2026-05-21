@@ -1,5 +1,5 @@
 import * as Sharing from 'expo-sharing';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
@@ -25,6 +25,7 @@ import { getPlayerMatchOutcome } from '../utils/matchOutcome';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { useUserFeedback } from '../utils/userFeedback';
+import { checkHasSubmittedRatings } from '../services/supabase/matchRatings';
 
 type Stacks = HomeStackParamList & GroupsStackParamList;
 type R =
@@ -131,6 +132,7 @@ export function MatchFinalScreen() {
   const [shareBusy, setShareBusy] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [submittedFromServer, setSubmittedFromServer] = useState(false);
   const wizardRef = useRef<PostMatchInlineWizardHandle>(null);
 
   const userId = useAuthStore((s) => s.getCurrentUserId());
@@ -154,6 +156,27 @@ export function MatchFinalScreen() {
       void loadSummary(match.id);
     }
   }, [match?.id, match?.status, loadSummary]);
+
+  // Store'daki matchRatingsSubmissionByMatchId rehydration race condition'ını önlemek için
+  // ekran odaklandığında sunucudan submission durumu kontrol edilir.
+  useFocusEffect(
+    useCallback(() => {
+      if (!match || !isRemoteMatchId(match.id)) return undefined;
+      const onLineup = match.teamAIds.includes(userId) || match.teamBIds.includes(userId);
+      if (!onLineup) return undefined;
+
+      let cancelled = false;
+      void (async () => {
+        try {
+          const submitted = await checkHasSubmittedRatings(match.id);
+          if (!cancelled) setSubmittedFromServer(submitted);
+        } catch {
+          /* fail-open — buton gösterilmeye devam eder */
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [match?.id, match?.teamAIds, match?.teamBIds, userId]),
+  );
 
   const ratingWindow = useRatingWindow({
     startsAt: match?.startsAt,
@@ -276,7 +299,7 @@ export function MatchFinalScreen() {
     });
   }, [match, userId, getPlayer, onLineup, motmWinner]);
 
-  const showRatingCta = onLineup && !hasSubmittedRatings && isRemoteMatchId(match.id) && !windowClosed;
+  const showRatingCta = onLineup && !hasSubmittedRatings && !submittedFromServer && isRemoteMatchId(match.id) && !windowClosed;
 
   return (
     <>

@@ -6,6 +6,7 @@ import { letterSpacing, spacing, typography } from '../theme';
 import { makeStyles } from '../theme/ThemeContext';
 import type { Match, Player } from '../types/domain';
 import { formatMatchDateTime } from '../utils/dates';
+import { TEAM_SIDE_LABELS } from '../constants/teamLabels';
 
 export type MatchFinishedResultCardProps = {
   match: Match;
@@ -28,7 +29,7 @@ export const MatchFinishedResultCard = React.forwardRef<View, MatchFinishedResul
           {result ? (
             <>
               <View style={styles.scoreHero}>
-                <Text style={styles.teamTag}>A</Text>
+                <Text style={styles.teamTag}>{TEAM_SIDE_LABELS.A}</Text>
                 <Text style={styles.scoreBig} testID="match-summary:scoreA">
                   {result.scoreA}
                 </Text>
@@ -36,7 +37,7 @@ export const MatchFinishedResultCard = React.forwardRef<View, MatchFinishedResul
                 <Text style={styles.scoreBig} testID="match-summary:scoreB">
                   {result.scoreB}
                 </Text>
-                <Text style={styles.teamTag}>B</Text>
+                <Text style={styles.teamTag}>{TEAM_SIDE_LABELS.B}</Text>
               </View>
 
               {result.scorers.length === 0 &&
