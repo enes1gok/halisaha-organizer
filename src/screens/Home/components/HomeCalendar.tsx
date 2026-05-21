@@ -54,10 +54,6 @@ function HomeCalendarBase({
   const reduceMotion = useReduceMotion();
   const matrix = useMemo(() => buildMonthMatrix(monthAnchor, today), [monthAnchor, today]);
 
-  const opacity = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const lastAnchorRef = useRef<number>(monthAnchor.getTime());
-
   const bodyHeight = useSharedValue(expanded ? MAX_CALENDAR_BODY_HEIGHT : 0);
 
   useEffect(() => {
@@ -73,6 +69,10 @@ function HomeCalendarBase({
     maxHeight: bodyHeight.value,
     overflow: 'hidden',
   }));
+
+  const opacity = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const lastAnchorRef = useRef<number>(monthAnchor.getTime());
 
   useEffect(() => {
     const prev = lastAnchorRef.current;
@@ -109,6 +109,11 @@ function HomeCalendarBase({
     transform: [{ translateX: translateX.value }],
   }));
 
+  const handleToggle = useCallback(() => {
+    void lightImpact();
+    onToggle();
+  }, [onToggle]);
+
   const handlePrev = useCallback(() => {
     void lightImpact();
     onChangeMonth(-1);
@@ -118,11 +123,6 @@ function HomeCalendarBase({
     void lightImpact();
     onChangeMonth(1);
   }, [onChangeMonth]);
-
-  const handleToggle = useCallback(() => {
-    void lightImpact();
-    onToggle();
-  }, [onToggle]);
 
   return (
     <View style={styles.shell}>

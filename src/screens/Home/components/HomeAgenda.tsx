@@ -38,7 +38,7 @@ type Props = {
   onPrimaryVisibleDateKeyChange?: (dateKey: string) => void;
   ListHeaderComponent?: React.ReactElement | null;
   onPressMatch: (match: Match) => void;
-  emptyAction: EmptyAction;
+  emptyAction?: EmptyAction;
   /** Yaklaşan sekmede liste boşken «Gelmiyorum» nedeniyle filtrelendiğini anlat */
   showNotGoingEmptyHint?: boolean;
   onLoadMore?: () => void;
@@ -67,7 +67,7 @@ const SEGMENT_TO_EMPTY_VARIANT: Record<SegmentValue, EmptyStateVariant> = {
 const EMPTY_COPY: Record<SegmentValue, { title: string; subtitle: string }> = {
   upcoming: {
     title: 'Yaklaşan maçın yok',
-    subtitle: 'Yeni bir maç oluştur ya da ana sayfadan bir maça katıl.',
+    subtitle: 'Katılım kodu ile bir maça katıl ya da yeni maç oluştur.',
   },
   past: {
     title: 'Henüz oynanmış maçın yok',
@@ -75,7 +75,7 @@ const EMPTY_COPY: Record<SegmentValue, { title: string; subtitle: string }> = {
   },
   all: {
     title: 'Henüz maçın yok',
-    subtitle: 'Ana sayfadan bir maça katıl ya da yeni maç oluştur.',
+    subtitle: 'Katılım kodu ile bir maça katıl ya da yeni maç oluştur.',
   },
 };
 

@@ -2,7 +2,6 @@ import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { EmptyStateHero } from './emptyIllustrations';
 import { PressableScale } from './PressableScale';
 import { rsvpStatusIcon, rsvpStatusLeftBorder } from './rsvpUserIndicator';
 import { useClipboardCopyFeedback } from '../hooks/useClipboardCopyFeedback';
@@ -65,22 +64,7 @@ export function HomeUpcomingHeroCard({
     Platform.OS === 'android' ? ({ collapsable: false } as const) : {};
 
   if (!match) {
-    return (
-      <View style={styles.outer}>
-        <View style={styles.card}>
-          <View style={styles.emptyInner}>
-            <EmptyStateHero variant="matches_upcoming" testID="home:upcoming:empty:hero" />
-            <Text style={[typography.body, styles.tabTitle]}>Önümüzdeki maç</Text>
-            <Text style={[typography.subtitle, styles.placeholderBody, styles.placeholderTitle]}>
-              Yaklaşan maç yok
-            </Text>
-            <Text style={[typography.body, styles.muted, styles.emptyHint]}>
-              Katılım kodu ile maça katılabilir veya yeni maç oluşturabilirsiniz.
-            </Text>
-          </View>
-        </View>
-      </View>
-    );
+    return null;
   }
 
   const missing = rosterMissingSlots(match, goingCount);
@@ -224,11 +208,6 @@ const useStyles = makeStyles((t) =>
       minHeight: 200,
       ...shadows.md,
     },
-    emptyInner: {
-      paddingVertical: spacing.lg,
-      paddingHorizontal: spacing.lg,
-      alignItems: 'center',
-    },
     headerSection: {
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.lg,
@@ -242,25 +221,12 @@ const useStyles = makeStyles((t) =>
       paddingHorizontal: spacing.lg,
       alignItems: 'center',
     },
-    emptyHint: {
-      marginTop: spacing.sm,
-      textAlign: 'center',
-    },
     tabTitle: {
       color: t.colors.textMuted,
       marginBottom: spacing.sm,
       textAlign: 'center',
       alignSelf: 'stretch',
       fontSize: 16,
-    },
-    placeholderBody: {
-      color: t.colors.text,
-      marginTop: 2,
-      textAlign: 'center',
-      alignSelf: 'stretch',
-    },
-    placeholderTitle: {
-      fontSize: 19,
     },
     ibanPayBlock: {
       alignSelf: 'stretch',

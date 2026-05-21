@@ -57,7 +57,6 @@ export function HomeScreen() {
   const agendaRef = useRef<HomeAgendaHandle>(null);
   const suppressPrimaryVisibleSyncRef = useRef(false);
   const skipNextAgendaScrollRef = useRef(false);
-  const [calendarExpanded, setCalendarExpanded] = useState(false);
 
   useEffect(() => {
     if (!data.selectedDateKey) return;
@@ -114,10 +113,6 @@ export function HomeScreen() {
     [navigation, data.userId, data.ratingsSubmission],
   );
 
-  const handleGoToCreate = useCallback(() => {
-    navigation.navigate('CreateTab');
-  }, [navigation]);
-
   const handleOpenLastMatch = useCallback(() => {
     if (!lastMatch || !data.userId) return;
     const dest = resolveMyMatchesEntryScreen(lastMatch, data.userId, data.ratingsSubmission);
@@ -126,6 +121,8 @@ export function HomeScreen() {
     else if (dest === 'MatchSummary') navigation.navigate('MatchSummary', params);
     else navigation.navigate('MatchDetail', params);
   }, [lastMatch, navigation, data.userId, data.ratingsSubmission]);
+
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
 
   const handleToggleCalendar = useCallback(() => {
     setCalendarExpanded((prev) => !prev);
@@ -141,23 +138,6 @@ export function HomeScreen() {
   const listHeader = useMemo(
     () => (
       <View style={styles.header}>
-        {lastMatch ? (
-          <HomeLastMatchCard
-            match={lastMatch}
-            playerId={data.userId}
-            onPress={handleOpenLastMatch}
-          />
-        ) : null}
-        <HomeUpcomingHeroCard
-          match={nextMatch}
-          goingCount={nextMatch ? countGoing(nextMatch) : 0}
-          userRsvp={userAttendee?.status ?? null}
-          userHasPaid={userHasPaid}
-          getPlayer={getPlayer}
-          onOpenDetail={() => {
-            if (nextMatch) navigation.navigate('MatchDetail', { matchId: nextMatch.id });
-          }}
-        />
         <View style={styles.controlsRow}>
           <HomeSegmentControl
             value={data.segment}
@@ -177,6 +157,27 @@ export function HomeScreen() {
             onToggle={handleToggleCalendar}
           />
         </View>
+        {data.segment === 'upcoming' ? (
+          <>
+            {lastMatch ? (
+              <HomeLastMatchCard
+                match={lastMatch}
+                playerId={data.userId}
+                onPress={handleOpenLastMatch}
+              />
+            ) : null}
+            <HomeUpcomingHeroCard
+              match={nextMatch}
+              goingCount={nextMatch ? countGoing(nextMatch) : 0}
+              userRsvp={userAttendee?.status ?? null}
+              userHasPaid={userHasPaid}
+              getPlayer={getPlayer}
+              onOpenDetail={() => {
+                if (nextMatch) navigation.navigate('MatchDetail', { matchId: nextMatch.id });
+              }}
+            />
+          </>
+        ) : null}
       </View>
     ),
     [
@@ -209,9 +210,9 @@ export function HomeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.skeletonBody}>
-          <HomeHeroSkeleton />
-          <HomeLastMatchSkeleton />
           <HomeCalendarSkeleton />
+          <HomeLastMatchSkeleton />
+          <HomeHeroSkeleton />
           <View style={styles.skeletonGap} />
           <SkeletonList count={3} renderItem={() => <MatchCardSkeleton />} />
         </View>
@@ -238,9 +239,6 @@ export function HomeScreen() {
     );
   }
 
-  const emptyAction =
-    data.segment === 'past' ? null : { label: 'Yeni Maç Oluştur', onPress: handleGoToCreate };
-
   return (
     <View style={styles.screen}>
       <Animated.View style={styles.fill} entering={FadeIn.duration(180)}>
@@ -256,7 +254,6 @@ export function HomeScreen() {
           onPrimaryVisibleDateKeyChange={handlePrimaryVisibleDateKeyChange}
           ListHeaderComponent={listHeader}
           onPressMatch={handlePressMatch}
-          emptyAction={emptyAction}
           showNotGoingEmptyHint={data.sections.length === 0 && data.hasUpcomingNotGoingAttendance}
           onLoadMore={data.loadMore}
           loadingMore={data.loadingMore}
