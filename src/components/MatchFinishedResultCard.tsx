@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Card } from './Card';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
+import { TeamColorDot } from './TeamColorDot';
 import { letterSpacing, spacing, typography } from '../theme';
 import { makeStyles } from '../theme/ThemeContext';
 import type { Match, Player } from '../types/domain';
@@ -29,7 +30,10 @@ export const MatchFinishedResultCard = React.forwardRef<View, MatchFinishedResul
           {result ? (
             <>
               <View style={styles.scoreHero}>
-                <Text style={styles.teamTag}>{TEAM_SIDE_LABELS.A}</Text>
+                <View style={styles.teamSide}>
+                  <TeamColorDot team="A" size={24} />
+                  <Text style={styles.teamTag}>{TEAM_SIDE_LABELS.A}</Text>
+                </View>
                 <Text style={styles.scoreBig} testID="match-summary:scoreA">
                   {result.scoreA}
                 </Text>
@@ -37,7 +41,10 @@ export const MatchFinishedResultCard = React.forwardRef<View, MatchFinishedResul
                 <Text style={styles.scoreBig} testID="match-summary:scoreB">
                   {result.scoreB}
                 </Text>
-                <Text style={styles.teamTag}>{TEAM_SIDE_LABELS.B}</Text>
+                <View style={styles.teamSide}>
+                  <Text style={styles.teamTag}>{TEAM_SIDE_LABELS.B}</Text>
+                  <TeamColorDot team="B" size={24} />
+                </View>
               </View>
 
               {result.scorers.length === 0 &&
@@ -101,12 +108,16 @@ const useStyles = makeStyles((t) =>
       marginTop: spacing.sm,
       flexWrap: 'wrap',
     },
+    teamSide: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
     teamTag: {
       ...typography.caption,
       color: t.colors.textMuted,
       fontWeight: '700',
       letterSpacing: letterSpacing.wide,
-      minWidth: 16,
       textAlign: 'center',
     },
     scoreBig: {

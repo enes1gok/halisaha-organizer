@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PressableScale } from './PressableScale';
 import { MatchHeroVenueTitle } from './MatchHeroVenueTitle';
+import { TeamColorDot } from './TeamColorDot';
 import { radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
 import type { Match } from '../types/domain';
@@ -48,9 +49,13 @@ export function HomeLastMatchCard({ match, playerId, onPress }: Props) {
         <MatchHeroVenueTitle venue={match.venue} variant="list" />
         <Text style={[typography.caption, styles.date]}>{formatMatchDateTime(match.startsAt)}</Text>
         <View style={styles.scoreRow}>
-          <Text style={[typography.headlineStrong, styles.score]} testID="home:last-match:score">
-            {result.scoreA} — {result.scoreB}
-          </Text>
+          <View style={styles.scoreWithDots}>
+            <TeamColorDot team="A" size={18} />
+            <Text style={[typography.headlineStrong, styles.score]} testID="home:last-match:score">
+              {result.scoreA} — {result.scoreB}
+            </Text>
+            <TeamColorDot team="B" size={18} />
+          </View>
           <View style={[styles.badge, { borderColor: oc.color }]}>
             <Text style={[typography.micro, styles.badgeTxt, { color: oc.color }]}>{oc.label}</Text>
           </View>
@@ -62,9 +67,7 @@ export function HomeLastMatchCard({ match, playerId, onPress }: Props) {
 
 const useStyles = makeStyles((t) =>
   StyleSheet.create({
-    outer: {
-      marginTop: spacing.md,
-    },
+    outer: {},
     card: {
       backgroundColor: t.colors.surfaceGlass,
       borderRadius: radius.card,
@@ -87,8 +90,12 @@ const useStyles = makeStyles((t) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: spacing.md,
       marginTop: spacing.sm,
+    },
+    scoreWithDots: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
     },
     score: {
       color: t.colors.text,
