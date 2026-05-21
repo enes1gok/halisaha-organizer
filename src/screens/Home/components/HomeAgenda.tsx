@@ -44,6 +44,8 @@ type Props = {
   onLoadMore?: () => void;
   loadingMore?: boolean;
   hasMore?: boolean;
+  /** Additional padding (px) appended to the list's paddingBottom — e.g. for a floating action card. */
+  extraListPaddingBottom?: number;
 };
 
 const VIEWABILITY_CONFIG = {
@@ -52,7 +54,7 @@ const VIEWABILITY_CONFIG = {
   waitForInteraction: true,
 };
 
-export type MyMatchesAgendaHandle = {
+export type HomeAgendaHandle = {
   scrollToDateKey: (dateKey: string) => void;
 };
 
@@ -77,7 +79,7 @@ const EMPTY_COPY: Record<SegmentValue, { title: string; subtitle: string }> = {
   },
 };
 
-export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function MyMatchesAgenda(
+export const HomeAgenda = forwardRef<HomeAgendaHandle, Props>(function HomeAgenda(
   {
     sections,
     segment,
@@ -94,6 +96,7 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
     onLoadMore,
     loadingMore = false,
     hasMore = false,
+    extraListPaddingBottom = 0,
   },
   ref,
 ) {
@@ -172,7 +175,7 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
       keyExtractor={(item) => item.id}
       contentContainerStyle={[
         sections.length === 0 ? styles.emptyContent : styles.content,
-        { paddingBottom: getTabBarListPaddingBottom(insets.bottom) },
+        { paddingBottom: getTabBarListPaddingBottom(insets.bottom) + extraListPaddingBottom },
       ]}
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={ListHeaderComponent}
@@ -211,7 +214,7 @@ export const MyMatchesAgenda = forwardRef<MyMatchesAgendaHandle, Props>(function
           subtitle={emptySubtitle}
           actionLabel={emptyAction?.label}
           onAction={emptyAction?.onPress}
-          heroTestID="myMatches:agenda:empty:hero"
+          heroTestID="home:agenda:empty:hero"
         />
       }
       onEndReached={hasMore ? onLoadMore : undefined}
@@ -248,7 +251,7 @@ function SectionHeader({ section, highlighted }: SectionHeaderProps) {
   return (
     <View
       style={[styles.sectionHeader, highlighted && styles.sectionHeaderActive]}
-      testID={`myMatches:agenda:section:${section.dateKey}`}
+      testID={`home:agenda:section:${section.dateKey}`}
     >
       <Text style={[styles.sectionTitle, highlighted && styles.sectionTitleActive]}>
         {section.title}

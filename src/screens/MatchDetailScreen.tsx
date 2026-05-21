@@ -31,7 +31,7 @@ import { useEffectiveMatchStatus } from '../hooks/useEffectiveMatchStatus';
 import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
-import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import type { GroupsStackParamList, HomeStackParamList } from '../navigation/types';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { sortAttendeesWithPlayers } from '../store/helpers';
@@ -47,10 +47,9 @@ import { MatchDetailSummaryPanel } from './MatchDetail/components/MatchDetailSum
 import { useMatchDetailStyles } from './MatchDetail/matchDetailStyles';
 import type { MatchDetailTab } from './MatchDetail/types';
 
-type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
+type MatchStacks = HomeStackParamList & GroupsStackParamList;
 type MatchDetailRoute =
   | RouteProp<HomeStackParamList, 'MatchDetail'>
-  | RouteProp<MyMatchesStackParamList, 'MatchDetail'>
   | RouteProp<GroupsStackParamList, 'MatchDetail'>;
 type Nav = NativeStackNavigationProp<MatchStacks>;
 

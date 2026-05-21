@@ -58,15 +58,14 @@ import { buildSlotsFromCompact, compactSlots } from '../utils/lineupSlots';
 import { hasAssignedLineup } from '../utils/matchRoster';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
-import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import type { GroupsStackParamList, HomeStackParamList } from '../navigation/types';
 import { useUserFeedback } from '../utils/userFeedback';
 
 type Route =
   | RouteProp<HomeStackParamList, 'LineupBuilder'>
-  | RouteProp<MyMatchesStackParamList, 'LineupBuilder'>
   | RouteProp<GroupsStackParamList, 'LineupBuilder'>;
 type Nav = NativeStackNavigationProp<
-  HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList
+  HomeStackParamList & GroupsStackParamList
 >;
 
 const LONG_PRESS_MS = 150;

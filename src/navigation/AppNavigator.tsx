@@ -20,7 +20,6 @@ import {
   CreateTabWithTransition,
   GroupsTabWithTransition,
   HomeTabWithTransition,
-  MyMatchesTabWithTransition,
   ProfileTabWithTransition,
 } from './tabScreensWithTransition';
 import type { RootTabParamList } from './types';
@@ -53,7 +52,7 @@ const linking: LinkingOptions<RootTabParamList> = {
 const ACTIVE_SCALE = 1.2;
 const INACTIVE_SCALE = 1;
 
-type TabIconRouteName = 'HomeTab' | 'MyMatchesTab' | 'GroupsTab' | 'ProfileTab';
+type TabIconRouteName = 'HomeTab' | 'GroupsTab' | 'ProfileTab';
 
 type AnimatedTabIconProps = {
   routeName: string;
@@ -65,8 +64,6 @@ function renderIonicon(routeName: string, color: string) {
   switch (routeName as TabIconRouteName) {
     case 'HomeTab':
       return <Ionicons name="home-outline" size={size} color={color} />;
-    case 'MyMatchesTab':
-      return <Ionicons name="football-outline" size={size} color={color} />;
     case 'GroupsTab':
       return <Ionicons name="people-outline" size={size} color={color} />;
     case 'ProfileTab':
@@ -116,8 +113,6 @@ function HalisaTabBar({ state, navigation }: BottomTabBarProps) {
     switch (name) {
       case 'HomeTab':
         return 'Ana Sayfa';
-      case 'MyMatchesTab':
-        return 'Maçlar';
       case 'GroupsTab':
         return 'Gruplar';
       case 'ProfileTab':
@@ -215,7 +210,6 @@ export function AppNavigator() {
           }}
         >
           <Tab.Screen name="HomeTab" component={HomeTabWithTransition} />
-          <Tab.Screen name="MyMatchesTab" component={MyMatchesTabWithTransition} />
           <Tab.Screen
             name="CreateTab"
             component={CreateTabWithTransition}

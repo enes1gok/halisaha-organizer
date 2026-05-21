@@ -39,7 +39,7 @@ type Props = {
   onToggle: () => void;
 };
 
-function MyMatchesCalendarBase({
+function HomeCalendarBase({
   monthAnchor,
   selectedDateKey,
   today,
@@ -130,7 +130,7 @@ function MyMatchesCalendarBase({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Önceki ay"
-          testID="myMatches:calendar:prev"
+          testID="home:calendar:prev"
           onPress={handlePrev}
           hitSlop={10}
           style={({ pressed }) => [styles.chev, pressed && styles.chevPressed]}
@@ -140,7 +140,7 @@ function MyMatchesCalendarBase({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={expanded ? 'Takvimi kapat' : 'Takvimi aç'}
-          testID="myMatches:calendar:title"
+          testID="home:calendar:title"
           onPress={handleToggle}
           hitSlop={6}
           style={({ pressed }) => [styles.titleWrap, pressed && styles.titlePressed]}
@@ -150,7 +150,7 @@ function MyMatchesCalendarBase({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Sonraki ay"
-          testID="myMatches:calendar:next"
+          testID="home:calendar:next"
           onPress={handleNext}
           hitSlop={10}
           style={({ pressed }) => [styles.chev, pressed && styles.chevPressed]}
@@ -189,7 +189,7 @@ function MyMatchesCalendarBase({
   );
 }
 
-export const MyMatchesCalendar = React.memo(MyMatchesCalendarBase);
+export const HomeCalendar = React.memo(HomeCalendarBase);
 
 type DayCellProps = {
   cell: MonthDayCell;
@@ -246,7 +246,7 @@ function DayCell({ cell, count, selected, onSelect, reduceMotion }: DayCellProps
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={describeDayForA11y(cell.dateKey, count)}
-      testID={`myMatches:calendar:day:${cell.dateKey}`}
+      testID={`home:calendar:day:${cell.dateKey}`}
       onPress={handlePress}
       style={styles.dayCell}
     >

@@ -3,21 +3,12 @@ import { CreateMatchTabScreen } from '../screens/CreateMatchTabScreen';
 import { AnimatedTabScene } from './TabSceneTransitionContext';
 import { GroupsStackNav } from './GroupsStackNav';
 import { HomeStackNav } from './HomeStackNav';
-import { MyMatchesStackNav } from './MyMatchesStackNav';
 import { ProfileStackNav } from './ProfileStackNav';
 
 export function HomeTabWithTransition() {
   return (
     <AnimatedTabScene>
       <HomeStackNav />
-    </AnimatedTabScene>
-  );
-}
-
-export function MyMatchesTabWithTransition() {
-  return (
-    <AnimatedTabScene>
-      <MyMatchesStackNav />
     </AnimatedTabScene>
   );
 }

@@ -14,7 +14,7 @@ import { MotmSelectorSection } from '../components/MotmSelectorSection';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
-import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import type { GroupsStackParamList, HomeStackParamList } from '../navigation/types';
 import { fetchMyMatchRatingDraftsForMatch } from '../services/supabase/matchRatings';
 import { radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
@@ -25,10 +25,9 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useMatchesStore, usePlayersStore } from '../store';
 import { useUserFeedback } from '../utils/userFeedback';
 
-type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
+type Stacks = HomeStackParamList & GroupsStackParamList;
 type RatingFlowRoute =
   | RouteProp<HomeStackParamList, 'MatchRatingFlow'>
-  | RouteProp<MyMatchesStackParamList, 'MatchRatingFlow'>
   | RouteProp<GroupsStackParamList, 'MatchRatingFlow'>;
 type Nav = NativeStackNavigationProp<Stacks>;
 

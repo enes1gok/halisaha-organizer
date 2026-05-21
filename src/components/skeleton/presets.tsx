@@ -149,7 +149,7 @@ export function LeaderboardRowSkeleton() {
   );
 }
 
-export function MyMatchesCalendarSkeleton() {
+export function HomeCalendarSkeleton() {
   const styles = useSkeletonPresetStyles();
   return (
     <View style={styles.calendarShell}>

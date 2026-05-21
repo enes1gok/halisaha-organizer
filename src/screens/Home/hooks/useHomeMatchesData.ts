@@ -16,7 +16,7 @@ import {
   type SegmentValue,
 } from '../adapters/groupMatchesByDay';
 
-export type UseMyMatchesData = {
+export type UseHomeMatchesData = {
   segment: SegmentValue;
   setSegment: (next: SegmentValue) => void;
   monthAnchor: Date;
@@ -43,7 +43,7 @@ export type UseMyMatchesData = {
   hasMoreMatches: boolean;
 };
 
-export function useMyMatchesData(): UseMyMatchesData {
+export function useHomeMatchesData(): UseHomeMatchesData {
   const slice = useAppStore(
     useShallow((s) => ({
       matches: s.matches,
@@ -134,7 +134,7 @@ export function useMyMatchesData(): UseMyMatchesData {
     try {
       await slice.hydrateRemoteMatches({ force: true });
     } catch (e) {
-      console.warn('MyMatches refresh failed', e);
+      console.warn('Home matches refresh failed', e);
       setFetchError(true);
     } finally {
       setRefreshing(false);

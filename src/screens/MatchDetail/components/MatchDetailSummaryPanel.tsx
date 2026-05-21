@@ -4,7 +4,7 @@ import { Switch, Text, View } from 'react-native';
 import { PillButton } from '../../../components/PillButton';
 import { PostMatchInlineWizard } from '../../../components/PostMatchInlineWizard';
 import { RsvpOptionButton } from '../../../components/RsvpOptionButton';
-import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../../../navigation/types';
+import type { GroupsStackParamList, HomeStackParamList } from '../../../navigation/types';
 import { useTheme } from '../../../theme/ThemeContext';
 import type { Match, Player, RSVPStatus, SelfReportRequest } from '../../../types/domain';
 import type { EffectiveStatus } from '../../../utils/matchEffectiveStatus';
@@ -12,7 +12,7 @@ import { hasAssignedLineup } from '../../../utils/matchRoster';
 import { isRemoteMatchId } from '../../../utils/matchId';
 import { useMatchDetailStyles } from '../matchDetailStyles';
 
-type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
+type MatchStacks = HomeStackParamList & GroupsStackParamList;
 type Nav = NativeStackNavigationProp<MatchStacks>;
 
 type Props = {

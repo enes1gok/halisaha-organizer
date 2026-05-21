@@ -15,7 +15,6 @@ import { Durations, EasingPresets, TabSlide } from '../utils/animations';
 /** Must match `Tab.Screen` order in `AppNavigator.tsx`. */
 export const TAB_ROUTE_ORDER = [
   'HomeTab',
-  'MyMatchesTab',
   'CreateTab',
   'GroupsTab',
   'ProfileTab',

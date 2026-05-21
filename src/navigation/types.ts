@@ -10,15 +10,6 @@ export type HomeStackParamList = {
   MatchRatingFlow: { matchId: string };
 };
 
-export type MyMatchesStackParamList = {
-  MyMatchesMain: undefined;
-  MatchDetail: { matchId: string };
-  EditMatch: { matchId: string };
-  LineupBuilder: { matchId: string };
-  MatchSummary: { matchId: string };
-  MatchRatingFlow: { matchId: string };
-};
-
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   Settings: undefined;
@@ -54,7 +45,6 @@ export type GroupsStackParamList = {
 
 export type RootTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
-  MyMatchesTab: NavigatorScreenParams<MyMatchesStackParamList> | undefined;
   CreateTab: undefined;
   GroupsTab: NavigatorScreenParams<GroupsStackParamList> | undefined;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList> | undefined;

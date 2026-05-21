@@ -15,9 +15,9 @@ const BASE_OPTIONS: ReadonlyArray<{
   testId: string;
   countKey: keyof SegmentCounts;
 }> = [
-  { value: 'upcoming', label: 'Yaklaşan', testId: 'myMatches:segment:upcoming', countKey: 'upcoming' },
-  { value: 'past', label: 'Geçmiş', testId: 'myMatches:segment:past', countKey: 'past' },
-  { value: 'all', label: 'Tümü', testId: 'myMatches:segment:all', countKey: 'all' },
+  { value: 'upcoming', label: 'Yaklaşan', testId: 'home:segment:upcoming', countKey: 'upcoming' },
+  { value: 'past', label: 'Geçmiş', testId: 'home:segment:past', countKey: 'past' },
+  { value: 'all', label: 'Tümü', testId: 'home:segment:all', countKey: 'all' },
 ];
 
 const DEFAULT_COUNTS: SegmentCounts = { upcoming: 0, past: 0, all: 0 };
@@ -28,7 +28,7 @@ type Props = {
   counts?: SegmentCounts;
 };
 
-export function MyMatchesSegmentControl({ value, onChange, counts = DEFAULT_COUNTS }: Props) {
+export function HomeSegmentControl({ value, onChange, counts = DEFAULT_COUNTS }: Props) {
   const styles = useStyles();
   const handlePress = useCallback(
     (next: SegmentValue) => {

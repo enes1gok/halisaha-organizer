@@ -43,13 +43,12 @@ import {
   clampEvenMatchMaxPlayers,
 } from '../utils/matchMaxPlayers';
 import { normalizeStartsAtFromPicker } from '../utils/matchStartsAtNormalize';
-import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import type { GroupsStackParamList, HomeStackParamList } from '../navigation/types';
 
-type MatchStacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
+type MatchStacks = HomeStackParamList & GroupsStackParamList;
 type Nav = NativeStackNavigationProp<MatchStacks>;
 type EditMatchRoute =
   | RouteProp<HomeStackParamList, 'EditMatch'>
-  | RouteProp<MyMatchesStackParamList, 'EditMatch'>
   | RouteProp<GroupsStackParamList, 'EditMatch'>;
 
 function sanitizeMaxPlayersDigits(raw: string): string {

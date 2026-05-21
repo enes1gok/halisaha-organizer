@@ -11,7 +11,7 @@ import { MatchScoreLines } from '../components/MatchScoreLines';
 import { PillButton } from '../components/PillButton';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { getTabBarListPaddingBottom } from '../navigation/tabBarLayout';
-import type { GroupsStackParamList, HomeStackParamList, MyMatchesStackParamList } from '../navigation/types';
+import type { GroupsStackParamList, HomeStackParamList } from '../navigation/types';
 import { PostMatchInlineWizard, type PostMatchInlineWizardHandle } from '../components/PostMatchInlineWizard';
 import { letterSpacing, radius, shadows, spacing, typography } from '../theme';
 import { makeStyles, useTheme } from '../theme/ThemeContext';
@@ -26,10 +26,9 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore, useGroupsStore, useMatchesStore, usePlayersStore } from '../store';
 import { useUserFeedback } from '../utils/userFeedback';
 
-type Stacks = HomeStackParamList & MyMatchesStackParamList & GroupsStackParamList;
+type Stacks = HomeStackParamList & GroupsStackParamList;
 type R =
   | RouteProp<HomeStackParamList, 'MatchSummary'>
-  | RouteProp<MyMatchesStackParamList, 'MatchSummary'>
   | RouteProp<GroupsStackParamList, 'MatchSummary'>;
 type Nav = NativeStackNavigationProp<Stacks>;
 
